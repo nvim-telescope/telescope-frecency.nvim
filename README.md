@@ -7,19 +7,22 @@ An implementation of Mozillas [Frecency algorithm](https://developer.mozilla.org
 Frecency is a score given to each unique file loaded into a Neovim buffer.
 On each load a timestamp is recorded to a database. The score is calculated using the age of each of the timestamps and the amount of times the file has been loaded:
 
+Recency_score =
+
+| Timestamp age | Value |
+| -------- | ---------- |
+| 4 hours  | 100        |
+| 1 day    | 80         | 
+| 3 days   | 60         | 
+| 1 week   | 40         | 
+| 1 month  | 20         | 
+| 90 days  | 10         | 
+
 ```
-recency_score =
-   timestamp_age   4 hours    =>   value = 100   
-   timestamp_age   1 day      =>   value = 80    
-   timestamp_age   3 days     =>   value = 60    
-   timestamp_age   1 week     =>   value = 40    
-   timestamp_age   1 month    =>   value = 20    
-   timestamp_age   90 days    =>   value = 10   
-
 final_score = frequency * recency_score / max_number_of_timestamps
-
 ```
 ## WIP
+
 
 TODO
 
