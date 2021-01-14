@@ -58,7 +58,7 @@ local function filter_timestamps(timestamps, file_id)
 end
 
 local function get_file_scores()
-  if not sql_wrapper then return end
+  if not sql_wrapper then return {} end
 
   local scores = {}
   local files           = sql_wrapper:do_transaction('get_all_filepaths')
