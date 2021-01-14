@@ -47,7 +47,7 @@ This plugin uses `sql.nvim` to perform the database transactions.
 
 ## Installation
 
-TODO:
+TODO: add installation instructions for other package managers
 
 ```
 use {
