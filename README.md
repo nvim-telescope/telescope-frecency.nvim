@@ -10,10 +10,10 @@ On each load a timestamp is recorded to a database. The score is calculated usin
 ```
 recency_score =
    timestamp_age   4 hours    =>   value = 100   
-   timestamp_age   day        =>   value = 80    
+   timestamp_age   1 day      =>   value = 80    
    timestamp_age   3 days     =>   value = 60    
-   timestamp_age   week       =>   value = 40    
-   timestamp_age   month      =>   value = 20    
+   timestamp_age   1 week     =>   value = 40    
+   timestamp_age   1 month    =>   value = 20    
    timestamp_age   90 days    =>   value = 10   
 
 final_score = frequency * recency_score / max_number_of_timestamps
