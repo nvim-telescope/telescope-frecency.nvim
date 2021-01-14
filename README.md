@@ -2,12 +2,20 @@
 
 An implementation of Mozillas [Frecency algorithm](https://developer.mozilla.org/en-US/docs/Mozilla/Tech/Places/Frecency_algorithm) for [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim).
 
-## Frecency: sorting by "frequency" and "recency."
+## Frecency: sorting by "frequency" and "recency"
 
-Frecency is a score given to each file loaded into a Neovim buffer.
-The score is calculated by combining the timestamps recorded on each load and how recent the timestamps are:
+Frecency is a score given to each unique file loaded into a Neovim buffer.
+On each load a timestamp is recorded to a database. The score is calculated using the age of each of the timestamps and the amount of times the file has been loaded:
 
 ```
+recency_score =
+   timestamp_age = 240      => value = 100  -- past 4 hours 
+   timestamp_age = 1440     => value = 80   -- past day     
+   timestamp_age = 4320     => value = 60   -- past 3 days  
+   timestamp_age = 10080    => value = 40   -- past week    
+   timestamp_age = 43200    => value = 20   -- past month   
+   timestamp_age = 129600   => value = 10   -- past 90 days
+
 score  = frequency * recency_score / number_of_timestamps
 
 ```
