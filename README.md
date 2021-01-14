@@ -32,7 +32,8 @@ score = frequency * recency_score / max_number_of_timestamps
 
 TODO:
 
-- [ ] Implement sorter based on frecency score
+- [x] Implement sorter based on frecency score
+- [ ] Improve substring matcher to support multiple terms
 - [ ] Check file entries are valid via async job on VimClose
 
 <img src="https://raw.githubusercontent.com/sunjon/images/master/gh_readme_telescope_frecency.png" alt="screenshot" width="800"/>
