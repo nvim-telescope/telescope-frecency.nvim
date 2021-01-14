@@ -19,7 +19,6 @@ local function init()
 
   sql_wrapper = sqlwrap:new()
   sql_wrapper:bootstrap()
-  print("setup")
 
   -- setup autocommands
   vim.api.nvim_command("augroup TelescopeFrecency")
