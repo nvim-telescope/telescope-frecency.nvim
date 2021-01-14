@@ -16,7 +16,7 @@ recency_score =
    timestamp_age = 43200    => value = 20   -- past month   
    timestamp_age = 129600   => value = 10   -- past 90 days
 
-score  = frequency * recency_score / number_of_timestamps
+final_score  = frequency * recency_score / max_number_of_timestamps
 
 ```
 ## WIP
