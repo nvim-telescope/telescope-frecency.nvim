@@ -60,10 +60,12 @@ end
 local function get_file_scores()
   if not sql_wrapper then return end
 
+  local scores = {}
   local files           = sql_wrapper:do_transaction('get_all_filepaths')
   local timestamp_ages  = sql_wrapper:do_transaction('get_all_timestamp_ages')
 
-  local scores = {}
+  if vim.tbl_isempty(files) then return scores end
+
   for _, file_entry in ipairs(files) do
     table.insert(scores, {
       filename = file_entry.path,
