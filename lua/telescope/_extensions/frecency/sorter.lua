@@ -23,10 +23,11 @@ my_sorters.get_substr_matcher = function(opts)
   substr.highlighter = substr_highlighter
   substr.scoring_function = function(_, prompt, _, entry)
     -- local base_score = frecency:score(prompt, entry)
+    local display = entry.name:lower()
     local base_score
 
     -- TODO: split the prompt into components
-    base_score = entry.name:find(prompt, 1, true) and 1 or -1
+    base_score = display:find(prompt, 1, true) and 1 or -1
 
     if base_score == -1 then
       return -1
