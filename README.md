@@ -1,11 +1,11 @@
 # telescope-frecency.nvim
 
-An implementation of Mozillas [Frecency algorithm](https://developer.mozilla.org/en-US/docs/Mozilla/Tech/Places/Frecency_algorithm) for [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim).
+An implementation of Mozilla's [Frecency algorithm](https://developer.mozilla.org/en-US/docs/Mozilla/Tech/Places/Frecency_algorithm) for [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim).
 
 ## Frecency: sorting by "frequency" and "recency"
 
 Frecency is a score given to each unique file loaded into a Neovim buffer.
-On each load a timestamp is recorded to a database. The score is calculated using the age of each of the timestamps and the amount of times the file has been loaded:
+On each load a timestamp is recorded to a database. The score is calculated using the age of each of (up to 10) timestamps and the total amount of times the file has been loaded:
 
 ### Recency values (per timestamp)
 
@@ -70,3 +70,8 @@ lua require("telescope").extensions.frecency.frecency(opts)
 ```
 :Telescope frecency
 ```
+
+## References
+
+- [Stack Engineering: A faster smarter quick switcher](https://slack.engineering/a-faster-smarter-quick-switcher/)
+- [Mozilla Frecency algorithm](https://developer.mozilla.org/en-US/docs/Mozilla/Tech/Places/Frecency_algorithm)
