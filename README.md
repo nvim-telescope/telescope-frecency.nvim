@@ -5,7 +5,7 @@ An implementation of Mozilla's [Frecency algorithm](https://developer.mozilla.or
 ## Frecency: sorting by "frequency" and "recency"
 
 Frecency is a score given to each unique file loaded into a Neovim buffer.
-On each load a timestamp is recorded to a database. The score is calculated using the age of each of up to 10 timestamps and the total amount of times the file has been loaded:
+On each load a timestamp is recorded to a database. The score is calculated using the age of the 10 most recent timestamps and the total amount of times the file has been loaded:
 
 ### Recency values (per timestamp)
 
