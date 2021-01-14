@@ -70,6 +70,13 @@ local function get_file_scores()
       score    = calculate_file_score(file_entry.count, filter_timestamps(timestamp_ages, file_entry.id))
     })
   end
+
+  -- sort the table
+  local function compare(a, b)
+    return a.score > b.score
+  end
+  table.sort(scores, compare)
+
   return scores
 end
 
