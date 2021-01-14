@@ -14,7 +14,7 @@ score  = frequency * recency_score / number_of_timestamps
 
 
 
-<img src="https://raw.githubusercontent.com/sunjon/images/master/gh_readme_telescope_packer.png" height="600">
+<img src="https://raw.githubusercontent.com/sunjon/images/master/gh_readme_telescope_frecency.png" height="600">
 
 ## Requirements
 
