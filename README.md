@@ -38,6 +38,8 @@ TODO:
 
 <img src="https://raw.githubusercontent.com/sunjon/images/master/gh_readme_telescope_frecency.png" height="600">
 
+* _Scores shown in finder for illustration purposes only_
+
 ## Requirements
 
 - [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) (required)
