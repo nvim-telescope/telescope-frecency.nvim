@@ -18,7 +18,7 @@ local entry_display = require "telescope.pickers.entry_display"
 local finders       = require "telescope.finders"
 local pickers       = require "telescope.pickers"
 local previewers    = require "telescope.previewers"
-local sorters       = require "telescope._extensions.frecency.sorter"
+local sorters       = require "telescope.sorters"
 local conf          = require('telescope.config').values
 local path = require('telescope.path')
 local utils = require('telescope.utils')
@@ -28,7 +28,6 @@ local frecency = function(opts)
 
   local cwd = vim.fn.expand(opts.cwd or vim.fn.getcwd())
   local results = db_client.get_file_scores()
-  -- print(vim.inspect(results))
 
   local displayer = entry_display.create {
     separator = "",
@@ -72,7 +71,7 @@ local frecency = function(opts)
       end,
     },
     previewer = conf.file_previewer(opts),
-    sorter    = sorters.get_frecency_sorter()
+    sorter    = sorters.get_generic_fuzzy_sorter(),
   }):find()
 end
 
