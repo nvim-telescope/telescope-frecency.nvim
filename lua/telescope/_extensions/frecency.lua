@@ -18,7 +18,8 @@ local entry_display = require "telescope.pickers.entry_display"
 local finders       = require "telescope.finders"
 local pickers       = require "telescope.pickers"
 local previewers    = require "telescope.previewers"
-local sorters       = require "telescope.sorters"
+-- local sorters       = require "telescope.sorters"
+local sorters       = require "telescope._extensions.frecency.sorter"
 local conf          = require('telescope.config').values
 local path = require('telescope.path')
 local utils = require('telescope.utils')
@@ -71,7 +72,7 @@ local frecency = function(opts)
       end,
     },
     previewer = conf.file_previewer(opts),
-    sorter    = sorters.get_generic_fuzzy_sorter(),
+    sorter    = sorters.get_frecency_sorter(opts),
   }):find()
 end
 

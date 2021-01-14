@@ -9,6 +9,7 @@ my_sorters.get_frecency_sorter = function(opts)
   local fuzzy_sorter = sorters.get_generic_fuzzy_sorter(opts)
 
   local frecency = sorters:new()
+  frecency.highlighter = fuzzy_sorter.highlighter
   frecency.scoring_function = function(_, prompt, _, entry)
     local base_score = fuzzy_sorter:score(prompt, entry)
 
