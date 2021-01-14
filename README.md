@@ -1,7 +1,5 @@
 # telescope-frecency.nvim
 
-## WIP
-
 An implementation of Mozillas [Frecency algorithm](https://developer.mozilla.org/en-US/docs/Mozilla/Tech/Places/Frecency_algorithm) for [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim).
 
 ## Frecency: sorting by "frequency" and "recency."
@@ -13,7 +11,12 @@ The score is calculated by combining the timestamps recorded on each load and ho
 score  = frequency * recency_score / number_of_timestamps
 
 ```
+## WIP
 
+TODO
+
+- [ ] Implement sorter based on frecency score
+- [ ] Check file entries are valid via async job on VimClose
 
 
 <img src="https://raw.githubusercontent.com/sunjon/images/master/gh_readme_telescope_frecency.png" height="600">
