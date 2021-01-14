@@ -27,7 +27,7 @@ score = frequency * recency_score / max_number_of_timestamps
 ## WIP
 
 
-TODO
+TODO:
 
 - [ ] Implement sorter based on frecency score
 - [ ] Check file entries are valid via async job on VimClose
