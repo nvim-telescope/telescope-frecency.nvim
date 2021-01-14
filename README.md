@@ -1,5 +1,7 @@
 # telescope-frecency.nvim
 
+## WIP
+
 An implementation of Mozillas [Frecency algorithm](https://developer.mozilla.org/en-US/docs/Mozilla/Tech/Places/Frecency_algorithm) for [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim).
 
 ## Frecency: sorting by "frequency" and "recency."
@@ -31,7 +33,13 @@ This plugin uses `sql.nvim` to perform the database transactions.
 TODO:
 
 ```
-abc
+use {
+  "sunjon/telescope-frecency",
+  config = function()
+    require"telescope".load_extension("frecency")
+  end
+}
+
 ```
 
 ## Configuration
