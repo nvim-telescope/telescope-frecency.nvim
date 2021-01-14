@@ -35,7 +35,7 @@ TODO:
 - [ ] Implement sorter based on frecency score
 - [ ] Check file entries are valid via async job on VimClose
 
-<img src="https://raw.githubusercontent.com/sunjon/images/master/gh_readme_telescope_frecency.png" alt="screenshot" width="600"/>
+<img src="https://raw.githubusercontent.com/sunjon/images/master/gh_readme_telescope_frecency.png" alt="screenshot" width="800"/>
 
 * _Scores shown in finder for illustration purposes only_
 
