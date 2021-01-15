@@ -1,5 +1,5 @@
+local util    = require("telescope._extensions.frecency.util")
 local vim = vim
-local uv  = vim.loop
 
 local has_sql, sql = pcall(require, "sql")
 if not has_sql then
@@ -28,28 +28,22 @@ local schemas = {[[
 ]]}
 
 local queries = {
-  ["file_add_entry"]              = "INSERT INTO files (path, count) values(:path, 1);",
-  ["file_update_counter"]         = "UPDATE files SET count = count + 1 WHERE path = :path;",
-  ["timestamp_add_entry"]         = "INSERT INTO timestamps (file_id, timestamp) values(:file_id, julianday('now'));",
-  ["timestamp_delete_before_id"]  = "DELETE FROM timestamps WHERE id < :id and file_id == :file_id;",
-  ["get_all_filepaths"]           = "SELECT * FROM files;",
-  ["get_all_timestamp_ages"]      = "SELECT id, file_id, CAST((julianday('now') - julianday(timestamp)) * 24 * 60 AS INTEGER) AS age FROM timestamps;",
-  ["get_row"]                     = "SELECT * FROM files WHERE path == :path;",
-  ["get_timestamp_ids_for_file"]  = "SELECT id FROM timestamps WHERE file_id == :file_id;",
+  ["file_add_entry"]                = "INSERT INTO files (path, count) values(:path, 1);",
+  ["file_delete_entry"]             = "DELETE FROM files WHERE id == :id;",
+  ["file_update_counter"]           = "UPDATE files SET count = count + 1 WHERE path == :path;",
+  ["timestamp_add_entry"]           = "INSERT INTO timestamps (file_id, timestamp) values(:file_id, julianday('now'));",
+  ["timestamp_delete_before_id"]    = "DELETE FROM timestamps WHERE id < :id and file_id == :file_id;",
+  ["timestamp_delete_with_file_id"] = "DELETE FROM timestamps WHERE file_id == :file_id;",
+  ["get_all_filepaths"]             = "SELECT * FROM files;",
+  ["get_all_timestamp_ages"]        = "SELECT id, file_id, CAST((julianday('now') - julianday(timestamp)) * 24 * 60 AS INTEGER) AS age FROM timestamps;",
+  ["get_row"]                       = "SELECT * FROM files WHERE path == :path;",
+  ["get_timestamp_ids_for_file"]    = "SELECT id FROM timestamps WHERE file_id == :file_id;",
 }
 
 -- local ignore_patterns = {
 -- }
 
 --
-local function fs_stat(path)  -- TODO: move this to new file with M
-  local stat = uv.fs_stat(path)
-  local res  = {}
-  res.exists      = stat and true or false -- TODO: this is silly
-  res.isdirectory = (stat and stat.type == "directory") and true or false
-
-  return res
-end
 
 local M = {}
 M.queries = queries
@@ -108,7 +102,7 @@ function M:get_row_id(filepath)
 end
 
 function M:update(filepath)
-  local filestat = fs_stat(filepath)
+  local filestat = util.fs_stat(filepath)
   if (vim.tbl_isempty(filestat) or
       filestat.exists       == false or
       filestat.isdirectory  == true) then

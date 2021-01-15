@@ -1,4 +1,5 @@
-local sqlwrap   = require("telescope._extensions.frecency.sql_wrapper")
+local sqlwrap = require("telescope._extensions.frecency.sql_wrapper")
+local util    = require("telescope._extensions.frecency.util")
 
 local MAX_TIMESTAMPS = 10
 
@@ -23,13 +24,8 @@ local function init()
   -- setup autocommands
   vim.api.nvim_command("augroup TelescopeFrecency")
   vim.api.nvim_command("autocmd!")
-  vim.api.nvim_command("autocmd BufEnter * lua require'telescope._extensions.frecency.db_client'.autocmd_handler(vim.fn.expand('<amatch>'))")
+  vim.api.nvim_command("autocmd BufWinEnter,BufWritePost * lua require'telescope._extensions.frecency.db_client'.autocmd_handler(vim.fn.expand('<amatch>'))")
   vim.api.nvim_command("augroup END")
-end
-
--- TODO: move these to util.lua
-local function string_isempty(s)
-  return s == nil or s == ''
 end
 
 local function calculate_file_score(frequency, timestamps)
@@ -83,12 +79,32 @@ local function get_file_scores()
 end
 
 local function autocmd_handler(filepath)
-  if not sql_wrapper or string_isempty(filepath) then return end
+  if not sql_wrapper or util.string_isempty(filepath) then return end
 
   -- check if file is registered as loaded
   if not vim.b.frecency_registered then
+    -- allow noname files to go unregistered until BufWritePost
+    if not util.fs_stat(filepath).exists then return end
+
+    -- TODO: only register buffer if update did something?
+    -- TODO: apply filetype_ignore here?
     vim.b.frecency_registered = 1
+    -- print("registered buffer")
     sql_wrapper:update(filepath)
+  end
+end
+
+local function validate()
+  if not sql_wrapper then return {} end
+
+  local files = sql_wrapper:do_transaction('get_all_filepaths')
+  for _, entry in pairs(files) do
+    if not util.fs_stat(entry.path).exists then
+      -- remove entries from file and timestamp tables
+      print("removing entry: " .. entry.path .. "[" .. entry.id .."]")
+      sql_wrapper:do_transaction('file_delete_entry', { id = entry.id })
+      sql_wrapper:do_transaction('timestamp_delete_with_file_id', { file_id = entry.id })
+    end
   end
 end
 
@@ -96,4 +112,5 @@ return {
   init            = init,
   get_file_scores = get_file_scores,
   autocmd_handler = autocmd_handler,
+  validate        = validate,
 }

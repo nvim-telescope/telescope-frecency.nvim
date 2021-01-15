@@ -6,9 +6,10 @@ if not has_telescope then
 end
 
 -- start the database client
-print("start")
+-- print("start")
 local db_client = require("telescope._extensions.frecency.db_client")
-vim.defer_fn(db_client.init, 100) -- TODO: this is a crappy attempt to lessen loadtime impact, use VimEnter?
+-- vim.defer_fn(db_client.init, 100) -- TODO: this is a crappy attempt to lessen loadtime impact, use VimEnter?
+db_client.init() -- TODO: this is a crappy attempt to lessen loadtime impact, use VimEnter?
 
 
 -- finder code
@@ -77,9 +78,15 @@ local frecency = function(opts)
   }):find()
 end
 
+local validate = function()
+  print("validate db")
+  db_client.validate()
+end
+
 
 return telescope.register_extension {
   exports = {
     frecency = frecency,
+    validate = validate,
   },
 }

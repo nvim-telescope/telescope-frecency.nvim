@@ -1,20 +1,21 @@
 local sorters = require "telescope.sorters"
+local util    = require("telescope._extensions.frecency.util")
 
 local my_sorters = {}
 
-local function split(s, delimiter)
-  local result = {}
-  for match in (s .. delimiter):gmatch("(.-)" .. delimiter) do
-    table.insert(result, match)
-  end
-  return result
-end
+-- local function split(s, delimiter)
+--   local result = {}
+--   for match in (s .. delimiter):gmatch("(.-)" .. delimiter) do
+--     table.insert(result, match)
+--   end
+--   return result
+-- end
 
 local substr_highlighter = function(_, prompt, display)
   local highlights = {}
   display = display:lower()
 
-  local search_terms = split(prompt, " ")
+  local search_terms = util.split(prompt, " ")
   local hl_start, hl_end
 
   for _, word in pairs(search_terms) do
@@ -35,7 +36,7 @@ my_sorters.get_substr_matcher = function(opts)
   substr.scoring_function = function(_, prompt, _, entry)
     local display = entry.name:lower()
 
-    local search_terms = split(prompt, " ")
+    local search_terms = util.split(prompt, " ")
     local matched
     for _, word in pairs(search_terms) do
        matched = display:find(word, 1, true) and 1 or -1
