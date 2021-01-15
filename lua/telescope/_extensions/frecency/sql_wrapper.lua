@@ -9,23 +9,6 @@ end
 -- TODO: pass in max_timestamps from db.lua
 local MAX_TIMESTAMPS = 10
 
--- TODO: prioritize files in project root!
-
-local schemas = {[[
-  CREATE TABLE IF NOT EXISTS files (
-    id                    INTEGER PRIMARY KEY,
-    count                 INTEGER,
-    path                  TEXT
-  );
-]],
-[[
-  CREATE TABLE IF NOT EXISTS timestamps (
-    id                    INTEGER PRIMARY KEY,
-    file_id               INTEGER,
-    timestamp             REAL,
-    FOREIGN KEY(file_id)  REFERENCES files(id)
-  );
-]]}
 
 local queries = {
   ["file_add_entry"]                = "INSERT INTO files (path, count) values(:path, 1);",
@@ -77,9 +60,20 @@ function M:bootstrap(opts)
   end
 
   -- create tables if they don't exist
-  for _, s in pairs(schemas) do
-    self.db:eval(s)
-  end
+  self.db:create("files", {
+    ensure = true,
+    id     = {"integer", "primary", "key"},
+    count  = "integer",
+    path   = "text"
+  })
+  self.db:create("timestamps", {
+    ensure    = true,
+    id        = {"integer", "primary", "key"},
+    file_id   = "integer",
+    count     = "integer",
+    timestamp = "real"
+    -- FOREIGN KEY(file_id)  REFERENCES files(id)
+  })
   self.db:close()
 
 end
