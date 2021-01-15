@@ -68,7 +68,7 @@ function M:bootstrap(opts)
   self.max_entries = opts.max_entries or 2000
 
   -- create the db if it doesn't exist
-  local db_root = opts.docs_root or "$XDG_DATA_HOME/nvim"
+  local db_root = opts.docs_root or vim.fn.stdpath('data')
   local db_filename = db_root .. "/file_frecency.sqlite3"
   self.db = sql.open(db_filename)
   if not self.db then
