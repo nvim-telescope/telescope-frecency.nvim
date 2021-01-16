@@ -89,9 +89,8 @@ end
 
 function M:get_filepath_row_id(filepath)
   local res
-  local func = function(db) res = db:select("files", { where = { path = filepath}}) end
-  self.db:with_open(func)
-  return res and res[1].id or nil
+  self.db:with_open(function(db) res = db:select("files", { where = { path = filepath}}) end)
+  return not vim.tbl_isempty(res) and res[1].id or nil
 end
 
 function M:update(filepath)
