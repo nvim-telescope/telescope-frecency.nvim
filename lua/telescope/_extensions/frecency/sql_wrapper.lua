@@ -67,18 +67,14 @@ end
 -------------------------------------------
 
 function M:do_transaction(t, params)
-  local transaction = function(sql_cmd)
-    return self.db:with_open(function(db)
-      local case = {
-        [1] = function() return db:select(t.cmd_data, params) end,
-        [2] = function() return db:insert(t.cmd_data, params) end,
-        [3] = function() return db:eval(t.cmd_data,   params) end,
-      }
-      return case[sql_cmd]()
-    end)
-  end
-
-  return transaction(t.cmd)
+  return self.db:with_open(function(db)
+    local case = {
+      [1] = function() return db:select(t.cmd_data, params) end,
+      [2] = function() return db:insert(t.cmd_data, params) end,
+      [3] = function() return db:eval(t.cmd_data,   params) end,
+    }
+    return case[t.cmd]()
+  end)
 end
 
 local cmd = {
