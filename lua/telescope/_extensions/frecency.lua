@@ -6,7 +6,6 @@ if not has_telescope then
 end
 
 -- start the database client
--- print("start")
 local db_client = require("telescope._extensions.frecency.db_client")
 -- vim.defer_fn(db_client.init, 100) -- TODO: this is a crappy attempt to lessen loadtime impact, use VimEnter?
 db_client.init()
@@ -21,7 +20,7 @@ local pickers       = require "telescope.pickers"
 local previewers    = require "telescope.previewers"
 -- local sorters       = require "telescope.sorters"
 local sorters       = require "telescope._extensions.frecency.sorter"
-local conf          = require('telescope.config').values
+-- local conf          = require('telescope.config').values
 local path = require('telescope.path')
 local utils = require('telescope.utils')
 
@@ -29,7 +28,9 @@ local frecency = function(opts)
   opts = opts or {}
 
   local cwd = vim.fn.expand(opts.cwd or vim.fn.getcwd())
-  local results = db_client.get_file_scores()
+  -- opts.lsp_workspace_filter = true
+  -- TODO: decide on how to handle cwd or lsp_workspace for pathname shorten?
+  local results = db_client.get_file_scores(opts) -- TODO: pass `filter_workspace` option
 
   local displayer = entry_display.create {
     separator = "",

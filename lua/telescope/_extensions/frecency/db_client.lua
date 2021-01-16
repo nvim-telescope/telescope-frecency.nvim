@@ -18,7 +18,6 @@ local sql_wrapper = nil
 local function import_oldfiles()
   local oldfiles = vim.api.nvim_get_vvar("oldfiles")
   for _, filepath in pairs(oldfiles) do
-    -- TODO: don't touch existing entries
     sql_wrapper:update(filepath)
   end
   print(("Telescope-Frecency: Imported %d entries from oldfiles."):format(#oldfiles))
@@ -66,7 +65,17 @@ local function filter_timestamps(timestamps, file_id)
   return res
 end
 
-local function get_file_scores()
+local function filter_workspace(filelist, workspace_path)
+  local res = {}
+  for _, entry in pairs(filelist) do
+    if util.string_starts(entry.path, workspace_path) then
+      table.insert(res, entry)
+    end
+  end
+  return res
+end
+
+local function get_file_scores(opts)
   if not sql_wrapper then return {} end
 
   local queries = sql_wrapper.queries
@@ -78,6 +87,14 @@ local function get_file_scores()
   -- print(vim.inspect(timestamp_ages))
   if vim.tbl_isempty(files) then return scores end
 
+  -- filter to LSP workspace directory
+  local buf_workspaces = opts.lsp_workspace_filter and vim.lsp.buf.list_workspace_folders() or {}
+  if not vim.tbl_isempty(buf_workspaces) then
+    for _, ws_path in pairs(buf_workspaces) do
+      files = filter_workspace(files, ws_path)
+    end
+  end
+
   for _, file_entry in ipairs(files) do
     table.insert(scores, {
       filename = file_entry.path,
@@ -86,10 +103,7 @@ local function get_file_scores()
   end
 
   -- sort the table
-  local function compare(a, b)
-    return a.score > b.score
-  end
-  table.sort(scores, compare)
+  table.sort(scores, function(a, b) return a.score > b.score end)
 
   return scores
 end
