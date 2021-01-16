@@ -15,11 +15,24 @@ local recency_modifier = {
 
 local sql_wrapper = nil
 
+local function import_oldfiles()
+  local oldfiles = vim.api.nvim_get_vvar("oldfiles")
+  for _, filepath in pairs(oldfiles) do
+    -- TODO: don't touch existing entries
+    sql_wrapper:update(filepath)
+  end
+  print(("Telescope-Frecency: Imported %d entries from oldfiles."):format(#oldfiles))
+end
+
 local function init()
   if sql_wrapper then return end
 
   sql_wrapper = sqlwrap:new()
-  sql_wrapper:bootstrap()
+  local first_run = sql_wrapper:bootstrap()
+  if first_run then
+    -- TODO: this needs to be scheduled for after shada load
+    vim.defer_fn(import_oldfiles, 100)
+  end
 
   -- setup autocommands
   vim.api.nvim_command("augroup TelescopeFrecency")

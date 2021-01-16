@@ -46,25 +46,28 @@ function M:bootstrap(opts)
     return
   end
 
-  -- create tables if they don't exist
-  self.db:create("files", {
-    ensure = true,
-    id     = {"INTEGER", "PRIMARY", "KEY"},
-    count  = "INTEGER",
-    path   = "TEXT"
-  })
-  self.db:create("timestamps", {
-    ensure    = true,
-    id        = {"INTEGER", "PRIMARY", "KEY"},
-    file_id   = "INTEGER",
-    timestamp = "REAL"
-    -- FOREIGN KEY(file_id)  REFERENCES files(id)
-  })
-  self.db:close()
+  local first_run = false
+  if not self.db:exists("files") then
+    first_run = true
+    -- create tables if they don't exist
+    self.db:create("files", {
+      id     = {"INTEGER", "PRIMARY", "KEY"},
+      count  = "INTEGER",
+      path   = "TEXT"
+    })
+    self.db:create("timestamps", {
+      id        = {"INTEGER", "PRIMARY", "KEY"},
+      file_id   = "INTEGER",
+      timestamp = "REAL"
+      -- FOREIGN KEY(file_id)  REFERENCES files(id)
+    })
+  end
 
+  self.db:close()
+  return first_run
 end
 
--------------------------------------------
+--
 
 function M:do_transaction(t, params)
   return self.db:with_open(function(db)
