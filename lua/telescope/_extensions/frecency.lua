@@ -9,7 +9,7 @@ end
 -- print("start")
 local db_client = require("telescope._extensions.frecency.db_client")
 -- vim.defer_fn(db_client.init, 100) -- TODO: this is a crappy attempt to lessen loadtime impact, use VimEnter?
-db_client.init() -- TODO: this is a crappy attempt to lessen loadtime impact, use VimEnter?
+db_client.init()
 
 
 -- finder code

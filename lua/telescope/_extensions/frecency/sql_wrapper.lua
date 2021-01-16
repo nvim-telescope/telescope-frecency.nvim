@@ -10,17 +10,17 @@ end
 local MAX_TIMESTAMPS = 10
 
 
+-- TODO: replace at least SELECT evals with db:select()
 local queries = {
-  ["file_add_entry"]                = "INSERT INTO files (path, count) values(:path, 1);",
-  ["file_delete_entry"]             = "DELETE FROM files WHERE id == :id;",
-  ["file_update_counter"]           = "UPDATE files SET count = count + 1 WHERE path == :path;",
-  ["timestamp_add_entry"]           = "INSERT INTO timestamps (file_id, timestamp) values(:file_id, julianday('now'));",
-  ["timestamp_delete_before_id"]    = "DELETE FROM timestamps WHERE id < :id and file_id == :file_id;",
-  ["timestamp_delete_with_file_id"] = "DELETE FROM timestamps WHERE file_id == :file_id;",
-  ["get_all_filepaths"]             = "SELECT * FROM files;",
-  ["get_all_timestamp_ages"]        = "SELECT id, file_id, CAST((julianday('now') - julianday(timestamp)) * 24 * 60 AS INTEGER) AS age FROM timestamps;",
-  ["get_row"]                       = "SELECT * FROM files WHERE path == :path;",
-  ["get_timestamp_ids_for_file"]    = "SELECT id FROM timestamps WHERE file_id == :file_id;",
+  file_add_entry                = "INSERT INTO files (path, count) values(:path, 1);",
+  file_delete_entry             = "DELETE FROM files WHERE id == :id;",
+  file_update_counter           = "UPDATE files SET count = count + 1 WHERE path == :path;",
+  timestamp_add_entry           = "INSERT INTO timestamps (file_id, timestamp) values(:file_id, julianday('now'));",
+  timestamp_delete_before_id    = "DELETE FROM timestamps WHERE id < :id and file_id == :file_id;",
+  timestamp_delete_with_file_id = "DELETE FROM timestamps WHERE file_id == :file_id;",
+  get_all_filepaths             = "SELECT * FROM files;",
+  get_all_timestamp_ages        = "SELECT id, file_id, CAST((julianday('now') - julianday(timestamp)) * 24 * 60 AS INTEGER) AS age FROM timestamps;",
+  get_timestamp_ids_for_file    = "SELECT id FROM timestamps WHERE file_id == :file_id;",
 }
 
 -- local ignore_patterns = {
@@ -62,37 +62,36 @@ function M:bootstrap(opts)
   -- create tables if they don't exist
   self.db:create("files", {
     ensure = true,
-    id     = {"integer", "primary", "key"},
-    count  = "integer",
-    path   = "text"
+    id     = {"INTEGER", "PRIMARY", "KEY"},
+    count  = "INTEGER",
+    path   = "TEXT"
   })
   self.db:create("timestamps", {
     ensure    = true,
-    id        = {"integer", "primary", "key"},
-    file_id   = "integer",
-    count     = "integer",
-    timestamp = "real"
+    id        = {"INTEGER", "PRIMARY", "KEY"},
+    file_id   = "INTEGER",
+    count     = "INTEGER",
+    timestamp = "REAL"
     -- FOREIGN KEY(file_id)  REFERENCES files(id)
   })
   self.db:close()
 
 end
 
-function M:do_transaction(query, params)
-  if not queries[query] then
-    print("invalid query_preset: " .. query )
-    return
-  end
 
+function M:do_eval(query, params)
   local res
-  self.db:with_open(function(db) res = db:eval(queries[query], params) end)
+
+  self.db:with_open(function(db) res = db:eval(query, params) end)
+  if res == true then res = {} end -- cater for eval returning true on empty set
   return res
 end
 
-function M:get_row_id(filepath)
-  local result = self:do_transaction('get_row', { path = filepath })
-
-  return type(result) == "table" and result[1].id or nil
+function M:get_filepath_row_id(filepath)
+  local res
+  local func = function(db) res = db:select("files", { where = { path = filepath}}) end
+  self.db:with_open(func)
+  return res and res[1].id or nil
 end
 
 function M:update(filepath)
@@ -104,23 +103,23 @@ function M:update(filepath)
 
   -- create entry if it doesn't exist
   local file_id
-  file_id = self:get_row_id(filepath)
+  file_id = self:get_filepath_row_id(filepath)
   if not file_id then
-    self:do_transaction('file_add_entry', { path = filepath })
-    file_id = self:get_row_id(filepath)
+    self:do_eval(queries.file_add_entry, { path = filepath })
+    file_id = self:get_filepath_row_id(filepath)
   else
   -- ..or update existing entry
-    self:do_transaction('file_update_counter', { path = filepath })
+    self:do_eval(queries.file_update_counter, { path = filepath })
   end
 
   -- register timestamp for this update
-  self:do_transaction('timestamp_add_entry', { file_id = file_id })
+  self:do_eval(queries.timestamp_add_entry, { file_id = file_id })
 
   -- trim timestamps to MAX_TIMESTAMPS per file (there should be up to MAX_TS + 1 at this point)
-  local timestamps = self:do_transaction('get_timestamp_ids_for_file', { file_id = file_id })
+  local timestamps = self:do_eval(queries.get_timestamp_ids_for_file, { file_id = file_id })
   local trim_at = timestamps[(#timestamps - MAX_TIMESTAMPS) + 1]
   if trim_at then
-    self:do_transaction('timestamp_delete_before_id', { id = trim_at.id, file_id = file_id })
+    self:do_eval(queries.timestamp_delete_before_id, { id = trim_at.id, file_id = file_id })
   end
 end
 
