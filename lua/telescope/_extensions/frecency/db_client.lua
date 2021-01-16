@@ -58,9 +58,11 @@ local function get_file_scores()
 
   local queries = sql_wrapper.queries
   local scores = {}
-  local files           = sql_wrapper:do_eval(queries.get_all_filepaths)
-  local timestamp_ages  = sql_wrapper:do_eval(queries.get_all_timestamp_ages)
+  local files           = sql_wrapper:do_transaction(queries.file_get_entries, {})
+  local timestamp_ages  = sql_wrapper:do_transaction(queries.timestamp_get_all_entry_ages, {})
 
+  -- print(vim.inspect(files))
+  -- print(vim.inspect(timestamp_ages))
   if vim.tbl_isempty(files) then return scores end
 
   for _, file_entry in ipairs(files) do
@@ -99,13 +101,13 @@ local function validate()
   if not sql_wrapper then return {} end
 
   local queries = sql_wrapper.queries
-  local files = sql_wrapper:do_transaction(queries.get_all_filepaths)
+  local files = sql_wrapper:do_transaction(queries.file_get_entry, {})
   for _, entry in pairs(files) do
     if not util.fs_stat(entry.path).exists then
       -- remove entries from file and timestamp tables
       print("removing entry: " .. entry.path .. "[" .. entry.id .."]")
-      sql_wrapper:do_transaction(queries.file_delete_entry, { id = entry.id })
-      sql_wrapper:do_transaction(queries.timestamp_delete_with_file_id, { file_id = entry.id })
+      sql_wrapper:do_eval(queries.file_delete_entry, { id = entry.id })
+      sql_wrapper:do_eval(queries.timestamp_delete_with_file_id, { file_id = entry.id })
     end
   end
 end
