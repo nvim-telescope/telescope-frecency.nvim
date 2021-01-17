@@ -59,7 +59,7 @@ _TODO: add installation instructions for other package managers_
 
 If no database is found when running Neovim with the plugin installed, a new one is created and entries from `shada` `v:oldfiles` are automatically imported.
 
-## Commands and Function
+## Usage
 
 ```
 :Telescope frecency
