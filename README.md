@@ -7,12 +7,6 @@ Frecency is a [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim)
 Using an implementation of Mozilla's [Frecency algorithm](https://developer.mozilla.org/en-US/docs/Mozilla/Tech/Places/Frecency_algorithm), files that you edit often and/or recently are given higher precedence in the list index.
 As the extension 'learns' your editing habits over time, the sorting of the list is dynamically altered to priotize the files you're likely to need.
 
-```
-## WIP
-
-TODO:
-- [ ] Check file entries are valid via async job on VimClose
-
 ## Frecency: sorting by "frequency" and "recency"
 
 Frecency is a score given to each unique file loaded into a Neovim buffer.
