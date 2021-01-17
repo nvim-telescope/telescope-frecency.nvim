@@ -49,7 +49,7 @@ This plugin uses `sql.nvim` to perform the database transactions.
 
 ```lua
 use {
-  "sunjon/telescope-frecency",
+  "nvim-telescope/telescope-frecency.nvim",
   config = function()
     require"telescope".load_extension("frecency")
   end
