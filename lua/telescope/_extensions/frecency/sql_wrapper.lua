@@ -9,11 +9,6 @@ end
 -- TODO: pass in max_timestamps from db.lua
 local MAX_TIMESTAMPS = 10
 
-
--- local ignore_patterns = {
--- }
-
-
 --
 
 local M = {}
@@ -70,11 +65,14 @@ end
 --
 
 function M:do_transaction(t, params)
+  -- print(vim.inspect(t))
+  -- print(vim.inspect(params))
   return self.db:with_open(function(db)
     local case = {
       [1] = function() return db:select(t.cmd_data, params) end,
       [2] = function() return db:insert(t.cmd_data, params) end,
-      [3] = function() return db:eval(t.cmd_data,   params) end,
+      [3] = function() return db:delete(t.cmd_data, params) end,
+      [4] = function() return db:eval(t.cmd_data,   params) end,
     }
     return case[t.cmd]()
   end)
@@ -83,12 +81,17 @@ end
 local cmd = {
   select = 1,
   insert = 2,
-  eval   = 3,
+  delete = 3,
+  eval   = 4,
 }
 
 local queries = {
   file_add_entry = {
     cmd      = cmd.insert,
+    cmd_data = "files"
+  },
+  file_delete_entry = {
+    cmd      = cmd.delete,
     cmd_data = "files"
   },
   file_get_entries = {
@@ -103,6 +106,10 @@ local queries = {
     cmd      = cmd.eval,
     cmd_data = "INSERT INTO timestamps (file_id, timestamp) values(:file_id, julianday('now'));"
   },
+  timestamp_delete_entry = {
+    cmd      = cmd.delete,
+    cmd_data = "timestamps"
+  },
   timestamp_get_all_entries = {
     cmd      = cmd.select,
     cmd_data = "timestamps",
@@ -115,7 +122,6 @@ local queries = {
     cmd      = cmd.eval,
     cmd_data = "DELETE FROM timestamps WHERE id < :id and file_id == :file_id;"
   },
-  -- timestamp_delete_with_file_id = "DELETE FROM timestamps WHERE file_id == :file_id;",
 }
 
 M.queries = queries

@@ -13,6 +13,10 @@ local recency_modifier = {
   [6] = { age = 129600, value = 10  }  -- past 90 days
 }
 
+local default_ignore_patterns = {
+  "*.git/*", "*/tmp/*"
+}
+
 local sql_wrapper = nil
 
 local function import_oldfiles()
@@ -21,6 +25,19 @@ local function import_oldfiles()
     sql_wrapper:update(filepath)
   end
   print(("Telescope-Frecency: Imported %d entries from oldfiles."):format(#oldfiles))
+end
+
+local function file_is_ignored(filepath)
+  local is_ignored = false
+  for _, ignore_pattern in pairs(default_ignore_patterns) do
+    if util.filename_match(filepath, ignore_pattern) then
+      is_ignored = true
+      goto continue
+    end
+  end
+
+  ::continue::
+  return is_ignored
 end
 
 local function init()
@@ -83,8 +100,6 @@ local function get_file_scores(opts)
   local files           = sql_wrapper:do_transaction(queries.file_get_entries, {})
   local timestamp_ages  = sql_wrapper:do_transaction(queries.timestamp_get_all_entry_ages, {})
 
-  -- print(vim.inspect(files))
-  -- print(vim.inspect(timestamp_ages))
   if vim.tbl_isempty(files) then return scores end
 
   -- filter to LSP workspace directory
@@ -113,13 +128,12 @@ local function autocmd_handler(filepath)
 
   -- check if file is registered as loaded
   if not vim.b.frecency_registered then
-    -- allow noname files to go unregistered until BufWritePost
+    -- allow [noname] files to go unregistered until BufWritePost
     if not util.fs_stat(filepath).exists then return end
 
-    -- TODO: only register buffer if update did something?
-    -- TODO: apply filetype_ignore here?
+    if file_is_ignored(filepath) then return end
+
     vim.b.frecency_registered = 1
-    -- print("registered buffer")
     sql_wrapper:update(filepath)
   end
 end
@@ -128,13 +142,15 @@ local function validate()
   if not sql_wrapper then return {} end
 
   local queries = sql_wrapper.queries
-  local files = sql_wrapper:do_transaction(queries.file_get_entry, {})
+  local files = sql_wrapper:do_transaction(queries.file_get_entries, {})
   for _, entry in pairs(files) do
-    if not util.fs_stat(entry.path).exists then
+    if not util.fs_stat(entry.path).exists
+      or file_is_ignored(entry.path) then -- cleanup entries that match the _current_ ignore list (DANGEROUS! bad pattern could wipe the database)
+
       -- remove entries from file and timestamp tables
       print("removing entry: " .. entry.path .. "[" .. entry.id .."]")
-      sql_wrapper:do_eval(queries.file_delete_entry, { id = entry.id })
-      sql_wrapper:do_eval(queries.timestamp_delete_with_file_id, { file_id = entry.id })
+      sql_wrapper:do_transaction(queries.file_delete_entry , {where = {id = entry.id }})
+      sql_wrapper:do_transaction(queries.timestamp_delete_entry, {where = {file_id = entry.id}})
     end
   end
 end
