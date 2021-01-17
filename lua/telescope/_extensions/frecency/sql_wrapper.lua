@@ -9,6 +9,9 @@ end
 -- TODO: pass in max_timestamps from db.lua
 local MAX_TIMESTAMPS = 10
 
+local db_table = {}
+db_table.files      = "files"
+db_table.timestamps = "timestamps"
 --
 
 local M = {}
@@ -23,13 +26,9 @@ function M:new()
 end
 
 function M:bootstrap(opts)
+  if self.db then return end
+
   opts = opts or {}
-
-  if self.db then
-    print("sql wrapper already initialised")
-    return
-  end
-
   self.max_entries = opts.max_entries or 2000
 
   -- create the db if it doesn't exist
@@ -42,15 +41,15 @@ function M:bootstrap(opts)
   end
 
   local first_run = false
-  if not self.db:exists("files") then
+  if not self.db:exists(db_table.files) then
     first_run = true
     -- create tables if they don't exist
-    self.db:create("files", {
-      id     = {"INTEGER", "PRIMARY", "KEY"},
-      count  = "INTEGER",
-      path   = "TEXT"
+    self.db:create(db_table.files, {
+      id        = {"INTEGER", "PRIMARY", "KEY"},
+      count     = "INTEGER",
+      path      = "TEXT"
     })
-    self.db:create("timestamps", {
+    self.db:create(db_table.timestamps, {
       id        = {"INTEGER", "PRIMARY", "KEY"},
       file_id   = "INTEGER",
       timestamp = "REAL"
@@ -88,15 +87,15 @@ local cmd = {
 local queries = {
   file_add_entry = {
     cmd      = cmd.insert,
-    cmd_data = "files"
+    cmd_data = db_table.files
   },
   file_delete_entry = {
     cmd      = cmd.delete,
-    cmd_data = "files"
+    cmd_data = db_table.files
   },
   file_get_entries = {
     cmd      = cmd.select,
-    cmd_data = "files"
+    cmd_data = db_table.files
   },
   file_update_counter = {
     cmd      = cmd.eval,
@@ -108,11 +107,11 @@ local queries = {
   },
   timestamp_delete_entry = {
     cmd      = cmd.delete,
-    cmd_data = "timestamps"
+    cmd_data = db_table.timestamps
   },
   timestamp_get_all_entries = {
     cmd      = cmd.select,
-    cmd_data = "timestamps",
+    cmd_data = db_table.timestamps,
   },
   timestamp_get_all_entry_ages = {
     cmd      = cmd.eval,
