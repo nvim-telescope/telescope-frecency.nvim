@@ -5,10 +5,6 @@ if not has_telescope then
   error("This plugin requires telescope.nvim (https://github.com/nvim-telescope/telescope.nvim)")
 end
 
--- start the database client
-local db_client = require("telescope._extensions.frecency.db_client")
-db_client.init()
-
 -- finder code
 local conf          = require('telescope.config').values
 local entry_display = require "telescope.pickers.entry_display"
@@ -20,6 +16,7 @@ local utils         = require('telescope.utils')
 
 local os_path_sep   = vim.loop.os_uname().sysname == "Windows" and "\\" or "/"
 local show_scores   = false
+local db_client
 
 local frecency = function(opts)
   opts = opts or {}
@@ -85,6 +82,10 @@ end
 return telescope.register_extension {
   setup = function(ext_config)
     show_scores = ext_config.show_scores or false
+
+    -- start the database client
+    db_client = require("telescope._extensions.frecency.db_client")
+    db_client.init(ext_config.ignore_patterns)
   end,
   exports = {
     frecency = frecency,

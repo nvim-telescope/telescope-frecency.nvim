@@ -78,7 +78,7 @@ local function validate_db()
   end
 end
 
-local function init()
+local function init(config_ignore_patterns)
   if sql_wrapper then return end
 
   sql_wrapper = sqlwrap:new()
@@ -90,7 +90,9 @@ local function init()
     vim.defer_fn(import_oldfiles, 100)
   end
 
-  ignore_patterns = conf.file_ignore_patterns or default_ignore_patterns
+  ignore_patterns = config_ignore_patterns or default_ignore_patterns
+  print(vim.inspect(ignore_patterns))
+
 
   -- setup autocommands
   vim.api.nvim_command("augroup TelescopeFrecency")
