@@ -2,6 +2,7 @@ local sqlwrap = require("telescope._extensions.frecency.sql_wrapper")
 local util    = require("telescope._extensions.frecency.util")
 
 local MAX_TIMESTAMPS = 10
+local DB_REMOVE_SAFETY_THRESHOLD = 10
 
 -- modifier used as a weight in the recency_score calculation:
 local recency_modifier = {
@@ -40,11 +41,48 @@ local function file_is_ignored(filepath)
   return is_ignored
 end
 
+local function validate()
+  if not sql_wrapper then return {} end
+
+  local queries = sql_wrapper.queries
+  local files = sql_wrapper:do_transaction(queries.file_get_entries, {})
+  local pending_remove = {}
+  for _, entry in pairs(files) do
+    if not util.fs_stat(entry.path).exists -- file no longer exists
+      or file_is_ignored(entry.path) then -- cleanup entries that match the _current_ ignore list
+      table.insert(pending_remove, entry)
+    end
+  end
+
+   -- don't allow removal of >N values from DB without confirmation
+  local confirmed = false
+  if #pending_remove > DB_REMOVE_SAFETY_THRESHOLD then
+    if vim.fn.confirm("Telescope-Frecency: remove " .. #pending_remove .. " entries from SQLite3 database?", "&Yes\n&No", 2) then
+    confirmed = true
+    end
+  else
+    confirmed = true
+  end
+
+  if confirmed then
+    for _, entry in pairs(pending_remove) do
+      -- remove entries from file and timestamp tables
+      print("removing entry: " .. entry.path .. "[" .. entry.id .."]")
+      sql_wrapper:do_transaction(queries.file_delete_entry , {where = {id = entry.id }})
+      sql_wrapper:do_transaction(queries.timestamp_delete_entry, {where = {file_id = entry.id}})
+    end
+  else
+    print("TelescopeFrecency: validation aborted.")
+  end
+end
+
 local function init()
   if sql_wrapper then return end
 
   sql_wrapper = sqlwrap:new()
   local first_run = sql_wrapper:bootstrap()
+  validate()
+
   if first_run then
     -- TODO: this needs to be scheduled for after shada load
     vim.defer_fn(import_oldfiles, 100)
@@ -138,26 +176,8 @@ local function autocmd_handler(filepath)
   end
 end
 
-local function validate()
-  if not sql_wrapper then return {} end
-
-  local queries = sql_wrapper.queries
-  local files = sql_wrapper:do_transaction(queries.file_get_entries, {})
-  for _, entry in pairs(files) do
-    if not util.fs_stat(entry.path).exists
-      or file_is_ignored(entry.path) then -- cleanup entries that match the _current_ ignore list (DANGEROUS! bad pattern could wipe the database)
-
-      -- remove entries from file and timestamp tables
-      print("removing entry: " .. entry.path .. "[" .. entry.id .."]")
-      sql_wrapper:do_transaction(queries.file_delete_entry , {where = {id = entry.id }})
-      sql_wrapper:do_transaction(queries.timestamp_delete_entry, {where = {file_id = entry.id}})
-    end
-  end
-end
-
 return {
   init            = init,
   get_file_scores = get_file_scores,
   autocmd_handler = autocmd_handler,
-  validate        = validate,
 }

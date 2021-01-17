@@ -9,11 +9,11 @@ As the extension learns your editing habits over time, the sorting of the list i
 
 * _Scores shown in finder for illustration purposes only_
 
-## Frecency: sorting by "frequency" and "recency"
+## Frecency: Sorting by 'frequency' _and_ 'recency'
 
 'Frecency' is a score given to each unique file indexed in a file history database.
 
-A timestamp is recorded to once per session when a file is loaded into a buffer.
+A timestamp is recorded once per session when a file is loaded into a buffer.
 
 The score is calculated using the age of the 10 most recent timestamps and the total amount of times the file has been loaded:
 

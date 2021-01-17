@@ -7,10 +7,7 @@ end
 
 -- start the database client
 local db_client = require("telescope._extensions.frecency.db_client")
--- vim.defer_fn(db_client.init, 100) -- TODO: this is a crappy attempt to lessen loadtime impact, use VimEnter?
 db_client.init()
-local os_path_sep = vim.loop.os_uname().sysname == "Windows" and "\\" or "/"
-
 
 -- finder code
 
@@ -19,11 +16,10 @@ local entry_display = require "telescope.pickers.entry_display"
 local finders       = require "telescope.finders"
 local pickers       = require "telescope.pickers"
 local previewers    = require "telescope.previewers"
--- local sorters       = require "telescope.sorters"
 local sorters       = require "telescope._extensions.frecency.sorter"
--- local conf          = require('telescope.config').values
 local path = require('telescope.path')
 local utils = require('telescope.utils')
+local os_path_sep = vim.loop.os_uname().sysname == "Windows" and "\\" or "/"
 
 local frecency = function(opts)
   opts = opts or {}
@@ -79,20 +75,12 @@ local frecency = function(opts)
       end,
     },
     -- previewer = conf.file_previewer(opts),
-    sorter    = sorters.get_substr_matcher(opts),
-    -- sorter    = conf.file_sorter(opts)
+    sorter = sorters.get_substr_matcher(opts),
   }):find()
 end
-
-local validate = function()
-  print("validate db")
-  db_client.validate()
-end
-
 
 return telescope.register_extension {
   exports = {
     frecency = frecency,
-    validate = validate,
   },
 }

@@ -7,7 +7,7 @@ local substr_highlighter = function(_, prompt, display)
   local highlights = {}
   display = display:lower()
 
-  local search_terms = util.split(prompt, " ")
+  local search_terms = util.split(prompt, "%s")
   local hl_start, hl_end
 
   for _, word in pairs(search_terms) do
