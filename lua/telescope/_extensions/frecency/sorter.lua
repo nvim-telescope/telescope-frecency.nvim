@@ -36,20 +36,17 @@ my_sorters.get_substr_matcher = function(opts)
   substr.scoring_function = function(_, prompt, _, entry)
     local display = entry.name:lower()
 
-    local search_terms = util.split(prompt, " ")
-    local matched
+    local search_terms = util.split(prompt, "%s")
+    local matched = 0
+    local total_search_terms = 0
     for _, word in pairs(search_terms) do
-       matched = display:find(word, 1, true) and 1 or -1
-       if matched == -1 then goto continue end
+      total_search_terms = total_search_terms + 1
+      if display:find(word, 1, true) then
+        matched = matched + 1
+      end
     end
 
-    ::continue::
-
-    if matched == -1 then
-      return -1
-    else
-      return entry.index
-    end
+    return matched == total_search_terms and entry.index or -1
   end
 
   return substr

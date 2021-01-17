@@ -9,6 +9,7 @@ end
 local db_client = require("telescope._extensions.frecency.db_client")
 -- vim.defer_fn(db_client.init, 100) -- TODO: this is a crappy attempt to lessen loadtime impact, use VimEnter?
 db_client.init()
+local os_path_sep = vim.loop.os_uname().sysname == "Windows" and "\\" or "/"
 
 
 -- finder code
@@ -32,8 +33,6 @@ local frecency = function(opts)
   -- TODO: decide on how to handle cwd or lsp_workspace for pathname shorten?
   local results = db_client.get_file_scores(opts) -- TODO: pass `filter_workspace` option
 
-  local os_path_sep = vim.loop.os_uname().sysname == "Windows" and "\\" or "/"
-
   local displayer = entry_display.create {
     separator = "",
     hl_chars = {[os_path_sep] = "TelescopePathSeparator"},
@@ -49,7 +48,6 @@ local frecency = function(opts)
     local buf_is_loaded = vim.api.nvim_buf_is_loaded
 
     local filename = entry.name
-
     local hl_filename = buf_is_loaded(bufnr(filename)) and "TelescopeBufferLoaded" or ""
 
     if opts.tail_path then
@@ -60,8 +58,6 @@ local frecency = function(opts)
 
     filename = path.make_relative(filename, cwd)
 
-
-    -- TODO: remove score from display; only there for debug
     return displayer {
       {entry.score, "Directory"},
       {filename, hl_filename},

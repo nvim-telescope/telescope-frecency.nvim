@@ -34,7 +34,7 @@ end
 
 util.split = function(str, delimiter)
   local result = {}
-  for match in (str .. delimiter):gmatch("(.-)" .. delimiter) do
+  for match in str:gmatch("[^" .. delimiter .. "]+") do
     table.insert(result, match)
   end
   return result
