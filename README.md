@@ -2,8 +2,8 @@
 
 Frecency is a [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) extension that offers a more intelligent way to select files from your editing history.
 
-Using an implementation of Mozilla's [Frecency algorithm](https://developer.mozilla.org/en-US/docs/Mozilla/Tech/Places/Frecency_algorithm), files that you edit often and/or recently are given higher precedence in the list index.
-As the extension 'learns' your editing habits over time, the sorting of the list is dynamically altered to priotize the files you're likely to need.
+Using an implementation of Mozilla's [Frecency algorithm](https://developer.mozilla.org/en-US/docs/Mozilla/Tech/Places/Frecency_algorithm), files edited _frecently_ are given higher precedence in the list index.
+As the extension learns your editing habits over time, the sorting of the list is dynamically altered to priotize the files you're likely to need.
 
 <img src="https://raw.githubusercontent.com/sunjon/images/master/gh_readme_telescope_frecency.png" alt="screenshot" width="800"/>
 
@@ -55,6 +55,7 @@ use {
 }
 
 ```
+If no database is found when running Neovim with the plugin installed, a new one is created and entries from `shada` `v:oldfiles` are automatically imported.
 
 ## Configuration
 

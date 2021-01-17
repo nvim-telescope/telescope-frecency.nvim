@@ -3,14 +3,6 @@ local util    = require("telescope._extensions.frecency.util")
 
 local my_sorters = {}
 
--- local function split(s, delimiter)
---   local result = {}
---   for match in (s .. delimiter):gmatch("(.-)" .. delimiter) do
---     table.insert(result, match)
---   end
---   return result
--- end
-
 local substr_highlighter = function(_, prompt, display)
   local highlights = {}
   display = display:lower()
