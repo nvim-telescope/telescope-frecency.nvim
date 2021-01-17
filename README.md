@@ -1,7 +1,5 @@
 # telescope-frecency.nvim
 
-> A smarter way to view files from your editing history
-
 Frecency is a [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) extension that offers a more intelligent way to select a file from your editing history.
 
 Using an implementation of Mozilla's [Frecency algorithm](https://developer.mozilla.org/en-US/docs/Mozilla/Tech/Places/Frecency_algorithm), files that you edit often and/or recently are given higher precedence in the list index.
