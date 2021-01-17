@@ -1,5 +1,6 @@
 local sqlwrap = require("telescope._extensions.frecency.sql_wrapper")
 local util    = require("telescope._extensions.frecency.util")
+local conf    = require('telescope.config').values
 
 local MAX_TIMESTAMPS = 10
 local DB_REMOVE_SAFETY_THRESHOLD = 10
@@ -19,6 +20,7 @@ local default_ignore_patterns = {
 }
 
 local sql_wrapper = nil
+local ignore_patterns = {}
 
 local function import_oldfiles()
   local oldfiles = vim.api.nvim_get_vvar("oldfiles")
@@ -30,8 +32,8 @@ end
 
 local function file_is_ignored(filepath)
   local is_ignored = false
-  for _, ignore_pattern in pairs(default_ignore_patterns) do
-    if util.filename_match(filepath, ignore_pattern) then
+  for _, pattern in pairs(ignore_patterns) do
+    if util.filename_match(filepath, pattern) then
       is_ignored = true
       goto continue
     end
@@ -41,7 +43,7 @@ local function file_is_ignored(filepath)
   return is_ignored
 end
 
-local function validate()
+local function validate_db()
   if not sql_wrapper then return {} end
 
   local queries = sql_wrapper.queries
@@ -81,12 +83,14 @@ local function init()
 
   sql_wrapper = sqlwrap:new()
   local first_run = sql_wrapper:bootstrap()
-  validate()
+  validate_db()
 
   if first_run then
     -- TODO: this needs to be scheduled for after shada load
     vim.defer_fn(import_oldfiles, 100)
   end
+
+  ignore_patterns = conf.file_ignore_patterns or default_ignore_patterns
 
   -- setup autocommands
   vim.api.nvim_command("augroup TelescopeFrecency")
