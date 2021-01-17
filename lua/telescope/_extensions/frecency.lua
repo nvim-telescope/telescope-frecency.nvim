@@ -32,9 +32,11 @@ local frecency = function(opts)
   -- TODO: decide on how to handle cwd or lsp_workspace for pathname shorten?
   local results = db_client.get_file_scores(opts) -- TODO: pass `filter_workspace` option
 
+  local os_path_sep = vim.loop.os_uname().sysname == "Windows" and "\\" or "/"
+
   local displayer = entry_display.create {
     separator = "",
-    hl_chars = { ["/"] = "TelescopePathSeparator"},
+    hl_chars = {[os_path_sep] = "TelescopePathSeparator"},
     items = {
       { width = 8 },
       { remaining = true },
@@ -45,6 +47,9 @@ local frecency = function(opts)
   local make_display = function(entry)
     local filename = entry.name
 
+    local hl_filename = vim.api.nvim_buf_is_loaded(vim.fn.bufnr(filename)) and "SpecialKey" or ""
+    -- print(filename .. " : " .. hl_filename)
+
     if opts.tail_path then
       filename = utils.path_tail(filename)
     elseif opts.shorten_path then
@@ -53,9 +58,11 @@ local frecency = function(opts)
 
     filename = path.make_relative(filename, cwd)
 
+
     -- TODO: remove score from display; only there for debug
     return displayer {
-      {entry.score, "Directory"}, filename
+      {entry.score, "Directory"},
+      {filename, hl_filename},
     }
   end
 
