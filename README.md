@@ -5,6 +5,10 @@ Frecency is a [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim)
 Using an implementation of Mozilla's [Frecency algorithm](https://developer.mozilla.org/en-US/docs/Mozilla/Tech/Places/Frecency_algorithm), files that you edit often and/or recently are given higher precedence in the list index.
 As the extension 'learns' your editing habits over time, the sorting of the list is dynamically altered to priotize the files you're likely to need.
 
+<img src="https://raw.githubusercontent.com/sunjon/images/master/gh_readme_telescope_frecency.png" alt="screenshot" width="800"/>
+
+* _Scores shown in finder for illustration purposes only_
+
 ## Frecency: sorting by "frequency" and "recency"
 
 Frecency is a score given to each unique file loaded into a Neovim buffer.
@@ -28,10 +32,7 @@ The score is calculated using the age of the 10 most recent timestamps and the t
 
 ```
 score = frequency * recency_score / max_number_of_timestamps
-
-<img src="https://raw.githubusercontent.com/sunjon/images/master/gh_readme_telescope_frecency.png" alt="screenshot" width="800"/>
-
-* _Scores shown in finder for illustration purposes only_
+```
 
 ## Requirements
 
@@ -40,8 +41,6 @@ score = frequency * recency_score / max_number_of_timestamps
 
 Timestamps and file records are stored in an [SQLite3](https://www.sqlite.org/index.html) database for persistence and speed.
 This plugin uses `sql.nvim` to perform the database transactions.
-
-
 
 ## Installation
 
