@@ -1,6 +1,17 @@
 # telescope-frecency.nvim
 
-An implementation of Mozilla's [Frecency algorithm](https://developer.mozilla.org/en-US/docs/Mozilla/Tech/Places/Frecency_algorithm) for [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim).
+> A smarter way to view files from your editing history
+
+Frecency is a [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) extension that offers a more intelligent way to select a file from your editing history.
+
+Using an implementation of Mozilla's [Frecency algorithm](https://developer.mozilla.org/en-US/docs/Mozilla/Tech/Places/Frecency_algorithm), files that you edit often and/or recently are given higher precedence in the list index.
+As the extension 'learns' your editing habits over time, the sorting of the list is dynamically altered to priotize the files you're likely to need.
+
+```
+## WIP
+
+TODO:
+- [ ] Check file entries are valid via async job on VimClose
 
 ## Frecency: sorting by "frequency" and "recency"
 
@@ -25,16 +36,6 @@ The score is calculated using the age of the 10 most recent timestamps and the t
 
 ```
 score = frequency * recency_score / max_number_of_timestamps
-```
-
-## WIP
-
-
-TODO:
-
-- [x] Implement sorter based on frecency score
-- [ ] Improve substring matcher to support multiple terms
-- [ ] Check file entries are valid via async job on VimClose
 
 <img src="https://raw.githubusercontent.com/sunjon/images/master/gh_readme_telescope_frecency.png" alt="screenshot" width="800"/>
 
@@ -78,5 +79,5 @@ lua require("telescope").extensions.frecency.frecency(opts)
 
 ## References
 
-- [Stack Engineering: A faster smarter quick switcher](https://slack.engineering/a-faster-smarter-quick-switcher/)
 - [Mozilla Frecency algorithm](https://developer.mozilla.org/en-US/docs/Mozilla/Tech/Places/Frecency_algorithm)
+- [Stack Engineering: A faster smarter quick switcher](https://slack.engineering/a-faster-smarter-quick-switcher/)
