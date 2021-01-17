@@ -69,7 +69,6 @@ local function validate_db()
   if confirmed then
     for _, entry in pairs(pending_remove) do
       -- remove entries from file and timestamp tables
-      print("removing entry: " .. entry.path .. "[" .. entry.id .."]")
       sql_wrapper:do_transaction(queries.file_delete_entry , {where = {id = entry.id }})
       sql_wrapper:do_transaction(queries.timestamp_delete_entry, {where = {file_id = entry.id}})
     end
@@ -91,8 +90,6 @@ local function init(config_ignore_patterns)
   end
 
   ignore_patterns = config_ignore_patterns or default_ignore_patterns
-  print(vim.inspect(ignore_patterns))
-
 
   -- setup autocommands
   vim.api.nvim_command("augroup TelescopeFrecency")
