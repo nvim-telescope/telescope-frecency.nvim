@@ -47,8 +47,7 @@ local frecency = function(opts)
   local make_display = function(entry)
     local filename = entry.name
 
-    local hl_filename = vim.api.nvim_buf_is_loaded(vim.fn.bufnr(filename)) and "SpecialKey" or ""
-    -- print(filename .. " : " .. hl_filename)
+    local hl_filename = vim.api.nvim_buf_is_loaded(vim.fn.bufnr(filename)) and "TelescopeBufferLoaded" or ""
 
     if opts.tail_path then
       filename = utils.path_tail(filename)
