@@ -127,13 +127,13 @@ local function autocmd_handler(filepath)
   if not sql_wrapper or util.string_isempty(filepath) then return end
 
   -- check if file is registered as loaded
-  if not vim.b.frecency_registered then
+  if not vim.b.telescope_frecency_registered then
     -- allow [noname] files to go unregistered until BufWritePost
     if not util.fs_stat(filepath).exists then return end
 
     if file_is_ignored(filepath) then return end
 
-    vim.b.frecency_registered = 1
+    vim.b.telescope_frecency_registered = 1
     sql_wrapper:update(filepath)
   end
 end
