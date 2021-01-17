@@ -160,7 +160,4 @@ function M:update(filepath)
   end
 end
 
-function M:validate()
-end
-
 return M
