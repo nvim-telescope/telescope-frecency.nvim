@@ -13,6 +13,7 @@ local path          = require('telescope.path')
 local pickers       = require "telescope.pickers"
 local sorters       = require "telescope.sorters"
 local utils         = require('telescope.utils')
+local frecency_utils = require "telescope._extensions.frecency.util"
 
 
 -- local os_path_sep   = vim.loop.os_uname().sysname == "Windows" and "\\" or "/"
