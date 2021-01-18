@@ -13,7 +13,6 @@ local path          = require('telescope.path')
 local pickers       = require "telescope.pickers"
 local sorters       = require "telescope.sorters"
 local utils         = require('telescope.utils')
-local frecency_utils = require "telescope._extensions.frecency.util"
 
 
 -- local os_path_sep   = vim.loop.os_uname().sysname == "Windows" and "\\" or "/"
@@ -59,9 +58,6 @@ local frecency = function(opts)
 
     display_items = show_scores and {{entry.score, "Directory"}} or {}
     table.insert(display_items, {filename, hl_filename})
-    if frecency_utils.string_ends(filename, '.lua') then
-      table.insert(display_items, create_tag_display("lua"))
-    end
 
     return displayer(display_items)
   end
