@@ -26,7 +26,7 @@ my_sorters.get_substr_matcher = function(opts)
   local substr = sorters:new()
   substr.highlighter = substr_highlighter
   substr.scoring_function = function(_, prompt, _, entry)
-    local display = entry.name:lower()
+    local display = entry.ordinal:lower()
 
     local search_terms = util.split(prompt, "%s")
     local matched = 0
