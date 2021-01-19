@@ -39,7 +39,7 @@ local frecency = function(opts)
   }
 
   -- TODO: look into why this gets called so much
-  local bufnr, buf_is_loaded, filename, hl_filename, display_items
+  local bufnr, buf_is_loaded, filename, hl_filename, display_items, original_filename
 
   local make_display = function(entry)
     bufnr = vim.fn.bufnr
@@ -55,9 +55,14 @@ local frecency = function(opts)
     end
 
 
+    original_filename = filename
     filename = path.make_relative(filename, cwd)
     if frecency_utils.string_starts(filename, os_home) then
       filename = "~/" ..  path.make_relative(filename, os_home)
+    else
+      if filename ~= original_filename then
+        filename = "./" .. filename
+      end
     end
 
 
