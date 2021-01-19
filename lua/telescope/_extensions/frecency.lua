@@ -14,7 +14,6 @@ local pickers       = require "telescope.pickers"
 local sorters       = require "telescope.sorters"
 local utils         = require('telescope.utils')
 
-
 -- local os_path_sep   = vim.loop.os_uname().sysname == "Windows" and "\\" or "/"
 local os_path_sep   = utils.get_separator()
 local show_scores   = false
@@ -55,6 +54,9 @@ local frecency = function(opts)
     end
 
     filename = path.make_relative(filename, cwd)
+
+    local homedir = vim.loop.os_homedir()
+    filename = "~/" ..  path.make_relative(filename, homedir)
 
     display_items = show_scores and {{entry.score, "Directory"}} or {}
     table.insert(display_items, {filename, hl_filename})
