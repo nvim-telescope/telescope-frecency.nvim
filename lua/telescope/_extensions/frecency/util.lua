@@ -25,7 +25,7 @@ util.string_isempty = function(str)
 end
 
 util.string_starts = function(str, token)
-  return str:sub(1, str:len(token)) == token
+  return str:sub(1, token:len()) == token
 end
 
 util.string_ends = function(str, token)
