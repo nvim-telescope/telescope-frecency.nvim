@@ -48,23 +48,20 @@ local frecency = function(opts)
     filename = entry.name
     hl_filename = buf_is_loaded(bufnr(filename)) and "TelescopeBufferLoaded" or ""
 
+    original_filename = filename
+
     if opts.tail_path then
       filename = utils.path_tail(filename)
     elseif opts.shorten_path then
       filename = utils.path_shorten(filename)
-    end
-
-
-    original_filename = filename
-    filename = path.make_relative(filename, cwd)
-    if frecency_utils.string_starts(filename, os_home) then
-      filename = "~/" ..  path.make_relative(filename, os_home)
-    else
-      if filename ~= original_filename then
+    else -- check relative to home/current
+      filename = path.make_relative(filename, cwd)
+      if frecency_utils.string_starts(filename, os_home) then
+        filename = "~/" ..  path.make_relative(filename, os_home)
+      elseif filename ~= original_filename then
         filename = "./" .. filename
       end
     end
-
 
     display_items = show_scores and {{entry.score, "Directory"}} or {}
     table.insert(display_items, {filename, hl_filename})
