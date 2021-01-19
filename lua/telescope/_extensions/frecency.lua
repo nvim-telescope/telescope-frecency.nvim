@@ -17,7 +17,7 @@ local frecency_utils = require("telescope._extensions.frecency.util")
 
 local os_home       = vim.loop.os_homedir()
 local os_path_sep   = utils.get_separator()
-local show_scores   = false
+local show_scores = false
 local db_client
 
 local frecency = function(opts)
@@ -54,11 +54,12 @@ local frecency = function(opts)
       filename = utils.path_shorten(filename)
     end
 
-    filename = path.make_relative(filename, cwd)
 
+    filename = path.make_relative(filename, cwd)
     if frecency_utils.string_starts(filename, os_home) then
       filename = "~/" ..  path.make_relative(filename, os_home)
     end
+
 
     display_items = show_scores and {{entry.score, "Directory"}} or {}
     table.insert(display_items, {filename, hl_filename})
