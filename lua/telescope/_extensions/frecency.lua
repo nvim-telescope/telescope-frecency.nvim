@@ -83,7 +83,7 @@ local frecency = function(opts)
       end,
     },
     previewer = conf.file_previewer(opts),
-    sorter    = sorters.get_substr_matcher(opts),
+    sorter    = conf.file_sorter(opts),
   }):find()
 end
 
