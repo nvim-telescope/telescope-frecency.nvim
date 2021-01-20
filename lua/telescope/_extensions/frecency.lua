@@ -13,7 +13,6 @@ local path          = require('telescope.path')
 local pickers       = require "telescope.pickers"
 local sorters       = require "telescope.sorters"
 local utils         = require('telescope.utils')
-local frecency_utils = require("telescope._extensions.frecency.util")
 
 local os_home       = vim.loop.os_homedir()
 local os_path_sep   = utils.get_separator()
@@ -56,7 +55,7 @@ local frecency = function(opts)
       filename = utils.path_shorten(filename)
     else -- check relative to home/current
       filename = path.make_relative(filename, cwd)
-      if frecency_utils.string_starts(filename, os_home) then
+      if vim.startswith(filename, os_home) then
         filename = "~/" ..  path.make_relative(filename, os_home)
       elseif filename ~= original_filename then
         filename = "./" .. filename

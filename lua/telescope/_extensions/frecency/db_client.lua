@@ -1,7 +1,5 @@
 local sqlwrap = require("telescope._extensions.frecency.sql_wrapper")
 local util    = require("telescope._extensions.frecency.util")
-local conf    = require('telescope.config').values
-
 local MAX_TIMESTAMPS = 10
 local DB_REMOVE_SAFETY_THRESHOLD = 10
 
@@ -79,7 +77,6 @@ end
 
 local function init(config_ignore_patterns)
   if sql_wrapper then return end
-
   sql_wrapper = sqlwrap:new()
   local first_run = sql_wrapper:bootstrap()
   validate_db()
@@ -126,14 +123,14 @@ end
 local function filter_workspace(filelist, workspace_path)
   local res = {}
   for _, entry in pairs(filelist) do
-    if util.string_starts(entry.path, workspace_path) then
+    if vim.startwith(entry.path, workspace_path) then
       table.insert(res, entry)
     end
   end
   return res
 end
 
-local function get_file_scores(opts)
+local function get_file_scores(opts) -- TODO: no need to pass in all opts here
   if not sql_wrapper then return {} end
 
   local queries = sql_wrapper.queries
