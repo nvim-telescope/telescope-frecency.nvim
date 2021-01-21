@@ -11,7 +11,6 @@ local entry_display = require "telescope.pickers.entry_display"
 local finders       = require "telescope.finders"
 local path          = require('telescope.path')
 local pickers       = require "telescope.pickers"
-local sorters       = require "telescope.sorters"
 local utils         = require('telescope.utils')
 
 local os_home       = vim.loop.os_homedir()
