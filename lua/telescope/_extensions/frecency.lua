@@ -22,10 +22,10 @@ local db_client
 local frecency = function(opts)
   opts = opts or {}
 
-  local cwd = vim.fn.expand(opts.cwd or vim.fn.getcwd())
-  -- opts.lsp_workspace_filter = true
-  -- TODO: decide on how to handle cwd or lsp_workspace for pathname shorten?
-  local results = db_client.get_file_scores(opts) -- TODO: pass `filter_workspace` option
+  local state = {}
+  state.results = {}
+  state.current_filters = {}
+  state.cwd = vim.fn.expand(opts.cwd or vim.fn.getcwd())
 
   local display_cols = {}
   display_cols[1] = show_scores and {width = 8} or nil
@@ -54,7 +54,7 @@ local frecency = function(opts)
     elseif opts.shorten_path then
       filename = utils.path_shorten(filename)
     else -- check relative to home/current
-      filename = path.make_relative(filename, cwd)
+      filename = path.make_relative(filename, state.cwd)
       if vim.startswith(filename, os_home) then
         filename = "~/" ..  path.make_relative(filename, os_home)
       elseif filename ~= original_filename then
@@ -68,10 +68,55 @@ local frecency = function(opts)
     return displayer(display_items)
   end
 
+  local tags = {
+    ["conf"] = "/home/sunjon/.config",
+    ["project"] = "/home/sunjon/projects"
+  }
+  local update_results = function(filters)
+    -- only update if we have no results, or if current_filters changes
+    local filters_updated = false
+    local tag
+    for _, filt in pairs(filters) do
+      if not state.current_filters[filt] then
+        tag = tags[filt:gsub(":", "")]
+        if tag then
+          filters_updated = true
+          print(("Matched tag: [%s] - %s"):format(filt, tag))
+          goto continue
+        end
+      end
+    end
+
+    ::continue::
+
+    if vim.tbl_isempty(state.results) or filters_updated then
+      print(("[%s] - Updating source"):format(os.clock()))
+      -- TODO: Need to nuke the results in the finder
+      return db_client.get_file_scores(opts, tag)
+    else
+      -- print("cached")
+      return state.results
+    end
+  end
+
+  -- populate initial results
+  state.results = update_results({})
+
+
   pickers.new(opts, {
     prompt_title = "Frecency",
+    on_input_filter_cb = function(query_text)
+      local fc = opts.filter_delimiter or ":"
+      local filters = {}
+      for f in query_text:gmatch(fc .. "%S+" .. fc) do
+        query_text = query_text:gsub(f, "")
+        table.insert(filters, f)
+      end
+      state.results = update_results(filters)
+      return query_text
+    end,
     finder = finders.new_table {
-      results = results,
+      results = state.results,
       entry_maker = function(entry)
         return {
           value   = entry.filename,

@@ -1,5 +1,7 @@
 local sqlwrap = require("telescope._extensions.frecency.sql_wrapper")
+local scandir = require("plenary.scandir").scan_dir
 local util    = require("telescope._extensions.frecency.util")
+
 local MAX_TIMESTAMPS = 10
 local DB_REMOVE_SAFETY_THRESHOLD = 10
 
@@ -120,17 +122,49 @@ local function filter_timestamps(timestamps, file_id)
   return res
 end
 
-local function filter_workspace(filelist, workspace_path)
+-- TODO: optimize this
+local function find_in_table(tbl, target)
+  for _, entry in pairs(tbl) do
+    if entry.path == target then return true end
+  end
+  return false
+end
+
+local function async_callback(result)
+  -- print(vim.inspect(result))
+end
+
+local function filter_workspace(workspace_path, show_unindexed)
+  local queries = sql_wrapper.queries
+  show_unindexed = show_unindexed or true
+
   local res = {}
-  for _, entry in pairs(filelist) do
-    if vim.startwith(entry.path, workspace_path) then
-      table.insert(res, entry)
+
+  print("DB query for " .. workspace_path)
+  res = sql_wrapper:do_transaction(queries.file_get_descendant_of, {path = workspace_path.."%"})
+  local scan_opts = {
+    respect_gitignore = false,
+    depth             = 100,
+    hidden            = false
+  }
+
+  if show_unindexed then
+    for _, file in pairs(scandir(workspace_path, scan_opts)) do
+      if not find_in_table(res, file) then
+        table.insert(res, {
+          id           = 0,
+          path         = file,
+          count        = 0,
+          directory_id = 0,
+        })
+      end
     end
   end
+
   return res
 end
 
-local function get_file_scores(opts) -- TODO: no need to pass in all opts here
+local function get_file_scores(opts, workspace_path)
   if not sql_wrapper then return {} end
 
   local queries = sql_wrapper.queries
@@ -140,24 +174,27 @@ local function get_file_scores(opts) -- TODO: no need to pass in all opts here
 
   if vim.tbl_isempty(files) then return scores end
 
-  -- filter to LSP workspace directory
-  local buf_workspaces = opts.lsp_workspace_filter and vim.lsp.buf.list_workspace_folders() or {}
-  if not vim.tbl_isempty(buf_workspaces) then
-    for _, ws_path in pairs(buf_workspaces) do
-      files = filter_workspace(files, ws_path)
-    end
+  -- print(vim.inspect(files))
+  -- files = filter_workspace("/home/sunjon/.config")
+  workspace_path = "/home/sunjon/.config"
+  if workspace_path then
+    print("Applying Workspace Filter: " .. workspace_path)
+    files = filter_workspace(workspace_path)
   end
 
+  local score
   for _, file_entry in ipairs(files) do
+    score = file_entry.count == 0 and 0 or calculate_file_score(file_entry.count, filter_timestamps(timestamp_ages, file_entry.id))
     table.insert(scores, {
       filename = file_entry.path,
-      score    = calculate_file_score(file_entry.count, filter_timestamps(timestamp_ages, file_entry.id))
+      score    = score
     })
   end
 
   -- sort the table
   table.sort(scores, function(a, b) return a.score > b.score end)
 
+  -- print(vim.inspect(scores))
   return scores
 end
 
