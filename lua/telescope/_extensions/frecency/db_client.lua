@@ -136,14 +136,13 @@ end
 
 local function filter_workspace(workspace_path, show_unindexed)
   local queries = sql_wrapper.queries
-  show_unindexed = show_unindexed or true
+  show_unindexed = show_unindexed == nil and true or show_unindexed
 
   local res = {}
 
-  print("DB query for " .. workspace_path)
   res = sql_wrapper:do_transaction(queries.file_get_descendant_of, {path = workspace_path.."%"})
   local scan_opts = {
-    respect_gitignore = false,
+    respect_gitignore = true,
     depth             = 100,
     hidden            = false
   }
@@ -174,12 +173,13 @@ local function get_file_scores(opts, workspace_path)
 
   if vim.tbl_isempty(files) then return scores end
 
-  -- print(vim.inspect(files))
-  -- files = filter_workspace("/home/sunjon/.config")
-  workspace_path = "/home/sunjon/.config"
+  -- local show_unindexed = opts.show_unindexed or false
+  local show_unindexed = true
   if workspace_path then
     print("Applying Workspace Filter: " .. workspace_path)
-    files = filter_workspace(workspace_path)
+    files = filter_workspace(workspace_path, show_unindexed)
+  else
+    print("Unfiltered query")
   end
 
   local score

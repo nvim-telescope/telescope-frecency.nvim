@@ -24,7 +24,7 @@ local frecency = function(opts)
 
   local state = {}
   state.results = {}
-  state.current_filters = {}
+  state.active_filter = nil
   state.cwd = vim.fn.expand(opts.cwd or vim.fn.getcwd())
 
   local display_cols = {}
@@ -70,62 +70,67 @@ local frecency = function(opts)
 
   local tags = {
     ["conf"] = "/home/sunjon/.config",
-    ["project"] = "/home/sunjon/projects"
+    ["project"] = "/home/sunjon/projects",
+    ["wiki"] = "/home/sunjon/wiki"
   }
-  local update_results = function(filters)
-    -- only update if we have no results, or if current_filters changes
-    local filters_updated = false
-    local tag
-    for _, filt in pairs(filters) do
-      if not state.current_filters[filt] then
-        tag = tags[filt:gsub(":", "")]
-        if tag then
-          filters_updated = true
-          print(("Matched tag: [%s] - %s"):format(filt, tag))
-          goto continue
-        end
-      end
+
+  local update_results = function(filter)
+    local filter_updated = false
+
+    -- validate tag
+    local tag_dir = filter and tags[filter]
+    if tag_dir ~= state.active_filter then
+      filter_updated = true
+      state.active_filter = tag_dir
+      -- print(("Matched tag: [%s] - %s"):format(filter, tag_dir))
     end
 
-    ::continue::
-
-    if vim.tbl_isempty(state.results) or filters_updated then
-      print(("[%s] - Updating source"):format(os.clock()))
-      -- TODO: Need to nuke the results in the finder
-      return db_client.get_file_scores(opts, tag)
-    else
-      -- print("cached")
-      return state.results
+    if vim.tbl_isempty(state.results) or filter_updated then
+      state.results = db_client.get_file_scores(opts, tag_dir)
     end
+    return filter_updated
   end
 
   -- populate initial results
-  state.results = update_results({})
+  update_results()
 
+  local entry_maker = function(entry)
+    return {
+      value   = entry.filename,
+      display = make_display,
+      ordinal = entry.filename,
+      name    = entry.filename,
+      score   = entry.score
+    }
+  end
 
   pickers.new(opts, {
     prompt_title = "Frecency",
     on_input_filter_cb = function(query_text)
       local fc = opts.filter_delimiter or ":"
-      local filters = {}
-      for f in query_text:gmatch(fc .. "%S+" .. fc) do
-        query_text = query_text:gsub(f, "")
-        table.insert(filters, f)
+      local filter
+      -- check for active filter
+      local new_finder
+      filter = query_text:gmatch(fc .. "%S+" .. fc)()
+
+      if filter then
+        query_text = query_text:gsub(filter, "")
+        filter     = filter:gsub(fc, "")
       end
-      state.results = update_results(filters)
-      return query_text
+
+      if (filter or (state.active_filter and not filter))
+        and update_results(filter) then
+        new_finder = finders.new_table {
+          results     = state.results,
+          entry_maker = entry_maker
+        }
+      end
+
+      return query_text, new_finder
     end,
     finder = finders.new_table {
-      results = state.results,
-      entry_maker = function(entry)
-        return {
-          value   = entry.filename,
-          display = make_display,
-          ordinal = entry.filename,
-          name    = entry.filename,
-          score   = entry.score
-        }
-      end,
+      results     = state.results,
+      entry_maker = entry_maker
     },
     previewer = conf.file_previewer(opts),
     sorter    = sorters.get_substr_matcher(opts),
