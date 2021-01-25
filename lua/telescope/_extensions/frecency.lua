@@ -87,6 +87,10 @@ local frecency = function(opts)
     local tag_dir = filter and tags[filter]
     if filter == "lsp" then
       local workspaces = vim.api.nvim_buf_call(state.previous_buffer, vim.lsp.buf.list_workspace_folders)
+      if vim.tbl_isempty(workspaces) then
+        print("LSP workspace not found.")
+        return false
+      end
       tag_dir = workspaces[1]
     end
 
