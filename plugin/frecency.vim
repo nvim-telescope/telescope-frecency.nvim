@@ -4,6 +4,11 @@ function! frecency#FrecencyComplete(findstart, base)
   if a:findstart
     " locate the start of the word
     let line = getline('.')
+    " don't complete if there's already a completed `:tag:` in line
+    if count(line, ":") >= 2
+      return -3
+    endif
+
     let start = col('.') - 1
     while start > 0 && line[start -1] != ':'
 	let start -= 1
