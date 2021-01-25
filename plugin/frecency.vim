@@ -1,14 +1,14 @@
-let s:workspace_tags = ['conf', 'etc', 'project']
+let s:workspace_tags = ['conf', 'etc', 'lsp', 'project']
 
 function! frecency#FrecencyComplete(findstart, base)
   if a:findstart
-    " locate the start of the word
     let line = getline('.')
     " don't complete if there's already a completed `:tag:` in line
     if count(line, ":") >= 2
       return -3
     endif
 
+    " locate the start of the tag
     let start = col('.') - 1
     while start > 0 && line[start -1] != ':'
 	let start -= 1
