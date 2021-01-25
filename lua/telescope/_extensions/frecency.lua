@@ -19,6 +19,15 @@ local os_path_sep   = utils.get_separator()
 local show_scores = false
 local db_client
 
+local tags = {
+  ["conf"] = "/home/sunjon/.config",
+  ["data"] = "/home/sunjon/.local/share",
+  ["etc"] = "/etc",
+  ["alpha"] = "/home/sunjon/alpha",
+  ["project"] = "/home/sunjon/projects",
+  ["wiki"] = "/home/sunjon/wiki"
+}
+
 local frecency = function(opts)
   opts = opts or {}
 
@@ -68,11 +77,6 @@ local frecency = function(opts)
     return displayer(display_items)
   end
 
-  local tags = {
-    ["conf"] = "/home/sunjon/.config",
-    ["project"] = "/home/sunjon/projects",
-    ["wiki"] = "/home/sunjon/wiki"
-  }
 
   local update_results = function(filter)
     local filter_updated = false
@@ -104,7 +108,7 @@ local frecency = function(opts)
     }
   end
 
-  pickers.new(opts, {
+  local picker = pickers.new(opts, {
     prompt_title = "Frecency",
     on_input_filter_cb = function(query_text)
       local fc = opts.filter_delimiter or ":"
@@ -134,7 +138,16 @@ local frecency = function(opts)
     },
     previewer = conf.file_previewer(opts),
     sorter    = sorters.get_substr_matcher(opts),
-  }):find()
+  })
+  picker:find()
+  print("Prompt: " .. picker.prompt_bufnr)
+  -- local prompt_winid = vim.fn.bufwinid(picker.prompt_bufnr)
+  -- vim.api.nvim_buf_set_option(picker.prompt_bufnr, "completefunc", "v:lua.require('telescope').extensions.frecency.competefunc()")
+  vim.api.nvim_buf_set_option(picker.prompt_bufnr, "completefunc", "frecency#FrecencyComplete")
+  -- TODO: make keymaps play nicely with Telescope
+  vim.cmd("imap <expr> <buffer> <Tab> pumvisible() ? '<C-n>' : '<C-x><C-u>'")
+  vim.cmd("imap <expr> <buffer> <Cr>  pumvisible() ? '<C-y>:' : '<CR>'")
+  vim.cmd("imap <expr> <buffer> <Esc> pumvisible() ? '<C-e>:' : '<Esc>'")
 end
 
 return telescope.register_extension {

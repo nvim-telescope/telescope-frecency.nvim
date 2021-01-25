@@ -141,22 +141,23 @@ local function filter_workspace(workspace_path, show_unindexed)
   local res = {}
 
   res = sql_wrapper:do_transaction(queries.file_get_descendant_of, {path = workspace_path.."%"})
+  if type(res) == "boolean" then res = {} end -- TODO: do this in sql_wrapper:transaction
+
   local scan_opts = {
     respect_gitignore = true,
     depth             = 100,
-    hidden            = false
+    hidden            = true
   }
 
-  if show_unindexed then
-    for _, file in pairs(scandir(workspace_path, scan_opts)) do
-      if not find_in_table(res, file) then
-        table.insert(res, {
-          id           = 0,
-          path         = file,
-          count        = 0,
-          directory_id = 0,
-        })
-      end
+  if show_unindexed then -- TODO: handle duplicate entries
+    local unindexed_files = scandir(workspace_path, scan_opts)
+    for _, file in pairs(unindexed_files) do
+      table.insert(res, {
+        id           = 0,
+        path         = file,
+        count        = 0,
+        directory_id = 0
+      })
     end
   end
 
