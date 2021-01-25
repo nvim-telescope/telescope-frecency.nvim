@@ -6,6 +6,7 @@ if not has_telescope then
 end
 
 -- finder code
+local actions       = require('telescope.actions')
 local conf          = require('telescope.config').values
 local entry_display = require "telescope.pickers.entry_display"
 local finders       = require "telescope.finders"
@@ -20,12 +21,12 @@ local show_scores = false
 local db_client
 
 local tags = {
-  ["conf"] = "/home/sunjon/.config",
-  ["data"] = "/home/sunjon/.local/share",
-  ["etc"] = "/etc",
-  ["alpha"] = "/home/sunjon/alpha",
+  ["conf"]    = "/home/sunjon/.config",
+  ["data"]    = "/home/sunjon/.local/share",
+  ["etc"]     = "/etc",
+  ["alpha"]   = "/home/sunjon/alpha",
   ["project"] = "/home/sunjon/projects",
-  ["wiki"] = "/home/sunjon/wiki"
+  ["wiki"]    = "/home/sunjon/wiki"
 }
 
 local frecency = function(opts)
@@ -132,6 +133,17 @@ local frecency = function(opts)
 
       return query_text, new_finder
     end,
+    attach_mappings = function(prompt_bufnr)
+      actions.goto_file_selection_edit:replace(function()
+        if vim.fn.pumvisible() == 1 then
+          local accept_completion = vim.api.nvim_replace_termcodes("<C-y><Right>:", true, false, true)
+          vim.fn.nvim_feedkeys(accept_completion, "n", true)
+        else
+          actions._goto_file_selection(prompt_bufnr, "edit")
+        end
+      end)
+      return true
+    end,
     finder = finders.new_table {
       results     = state.results,
       entry_maker = entry_maker
@@ -140,14 +152,12 @@ local frecency = function(opts)
     sorter    = sorters.get_substr_matcher(opts),
   })
   picker:find()
-  print("Prompt: " .. picker.prompt_bufnr)
-  -- local prompt_winid = vim.fn.bufwinid(picker.prompt_bufnr)
+  -- TODO: create these as actions?
+  vim.cmd("imap <expr> <buffer> <Tab> pumvisible() ? '<C-n>' : '<C-x><C-u>'")
+  vim.cmd("imap <expr> <buffer> <Esc> pumvisible() ? '<C-e>:' : '<Esc>'")
+
   -- vim.api.nvim_buf_set_option(picker.prompt_bufnr, "completefunc", "v:lua.require('telescope').extensions.frecency.competefunc()")
   vim.api.nvim_buf_set_option(picker.prompt_bufnr, "completefunc", "frecency#FrecencyComplete")
-  -- TODO: make keymaps play nicely with Telescope
-  vim.cmd("imap <expr> <buffer> <Tab> pumvisible() ? '<C-n>' : '<C-x><C-u>'")
-  vim.cmd("imap <expr> <buffer> <Cr>  pumvisible() ? '<C-y>:' : '<CR>'")
-  vim.cmd("imap <expr> <buffer> <Esc> pumvisible() ? '<C-e>:' : '<Esc>'")
 end
 
 return telescope.register_extension {
