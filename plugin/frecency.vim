@@ -1,5 +1,3 @@
-let s:workspace_tags = ['conf', 'etc', 'lsp', 'project']
-
 function! frecency#FrecencyComplete(findstart, base)
   if a:findstart
     let line = getline('.')
@@ -20,8 +18,9 @@ function! frecency#FrecencyComplete(findstart, base)
       return ''
     end
 
+    let l:workspace_tags = luaeval("require'telescope'.extensions.frecency.get_workspaces()")
     let matches = []
-    for ws_tag in s:workspace_tags
+    for ws_tag in l:workspace_tags
       if ":" .. ws_tag =~ '^:' .. a:base
         call add(matches, ws_tag)
       endif

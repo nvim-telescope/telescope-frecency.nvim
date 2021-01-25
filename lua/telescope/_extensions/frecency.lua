@@ -17,29 +17,40 @@ local utils         = require('telescope.utils')
 
 local os_home       = vim.loop.os_homedir()
 local os_path_sep   = utils.get_separator()
-local show_scores = false
 local db_client
 
-local tags = {
-  ["conf"]    = "/home/sunjon/.config",
-  ["data"]    = "/home/sunjon/.local/share",
-  ["etc"]     = "/etc",
-  ["alpha"]   = "/home/sunjon/alpha",
-  ["project"] = "/home/sunjon/projects",
-  ["wiki"]    = "/home/sunjon/wiki"
+local state = {
+  results         = {},
+  active_filter   = nil,
+  previous_buffer = nil,
+  cwd             = nil,
+  show_scores     = false,
+  workspaces      = {},
 }
+
+local get_workspaces = function()
+  -- local lsp_workspace = vim.api.nvim_buf_call(state.previous_buffer, vim.lsp.buf.list_workspace_folders)
+  -- print(vim.inspect(state.workspaces))
+  -- return vim.tbl_extend(state.workspaces, {["LSP"] = lsp_workspace[1]})
+
+    -- TODO: validate that workspaces are existing directories
+  local tags = {}
+  for k,_ in pairs(state.workspaces) do
+    table.insert(tags, k)
+  end
+  -- print(vim.inspect(tags))
+  -- TODO: sort tags
+  return tags
+end
 
 local frecency = function(opts)
   opts = opts or {}
 
-  local state = {}
-  state.results = {}
-  state.active_filter = nil
   state.previous_buffer = vim.fn.bufnr('%')
   state.cwd = vim.fn.expand(opts.cwd or vim.fn.getcwd())
 
   local display_cols = {}
-  display_cols[1] = show_scores and {width = 8} or nil
+  display_cols[1] = state.show_scores and {width = 8} or nil
   table.insert(display_cols, {remaining = true})
 
   local displayer = entry_display.create {
@@ -73,7 +84,7 @@ local frecency = function(opts)
       end
     end
 
-    display_items = show_scores and {{entry.score, "Directory"}} or {}
+    display_items = state.show_scores and {{entry.score, "Directory"}} or {}
     table.insert(display_items, {filename, hl_filename})
 
     return displayer(display_items)
@@ -84,24 +95,18 @@ local frecency = function(opts)
     local filter_updated = false
 
     -- validate tag
-    local tag_dir = filter and tags[filter]
-    if filter == "lsp" then
-      local workspaces = vim.api.nvim_buf_call(state.previous_buffer, vim.lsp.buf.list_workspace_folders)
-      if vim.tbl_isempty(workspaces) then
-        print("LSP workspace not found.")
-        return false
-      end
-      tag_dir = workspaces[1]
-    end
+    local ws_dir = filter and state.workspaces[filter]
+    -- if filter == "lsp" then
+    -- end
 
-    if tag_dir and tag_dir ~= state.active_filter then
+    if ws_dir and ws_dir ~= state.active_filter then
       filter_updated = true
-      state.active_filter = tag_dir
+      state.active_filter = ws_dir
       -- print(("Matched tag: [%s] - %s"):format(filter, tag_dir))
     end
 
     if vim.tbl_isempty(state.results) or filter_updated then
-      state.results = db_client.get_file_scores(opts, tag_dir)
+      state.results = db_client.get_file_scores(opts, ws_dir)
     end
     return filter_updated
   end
@@ -176,9 +181,11 @@ local frecency = function(opts)
   vim.api.nvim_buf_set_option(picker.prompt_bufnr, "completefunc", "frecency#FrecencyComplete")
 end
 
+
 return telescope.register_extension {
   setup = function(ext_config)
-    show_scores = ext_config.show_scores or false
+    state.show_scores = ext_config.show_scores or false
+    state.workspaces = ext_config.workspaces or {}
 
     -- start the database client
     db_client = require("telescope._extensions.frecency.db_client")
@@ -186,5 +193,6 @@ return telescope.register_extension {
   end,
   exports = {
     frecency = frecency,
+    get_workspaces = get_workspaces,
   },
 }
