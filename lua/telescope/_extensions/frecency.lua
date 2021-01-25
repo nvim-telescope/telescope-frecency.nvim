@@ -142,6 +142,7 @@ local frecency = function(opts)
           actions._goto_file_selection(prompt_bufnr, "edit")
         end
       end)
+
       return true
     end,
     finder = finders.new_table {
@@ -153,8 +154,11 @@ local frecency = function(opts)
   })
   picker:find()
   -- TODO: create these as actions?
-  vim.cmd("imap <expr> <buffer> <Tab> pumvisible() ? '<C-n>' : '<C-x><C-u>'")
-  vim.cmd("imap <expr> <buffer> <Esc> pumvisible() ? '<C-e>:' : '<Esc>'")
+
+  -- trigger completion or next completion
+  vim.api.nvim_buf_set_keymap(picker.prompt_bufnr, "i", "<Tab>", "pumvisible() ? '<C-n>'  : '<C-x><C-u>'", {expr = true, noremap = false})
+  -- cancel completion or close() -- TODO: attach_mappings(actions.close:replace()) causes stack overflow
+  -- vim.api.nvim_buf_set_keymap(picker.prompt_bufnr, "i", "<Esc>", "pumvisible() ? '<C-e>'  : '<Cmd>lua require\"telescope.actions\".close(" .. picker.prompt_bufnr ..")<CR>'", {expr = true, noremap = false})
 
   -- vim.api.nvim_buf_set_option(picker.prompt_bufnr, "completefunc", "v:lua.require('telescope').extensions.frecency.competefunc()")
   vim.api.nvim_buf_set_option(picker.prompt_bufnr, "completefunc", "frecency#FrecencyComplete")
