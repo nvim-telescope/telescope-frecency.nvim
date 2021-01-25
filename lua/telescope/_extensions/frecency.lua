@@ -35,6 +35,7 @@ local frecency = function(opts)
   local state = {}
   state.results = {}
   state.active_filter = nil
+  state.previous_buffer = vim.fn.bufnr('%')
   state.cwd = vim.fn.expand(opts.cwd or vim.fn.getcwd())
 
   local display_cols = {}
@@ -84,7 +85,12 @@ local frecency = function(opts)
 
     -- validate tag
     local tag_dir = filter and tags[filter]
-    if tag_dir ~= state.active_filter then
+    if filter == "lsp" then
+      local workspaces = vim.api.nvim_buf_call(state.previous_buffer, vim.lsp.buf.list_workspace_folders)
+      tag_dir = workspaces[1]
+    end
+
+    if tag_dir and tag_dir ~= state.active_filter then
       filter_updated = true
       state.active_filter = tag_dir
       -- print(("Matched tag: [%s] - %s"):format(filter, tag_dir))
@@ -112,15 +118,15 @@ local frecency = function(opts)
   local picker = pickers.new(opts, {
     prompt_title = "Frecency",
     on_input_filter_cb = function(query_text)
-      local fc = opts.filter_delimiter or ":"
+      local delim = opts.filter_delimiter or ":"
       local filter
       -- check for active filter
       local new_finder
-      filter = query_text:gmatch(fc .. "%S+" .. fc)()
+      filter = query_text:gmatch(delim .. "%S+" .. delim)()
 
       if filter then
         query_text = query_text:gsub(filter, "")
-        filter     = filter:gsub(fc, "")
+        filter     = filter:gsub(delim, "")
       end
 
       if (filter or (state.active_filter and not filter))
