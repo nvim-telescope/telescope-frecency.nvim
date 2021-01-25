@@ -135,8 +135,10 @@ local frecency = function(opts)
     end,
     attach_mappings = function(prompt_bufnr)
       actions.goto_file_selection_edit:replace(function()
-        if vim.fn.pumvisible() == 1 then
-          local accept_completion = vim.api.nvim_replace_termcodes("<C-y><Right>:", true, false, true)
+        local compinfo = vim.fn.complete_info()
+        if compinfo.pum_visible == 1 then
+          local keys = compinfo.selected == -1 and "<C-e><Bs><Right>" or "<C-y><Right>:"
+          local accept_completion = vim.api.nvim_replace_termcodes(keys, true, false, true)
           vim.fn.nvim_feedkeys(accept_completion, "n", true)
         else
           actions._goto_file_selection(prompt_bufnr, "edit")
