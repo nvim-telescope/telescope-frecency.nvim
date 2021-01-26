@@ -112,7 +112,7 @@ local frecency = function(opts)
     end
 
     if vim.tbl_isempty(state.results) or filter_updated then
-      state.results = db_client.get_file_scores(opts, ws_dir)
+      state.results = db_client.get_file_scores(state.show_unindexed, ws_dir)
     end
     return filter_updated
   end
@@ -185,7 +185,8 @@ end
 
 return telescope.register_extension {
   setup = function(ext_config)
-    state.show_scores     = ext_config.show_scores or false
+    state.show_scores     = ext_config.show_scores == nil and false or ext_config.show_scores
+    state.show_unindexed  = ext_config.show_unindexed == nil and true or ext_config.show_unindexed
     state.user_workspaces = ext_config.workspaces or {}
 
     -- start the database client
