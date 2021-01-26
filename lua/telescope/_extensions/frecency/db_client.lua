@@ -163,18 +163,17 @@ local function filter_workspace(workspace_path, show_unindexed)
   return res
 end
 
-local function get_file_scores(opts, workspace_path)
+local function get_file_scores(show_unindexed, workspace_path)
   if not sql_wrapper then return {} end
 
+  print(show_unindexed)
   local queries = sql_wrapper.queries
-  local scores = {}
   local files           = sql_wrapper:do_transaction(queries.file_get_entries, {})
   local timestamp_ages  = sql_wrapper:do_transaction(queries.timestamp_get_all_entry_ages, {})
 
+  local scores = {}
   if vim.tbl_isempty(files) then return scores end
 
-  -- local show_unindexed = opts.show_unindexed or false
-  local show_unindexed = true
   if workspace_path then
     print("Workspace Filter: " .. workspace_path)
     files = filter_workspace(workspace_path, show_unindexed)
@@ -195,7 +194,6 @@ local function get_file_scores(opts, workspace_path)
   -- sort the table
   table.sort(scores, function(a, b) return a.score > b.score end)
 
-  -- print(vim.inspect(scores))
   return scores
 end
 
