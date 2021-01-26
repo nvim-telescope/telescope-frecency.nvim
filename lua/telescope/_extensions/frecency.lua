@@ -56,7 +56,7 @@ local function get_workspace_tags()
 
   if not vim.tbl_isempty(lsp_workspaces) then
     state.lsp_workspaces = lsp_workspaces
-    tags[#tags+1] = "LSP_ROOT"
+    tags[#tags+1] = "LSP"
   else
     state.lsp_workspaces = {}
   end
@@ -102,7 +102,7 @@ local frecency = function(opts)
 
     -- validate tag
     local ws_dir = filter and state.user_workspaces[filter]
-    if filter == "LSP_ROOT" and not vim.tbl_isempty(state.lsp_workspaces) then
+    if filter == "LSP" and not vim.tbl_isempty(state.lsp_workspaces) then
       ws_dir = state.lsp_workspaces[1]
     end
 
