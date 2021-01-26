@@ -81,14 +81,13 @@ local function init(config_ignore_patterns)
   if sql_wrapper then return end
   sql_wrapper = sqlwrap:new()
   local first_run = sql_wrapper:bootstrap()
+  ignore_patterns = config_ignore_patterns or default_ignore_patterns
   validate_db()
 
   if first_run then
     -- TODO: this needs to be scheduled for after shada load
     vim.defer_fn(import_oldfiles, 100)
   end
-
-  ignore_patterns = config_ignore_patterns or default_ignore_patterns
 
   -- setup autocommands
   vim.api.nvim_command("augroup TelescopeFrecency")
@@ -177,10 +176,11 @@ local function get_file_scores(opts, workspace_path)
   -- local show_unindexed = opts.show_unindexed or false
   local show_unindexed = true
   if workspace_path then
-    print("Applying Workspace Filter: " .. workspace_path)
+    print("Workspace Filter: " .. workspace_path)
     files = filter_workspace(workspace_path, show_unindexed)
   else
-    print("Unfiltered query")
+    -- print("Unfiltered query")
+    print(" ")
   end
 
   local score
