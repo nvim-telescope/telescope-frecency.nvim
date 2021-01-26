@@ -35,6 +35,16 @@ The score is calculated using the age of the 10 most recent timestamps and the t
 score = frequency * recency_score / max_number_of_timestamps
 ```
 
+### Workspace Filters
+
+The _Workspace filter_ feature enables you to select from user defined _filter tags_ that map to a directory or collection of directories.
+
+When a filter is applied, results are reduced to entries whose path is a descendant of the workspace directory.
+The indexed results are optionally augmented with a listing of _all_ files found in a recurssive search of the workspace directory.
+Unindexed files are given a score of zero and appear below the 'frecent' entries.
+
+TODO: insert filter screenshot
+
 ## Requirements
 
 - [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) (required)
@@ -70,6 +80,8 @@ If no database is found when running Neovim with the plugin installed, a new one
 ```lua
 vim.api.nvim_set_keymap("n", "<leader><leader>", "<Cmd>lua require('telescope').extensions.frecency.frecency()<CR>", {noremap = true, silent = true})
 ```
+Filter tags are applied by typing the `:tag:` name (adding surrounding colons) in the finder query.
+Entering `:<Tab>` will trigger omnicompletion for available tags.
 
 ## Configuration
 
@@ -92,6 +104,12 @@ telescope.setup {
     frecency = {
       show_scores = false,
       ignore_patterns = {"*.git/*", "*/tmp/*"},
+      workspaces = {
+        ["conf"]    = "/home/my_username/.config",
+        ["data"]    = "/home/my_username/.local/share",
+        ["project"] = "/home/my_username/projects",
+        ["wiki"]    = "/home/my_username/wiki"
+      }
     }
   },
 }
