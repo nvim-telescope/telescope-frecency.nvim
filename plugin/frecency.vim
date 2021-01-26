@@ -18,7 +18,7 @@ function! frecency#FrecencyComplete(findstart, base)
       return ''
     end
 
-    let l:workspace_tags = luaeval("require'telescope'.extensions.frecency.get_workspaces()")
+    let l:workspace_tags = luaeval("require'telescope'.extensions.frecency.get_workspace_tags()")
     let matches = []
     for ws_tag in l:workspace_tags
       if ":" .. ws_tag =~ '^:' .. a:base

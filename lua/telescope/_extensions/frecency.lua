@@ -25,21 +25,21 @@ local state = {
   previous_buffer = nil,
   cwd             = nil,
   show_scores     = false,
-  workspaces      = {},
+  user_workspaces = {},
 }
 
-local get_workspaces = function()
+local get_workspace_tags = function()
   -- local lsp_workspace = vim.api.nvim_buf_call(state.previous_buffer, vim.lsp.buf.list_workspace_folders)
   -- print(vim.inspect(state.workspaces))
   -- return vim.tbl_extend(state.workspaces, {["LSP"] = lsp_workspace[1]})
 
-    -- TODO: validate that workspaces are existing directories
+  -- TODO: validate that workspaces are existing directories
   local tags = {}
-  for k,_ in pairs(state.workspaces) do
+  for k,_ in pairs(state.user_workspaces) do
     table.insert(tags, k)
   end
   -- print(vim.inspect(tags))
-  -- TODO: sort tags
+  -- TODO: sort tags - by collective frecency?
   return tags
 end
 
@@ -59,7 +59,6 @@ local frecency = function(opts)
     items = display_cols
   }
 
-  -- TODO: look into why this gets called so much
   local bufnr, buf_is_loaded, filename, hl_filename, display_items, original_filename
 
   local make_display = function(entry)
@@ -84,25 +83,24 @@ local frecency = function(opts)
       end
     end
 
-    display_items = state.show_scores and {{entry.score, "Directory"}} or {}
+    display_items = state.show_scores and {{entry.score, "FoldColumn"}} or {}
     table.insert(display_items, {filename, hl_filename})
 
     return displayer(display_items)
   end
 
-
   local update_results = function(filter)
     local filter_updated = false
 
     -- validate tag
-    local ws_dir = filter and state.workspaces[filter]
+    local ws_dir = filter and state.user_workspaces[filter]
     -- if filter == "lsp" then
     -- end
 
-    if ws_dir and ws_dir ~= state.active_filter then
+    if ws_dir ~= state.active_filter then
       filter_updated = true
       state.active_filter = ws_dir
-      -- print(("Matched tag: [%s] - %s"):format(filter, tag_dir))
+      -- print(("Matched tag: [%s] - %s"):format(filter, ws_dir))
     end
 
     if vim.tbl_isempty(state.results) or filter_updated then
@@ -171,7 +169,7 @@ local frecency = function(opts)
   })
   picker:find()
   -- TODO: create these as actions?
-
+  vim.api.nvim_buf_set_option(picker.prompt_bufnr, "filetype", "frecency")
   -- trigger completion or next completion
   vim.api.nvim_buf_set_keymap(picker.prompt_bufnr, "i", "<Tab>", "pumvisible() ? '<C-n>'  : '<C-x><C-u>'", {expr = true, noremap = false})
   -- cancel completion or close() -- TODO: attach_mappings(actions.close:replace()) causes stack overflow
@@ -184,15 +182,15 @@ end
 
 return telescope.register_extension {
   setup = function(ext_config)
-    state.show_scores = ext_config.show_scores or false
-    state.workspaces = ext_config.workspaces or {}
+    state.show_scores       = ext_config.show_scores or false
+    state.user_workspaces  = ext_config.workspaces or {}
 
     -- start the database client
     db_client = require("telescope._extensions.frecency.db_client")
     db_client.init(ext_config.ignore_patterns)
   end,
   exports = {
-    frecency = frecency,
-    get_workspaces = get_workspaces,
+    frecency       = frecency,
+    get_workspace_tags = get_workspace_tags,
   },
 }
