@@ -81,7 +81,7 @@ local frecency = function(opts)
   state.previous_buffer = vim.fn.bufnr('%')
   state.cwd = vim.fn.expand(opts.cwd or vim.fn.getcwd())
 
-  local dir_col_width = 1
+  local dir_col_width = 10
 
   local function get_display_cols()
     local res = {}
@@ -101,9 +101,6 @@ local frecency = function(opts)
 
   local bufnr, buf_is_loaded, filename, hl_filename, display_items
   local make_display = function(entry)
-    -- TODO: how to get `dir_col_width` to `get_display_cols()` ?
-    dir_col_width = state.active_filter and #state.active_filter or 1
-    -- print(dir_col_width)
     bufnr = vim.fn.bufnr
     buf_is_loaded = vim.api.nvim_buf_is_loaded
 
@@ -112,11 +109,9 @@ local frecency = function(opts)
     filename    = format_filepath(filename, opts)
 
     display_items = state.show_scores and {{entry.score, "TelescopeFrecencyScores"}} or {}
-    if state.show_filter_column then
-      local filter_path = state.active_filter and path.make_relative(state.active_filter, os_home) .. os_path_sep or ""
-      table.insert(display_items, {filter_path, "Directory"})
-    end
 
+    local filter_path = state.active_filter and path.make_relative(state.active_filter, os_home) .. os_path_sep or ""
+    table.insert(display_items, {filter_path, "Directory"})
     table.insert(display_items, {filename, hl_filename})
 
     return displayer(display_items)
@@ -131,7 +126,7 @@ local frecency = function(opts)
       ws_dir = state.lsp_workspaces[1]
     end
 
-    if ws_dir ~= state.active_filter then
+    if ws_dir ~= state.active_filter then -- TODO: updated needs to be triggered when we have no text?
       filter_updated = true
       state.active_filter = ws_dir
     end
@@ -146,8 +141,6 @@ local frecency = function(opts)
   update_results()
 
   local entry_maker = function(entry)
-    local filter_status = state.active_filter ~= nil and "filter" or ""
-    -- print("making new entries for " .. filter_status)
     return {
       value   = entry.filename,
       display = make_display,
@@ -161,19 +154,17 @@ local frecency = function(opts)
     prompt_title = "Frecency",
     on_input_filter_cb = function(query_text)
       local delim = opts.filter_delimiter or ":"
-      local filter
-      -- check for active filter
-      filter = query_text:gmatch(delim .. "%S+" .. delim)()
+      -- check for :filter: in query text
+      local new_filter = query_text:gmatch(delim .. "%S+" .. delim)()
 
-      if filter then
-        query_text = query_text:gsub(filter, "")
-        filter     = filter:gsub(delim, "")
+      if new_filter then
+        query_text = query_text:gsub(new_filter, "")
+        new_filter = new_filter:gsub(delim, "")
       end
 
       local new_finder
-      local results_updated = update_results(filter)
-      if (filter or (state.active_filter and not filter))
-        and results_updated then
+      local results_updated = update_results(new_filter)
+      if results_updated then
         new_finder = finders.new_table {
           prompt_title = "bar",
           results     = state.results,
