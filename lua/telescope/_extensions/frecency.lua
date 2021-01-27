@@ -9,6 +9,7 @@ local actions       = require('telescope.actions')
 local conf          = require('telescope.config').values
 local entry_display = require "telescope.pickers.entry_display"
 local finders       = require "telescope.finders"
+local mappings      = require('telescope.mappings')
 local path          = require('telescope.path')
 local pickers       = require "telescope.pickers"
 local sorters       = require "telescope.sorters"
@@ -198,6 +199,15 @@ local frecency = function(opts)
   -- state.picker.prompt_title = state.active_filter or vim.fn.getcwd()
   -- print(vim.inspect(picker))
   state.picker:find()
+
+
+  local disable_maps = {}
+  disable_maps.i = {
+    ['<C-x>'] = "<C-x>",
+    ['<C-u>'] = "<C-u>"
+  }
+  -- print(vim.inspect(disable_maps))
+  mappings.apply_keymap(state.picker.prompt_bufnr, mappings.attach_mappings, disable_maps)
 
   vim.api.nvim_buf_set_option(state.picker.prompt_bufnr, "filetype", "frecency")
   vim.api.nvim_buf_set_option(state.picker.prompt_bufnr, "completefunc", "frecency#FrecencyComplete")
