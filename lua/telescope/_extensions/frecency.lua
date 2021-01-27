@@ -30,17 +30,23 @@ local state = {
 local function format_filepath(filename, opts)
   local original_filename = filename
 
+  if state.active_filter then
+    filename = path.make_relative(filename, state.active_filter)
+  else
+    filename = path.make_relative(filename, state.cwd)
+  end
+
   if opts.tail_path then
     filename = utils.path_tail(filename)
   elseif opts.shorten_path then
     filename = utils.path_shorten(filename)
-  else -- check relative to home/current
-    filename = path.make_relative(filename, state.cwd)
-    if vim.startswith(filename, os_home) then
-      filename = "~/" ..  path.make_relative(filename, os_home)
-    elseif filename ~= original_filename then
-      filename = "./" .. filename
-    end
+  end
+
+  -- check relative to home/current
+  if vim.startswith(filename, os_home) then
+    filename = "~/" ..  path.make_relative(filename, os_home)
+  elseif filename ~= original_filename then
+    filename = "./" .. filename
   end
 
   return filename
@@ -70,7 +76,7 @@ local frecency = function(opts)
   opts = opts or {}
 
   state.previous_buffer = vim.fn.bufnr('%')
-  -- state.cwd = vim.fn.expand(opts.cwd or vim.fn.getcwd())
+  state.cwd = vim.fn.expand(opts.cwd or vim.fn.getcwd())
 
   local display_cols = {}
   display_cols[1] = state.show_scores and {width = 8} or nil
