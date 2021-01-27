@@ -1,4 +1,5 @@
 local has_telescope, telescope = pcall(require, "telescope")
+-- TODO: don't pass opts anywhere. Read everything needed into state at startup
 
 if not has_telescope then
   error("This plugin requires telescope.nvim (https://github.com/nvim-telescope/telescope.nvim)")
@@ -24,10 +25,13 @@ local state = {
   cwd             = nil,
   show_scores     = false,
   user_workspaces = {},
-  lsp_workspaces  = {}
+  lsp_workspaces  = {},
+  picker    = {}
 }
 
 local function format_filepath(filename, opts)
+  -- if state.show_filter_column and state.active_filter ~= nil then return filename end
+  -- TODO: Not sure what which of these need to be optional
   local original_filename = filename
 
   if state.active_filter then
@@ -77,18 +81,29 @@ local frecency = function(opts)
   state.previous_buffer = vim.fn.bufnr('%')
   state.cwd = vim.fn.expand(opts.cwd or vim.fn.getcwd())
 
-  local display_cols = {}
-  display_cols[1] = state.show_scores and {width = 8} or nil
-  table.insert(display_cols, {remaining = true})
+  local dir_col_width = 1
+
+  local function get_display_cols()
+    local res = {}
+    res[1] = state.show_scores and {width = 8} or nil
+    if state.show_filter_column then
+      table.insert(res, {width = dir_col_width })
+    end
+    table.insert(res, {remaining = true})
+    return res
+  end
 
   local displayer = entry_display.create {
     separator = "",
     hl_chars = {[os_path_sep] = "TelescopePathSeparator"},
-    items = display_cols
+    items = get_display_cols()
   }
 
   local bufnr, buf_is_loaded, filename, hl_filename, display_items
   local make_display = function(entry)
+    -- TODO: how to get `dir_col_width` to `get_display_cols()` ?
+    dir_col_width = state.active_filter and #state.active_filter or 1
+    -- print(dir_col_width)
     bufnr = vim.fn.bufnr
     buf_is_loaded = vim.api.nvim_buf_is_loaded
 
@@ -97,6 +112,11 @@ local frecency = function(opts)
     filename    = format_filepath(filename, opts)
 
     display_items = state.show_scores and {{entry.score, "TelescopeFrecencyScores"}} or {}
+    if state.show_filter_column then
+      local filter_path = state.active_filter and path.make_relative(state.active_filter, os_home) .. os_path_sep or ""
+      table.insert(display_items, {filter_path, "Directory"})
+    end
+
     table.insert(display_items, {filename, hl_filename})
 
     return displayer(display_items)
@@ -126,6 +146,8 @@ local frecency = function(opts)
   update_results()
 
   local entry_maker = function(entry)
+    local filter_status = state.active_filter ~= nil and "filter" or ""
+    -- print("making new entries for " .. filter_status)
     return {
       value   = entry.filename,
       display = make_display,
@@ -135,13 +157,12 @@ local frecency = function(opts)
     }
   end
 
-  local picker = pickers.new(opts, {
+    state.picker = pickers.new(opts, {
     prompt_title = "Frecency",
     on_input_filter_cb = function(query_text)
       local delim = opts.filter_delimiter or ":"
       local filter
       -- check for active filter
-      local new_finder
       filter = query_text:gmatch(delim .. "%S+" .. delim)()
 
       if filter then
@@ -149,9 +170,12 @@ local frecency = function(opts)
         filter     = filter:gsub(delim, "")
       end
 
+      local new_finder
+      local results_updated = update_results(filter)
       if (filter or (state.active_filter and not filter))
-        and update_results(filter) then
+        and results_updated then
         new_finder = finders.new_table {
+          prompt_title = "bar",
           results     = state.results,
           entry_maker = entry_maker
         }
@@ -180,11 +204,13 @@ local frecency = function(opts)
     previewer = conf.file_previewer(opts),
     sorter    = sorters.get_substr_matcher(opts),
   })
-  picker:find()
+  -- state.picker.prompt_title = state.active_filter or vim.fn.getcwd()
+  -- print(vim.inspect(picker))
+  state.picker:find()
 
-  vim.api.nvim_buf_set_option(picker.prompt_bufnr, "filetype", "frecency")
-  vim.api.nvim_buf_set_option(picker.prompt_bufnr, "completefunc", "frecency#FrecencyComplete")
-  vim.api.nvim_buf_set_keymap(picker.prompt_bufnr, "i", "<Tab>", "pumvisible() ? '<C-n>'  : '<C-x><C-u>'", {expr = true, noremap = false})
+  vim.api.nvim_buf_set_option(state.picker.prompt_bufnr, "filetype", "frecency")
+  vim.api.nvim_buf_set_option(state.picker.prompt_bufnr, "completefunc", "frecency#FrecencyComplete")
+  vim.api.nvim_buf_set_keymap(state.picker.prompt_bufnr, "i", "<Tab>", "pumvisible() ? '<C-n>'  : '<C-x><C-u>'", {expr = true, noremap = false})
 end
 
 
@@ -192,6 +218,7 @@ return telescope.register_extension {
   setup = function(ext_config)
     state.show_scores     = ext_config.show_scores == nil and false or ext_config.show_scores
     state.show_unindexed  = ext_config.show_unindexed == nil and true or ext_config.show_unindexed
+    state.show_filter_column = ext_config.show_filter_column or true
     state.user_workspaces = ext_config.workspaces or {}
 
     -- start the database client
