@@ -34,19 +34,18 @@ local function format_filepath(filename, opts)
     filename = path.make_relative(filename, state.active_filter)
   else
     filename = path.make_relative(filename, state.cwd)
+    -- check relative to home/current
+    if vim.startswith(filename, os_home) then
+      filename = "~/" ..  path.make_relative(filename, os_home)
+    elseif filename ~= original_filename then
+      filename = "./" .. filename
+    end
   end
 
   if opts.tail_path then
     filename = utils.path_tail(filename)
   elseif opts.shorten_path then
     filename = utils.path_shorten(filename)
-  end
-
-  -- check relative to home/current
-  if vim.startswith(filename, os_home) then
-    filename = "~/" ..  path.make_relative(filename, os_home)
-  elseif filename ~= original_filename then
-    filename = "./" .. filename
   end
 
   return filename
