@@ -166,7 +166,6 @@ end
 local function get_file_scores(show_unindexed, workspace_path)
   if not sql_wrapper then return {} end
 
-  print(show_unindexed)
   local queries = sql_wrapper.queries
   local files           = sql_wrapper:do_transaction(queries.file_get_entries, {})
   local timestamp_ages  = sql_wrapper:do_transaction(queries.timestamp_get_all_entry_ages, {})
@@ -204,7 +203,6 @@ local function autocmd_handler(filepath)
   if not vim.b.telescope_frecency_registered then
     -- allow [noname] files to go unregistered until BufWritePost
     if not util.fs_stat(filepath).exists then return end
-
     if file_is_ignored(filepath) then return end
 
     vim.b.telescope_frecency_registered = 1
