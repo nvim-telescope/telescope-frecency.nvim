@@ -23,15 +23,16 @@ local os_home       = vim.loop.os_homedir()
 local os_path_sep   = utils.get_separator()
 
 local state = {
-  results         = {},
-  active_filter   = nil,
-  last_filter     = nil,
-  previous_buffer = nil,
-  cwd             = nil,
-  show_scores     = false,
-  user_workspaces = {},
-  lsp_workspaces  = {},
-  picker    = {}
+  results           = {},
+  active_filter     = nil,
+  active_filter_tag = nil,
+  last_filter       = nil,
+  previous_buffer   = nil,
+  cwd               = nil,
+  show_scores       = false,
+  user_workspaces   = {},
+  lsp_workspaces    = {},
+  picker            = {}
 }
 
 local function format_filepath(filename, opts)
@@ -87,8 +88,15 @@ local frecency = function(opts)
   state.cwd = vim.fn.expand(opts.cwd or vim.fn.getcwd())
 
   local function get_display_cols()
-    -- local directory_col_width = state.active_filter and #state.active_filter or 2
-    local directory_col_width = state.active_filter and #(path.make_relative(state.active_filter, os_home) .. os_path_sep) or 0
+    local directory_col_width = 0
+    if state.active_filter then
+      if state.active_filter_tag == "LSP" then
+        -- TODO: Only add +1 if opts.show_filter_thing is true, +1 is for the trailing slash
+        directory_col_width = #(utils.path_tail(state.active_filter)) + 1
+      else
+        directory_col_width = #(path.make_relative(state.active_filter, os_home)) + 1
+      end
+    end
     local res = {}
     res[1] = state.show_scores and {width = 8} or nil
     if state.show_filter_column then
@@ -115,11 +123,19 @@ local frecency = function(opts)
 
     display_items = state.show_scores and {{entry.score, "TelescopeFrecencyScores"}} or {}
 
-    local filter_path = state.active_filter and path.make_relative(state.active_filter, os_home) .. os_path_sep or ""
+    -- TODO: store the column lengths here, rather than recalculating in get_display_cols()
+    -- TODO: only include filter_paths column if opts.show_filter_col is true
+    local filter_path = ""
+    if state.active_filter then
+      if state.active_filter_tag == "LSP" then
+        filter_path = utils.path_tail(state.active_filter) .. os_path_sep
+      else
+        filter_path = path.make_relative(state.active_filter, os_home) .. os_path_sep
+      end
+    end
     table.insert(display_items, {filter_path, "Directory"})
     table.insert(display_items, {filename, hl_filename})
 
-    -- print("debug: " .. (state.active_filter and #state.active_filter or 0) )
     return displayer(display_items)
   end
 
@@ -135,6 +151,7 @@ local frecency = function(opts)
     if ws_dir ~= state.active_filter then -- TODO: updated needs to be triggered when we have no text?
       filter_updated = true
       state.active_filter = ws_dir
+      state.active_filter_tag = filter
     end
 
     if vim.tbl_isempty(state.results) or filter_updated then
@@ -207,8 +224,6 @@ local frecency = function(opts)
     previewer = conf.file_previewer(opts),
     sorter    = sorters.get_substr_matcher(opts),
   })
-  -- state.picker.prompt_title = state.active_filter or vim.fn.getcwd()
-  -- print(vim.inspect(picker))
   state.picker:find()
 
   -- restore last filter
