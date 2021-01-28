@@ -83,12 +83,12 @@ end
 local frecency = function(opts)
   opts = opts or {}
 
-  -- print(opts.default_text)
   state.previous_buffer = vim.fn.bufnr('%')
   state.cwd = vim.fn.expand(opts.cwd or vim.fn.getcwd())
 
   local function get_display_cols()
-    local directory_col_width = state.active_filter and #state.active_filter or 2
+    -- local directory_col_width = state.active_filter and #state.active_filter or 2
+    local directory_col_width = state.active_filter and #(path.make_relative(state.active_filter, os_home) .. os_path_sep) or 0
     local res = {}
     res[1] = state.show_scores and {width = 8} or nil
     if state.show_filter_column then
@@ -171,6 +171,12 @@ local frecency = function(opts)
       local new_finder
       local results_updated = update_results(new_filter)
       if results_updated then
+	displayer = entry_display.create {
+	  separator = "",
+	  hl_chars = { [os_path_sep] = "TelescopePathSeparator" },
+	  items = get_display_cols()
+	}
+
         state.last_filter = new_filter
         new_finder = finders.new_table {
           results     = state.results,
