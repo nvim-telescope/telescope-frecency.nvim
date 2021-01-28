@@ -121,17 +121,17 @@ local function filter_timestamps(timestamps, file_id)
   return res
 end
 
--- TODO: optimize this
-local function find_in_table(tbl, target)
-  for _, entry in pairs(tbl) do
-    if entry.path == target then return true end
-  end
-  return false
-end
+-- -- TODO: optimize this
+-- local function find_in_table(tbl, target)
+--   for _, entry in pairs(tbl) do
+--     if entry.path == target then return true end
+--   end
+--   return false
+-- end
 
-local function async_callback(result)
-  -- print(vim.inspect(result))
-end
+-- local function async_callback(result)
+--   -- print(vim.inspect(result))
+-- end
 
 local function filter_workspace(workspace_path, show_unindexed)
   local queries = sql_wrapper.queries
@@ -151,12 +151,14 @@ local function filter_workspace(workspace_path, show_unindexed)
   if show_unindexed then -- TODO: handle duplicate entries
     local unindexed_files = scandir(workspace_path, scan_opts)
     for _, file in pairs(unindexed_files) do
-      table.insert(res, {
-        id           = 0,
-        path         = file,
-        count        = 0,
-        directory_id = 0
-      })
+      if not file_is_ignored(file) then
+        table.insert(res, {
+          id           = 0,
+          path         = file,
+          count        = 0,
+          directory_id = 0
+        })
+      end
     end
   end
 
