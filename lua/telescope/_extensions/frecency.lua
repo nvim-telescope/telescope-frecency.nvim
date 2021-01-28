@@ -198,7 +198,7 @@ local frecency = function(opts)
         }
       end
 
-      return query_text, new_finder
+      return {prompt = query_text, updated_finder = new_finder}
     end,
     attach_mappings = function(prompt_bufnr)
       actions.goto_file_selection_edit:replace(function()
