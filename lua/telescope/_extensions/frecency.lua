@@ -150,11 +150,14 @@ local frecency = function(opts)
 
     if ws_dir ~= state.active_filter then
       filter_updated = true
-      state.active_filter = ws_dir
+      state.active_filter     = ws_dir
       state.active_filter_tag = filter
     end
 
-    if vim.tbl_isempty(state.results) or filter_updated then
+    -- TODO: FIX - cached finders show incorrect xx/yy count
+    if state.persistent_filter and state.last_filter and filter == state.last_filter then
+      -- print("Cached: " .. state.active_filter_tag)
+    elseif vim.tbl_isempty(state.results) or filter_updated then
       state.results = db_client.get_file_scores(state.show_unindexed, ws_dir)
     end
     return filter_updated
