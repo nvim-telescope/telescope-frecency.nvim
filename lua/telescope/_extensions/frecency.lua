@@ -223,13 +223,17 @@ local frecency = function(opts)
 end
 
 
+local function set_config_state(opt_name, value, default)
+  state[opt_name] = value == nil and default or value
+end
+
 return telescope.register_extension {
   setup = function(ext_config)
-    state.show_scores         = ext_config.show_scores == nil and false or ext_config.show_scores
-    state.show_unindexed      = ext_config.show_unindexed == nil and true or ext_config.show_unindexed
-    state.show_filter_column  = ext_config.show_filter_column == nil and true or ext_config.show_filter_column
-    state.persistent_filter   = ext_config.persistent_filter == nil and true or ext_config.persistent_filter
-    state.user_workspaces     = ext_config.workspaces or {}
+    set_config_state('show_scores',         ext_config.show_scores, false)
+    set_config_state('show_unindexed',      ext_config.show_unindexed, true)
+    set_config_state('show_filter_column',  ext_config.show_filter_column, true)
+    set_config_state('persistent_filter',   ext_config.persistent_filter, true)
+    set_config_state('user_workspaces',     ext_config.workspaces, {})
 
     -- start the database client
     db_client.init(ext_config.ignore_patterns)
