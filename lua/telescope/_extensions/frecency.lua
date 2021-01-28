@@ -2,7 +2,6 @@ local has_telescope, telescope = pcall(require, "telescope")
 
 -- TODO: make sure scandir unindexed have opts.ignore_patterns applied
 -- TODO: make filters handle mulitple directories
--- TODO: cache results of last_filter
 
 if not has_telescope then
   error("This plugin requires telescope.nvim (https://github.com/nvim-telescope/telescope.nvim)")
@@ -36,12 +35,9 @@ local state = {
 }
 
 local function format_filepath(filename, opts)
-  -- if state.show_filter_column and state.active_filter ~= nil then return filename end
-  -- TODO: Not sure what which of these need to be optional
   local original_filename = filename
 
   if state.active_filter then
-    -- print("toot " .. os.clock())
     filename = path.make_relative(filename, state.active_filter)
   else
     filename = path.make_relative(filename, state.cwd)
@@ -155,8 +151,8 @@ local frecency = function(opts)
       state.active_filter_tag = filter
     end
 
-    -- TODO: fix - cached finders show incorrect shortened paths (they're even longer!)
     if (state.persistent_filter and state.last_filter and filter == state.last_filter)
+    -- use cached results if last finder had a filter when closed
     or filter == "FRECENCY_FINDER_OPEN" and state.last_filter then
     elseif vim.tbl_isempty(state.results) or filter_updated then
       state.results = db_client.get_file_scores(state.show_unindexed, ws_dir)
