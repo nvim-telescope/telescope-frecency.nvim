@@ -148,7 +148,7 @@ local frecency = function(opts)
       ws_dir = state.lsp_workspaces[1]
     end
 
-    if ws_dir ~= state.active_filter then -- TODO: updated needs to be triggered when we have no text?
+    if ws_dir ~= state.active_filter then
       filter_updated = true
       state.active_filter = ws_dir
       state.active_filter_tag = filter
@@ -190,7 +190,7 @@ local frecency = function(opts)
       if results_updated then
 	displayer = entry_display.create {
 	  separator = "",
-	  hl_chars = { [os_path_sep] = "TelescopePathSeparator" },
+	  hl_chars = {[os_path_sep] = "TelescopePathSeparator"},
 	  items = get_display_cols()
 	}
 
