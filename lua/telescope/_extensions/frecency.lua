@@ -41,6 +41,7 @@ local function format_filepath(filename, opts)
   local original_filename = filename
 
   if state.active_filter then
+    -- print("toot " .. os.clock())
     filename = path.make_relative(filename, state.active_filter)
   else
     filename = path.make_relative(filename, state.cwd)
@@ -154,9 +155,9 @@ local frecency = function(opts)
       state.active_filter_tag = filter
     end
 
-    -- TODO: FIX - cached finders show incorrect xx/yy count
-    if state.persistent_filter and state.last_filter and filter == state.last_filter then
-      -- print("Cached: " .. state.active_filter_tag)
+    -- TODO: fix - cached finders show incorrect shortened paths (they're even longer!)
+    if (state.persistent_filter and state.last_filter and filter == state.last_filter)
+    or filter == "FRECENCY_FINDER_OPEN" and state.last_filter then
     elseif vim.tbl_isempty(state.results) or filter_updated then
       state.results = db_client.get_file_scores(state.show_unindexed, ws_dir)
     end
@@ -164,7 +165,7 @@ local frecency = function(opts)
   end
 
   -- populate initial results
-  update_results()
+  update_results("FRECENCY_FINDER_OPEN")
 
   local entry_maker = function(entry)
     return {
