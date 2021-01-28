@@ -2,6 +2,7 @@ local has_telescope, telescope = pcall(require, "telescope")
 
 -- TODO: make sure scandir unindexed have opts.ignore_patterns applied
 -- TODO: make filters handle mulitple directories
+-- TODO: cache results of last_filter
 
 if not has_telescope then
   error("This plugin requires telescope.nvim (https://github.com/nvim-telescope/telescope.nvim)")
@@ -24,6 +25,7 @@ local os_path_sep   = utils.get_separator()
 local state = {
   results         = {},
   active_filter   = nil,
+  last_filter     = nil,
   previous_buffer = nil,
   cwd             = nil,
   show_scores     = false,
@@ -81,6 +83,7 @@ end
 local frecency = function(opts)
   opts = opts or {}
 
+  -- print(opts.default_text)
   state.previous_buffer = vim.fn.bufnr('%')
   state.cwd = vim.fn.expand(opts.cwd or vim.fn.getcwd())
 
@@ -116,6 +119,7 @@ local frecency = function(opts)
     table.insert(display_items, {filter_path, "Directory"})
     table.insert(display_items, {filename, hl_filename})
 
+    -- print("debug: " .. (state.active_filter and #state.active_filter or 0) )
     return displayer(display_items)
   end
 
@@ -142,7 +146,6 @@ local frecency = function(opts)
   -- populate initial results
   update_results()
 
-  print(state.active_filter or "init")
   local entry_maker = function(entry)
     return {
       value   = entry.filename,
@@ -153,7 +156,7 @@ local frecency = function(opts)
     }
   end
 
-    state.picker = pickers.new(opts, {
+  state.picker = pickers.new(opts, {
     prompt_title = "Frecency",
     on_input_filter_cb = function(query_text)
       local delim = opts.filter_delimiter or ":"
@@ -168,8 +171,8 @@ local frecency = function(opts)
       local new_finder
       local results_updated = update_results(new_filter)
       if results_updated then
+        state.last_filter = new_filter
         new_finder = finders.new_table {
-          prompt_title = "bar",
           results     = state.results,
           entry_maker = entry_maker
         }
@@ -202,6 +205,11 @@ local frecency = function(opts)
   -- print(vim.inspect(picker))
   state.picker:find()
 
+  -- restore last filter
+  if state.persistent_filter and state.last_filter then
+    vim.fn.nvim_feedkeys(":" .. state.last_filter .. ":", "n", true)
+  end
+
   local restore_vim_maps = {}
   restore_vim_maps.i = {
     ['<C-x>'] = "<C-x>",
@@ -212,7 +220,6 @@ local frecency = function(opts)
   vim.api.nvim_buf_set_option(state.picker.prompt_bufnr, "filetype", "frecency")
   vim.api.nvim_buf_set_option(state.picker.prompt_bufnr, "completefunc", "frecency#FrecencyComplete")
   vim.api.nvim_buf_set_keymap(state.picker.prompt_bufnr, "i", "<Tab>", "pumvisible() ? '<C-n>'  : '<C-x><C-u>'", {expr = true, noremap = true})
-  -- vim.api.nvim_buf_set_keymap(state.picker.prompt_bufnr, "i", "<Tab>", [[<C-\\><C-o>:call feedkeys({-> return pumvisible() ? "<C-n>" : "<C-x><C-u>"}, 't')]], {expr = false, noremap = true})
 end
 
 
@@ -220,7 +227,8 @@ return telescope.register_extension {
   setup = function(ext_config)
     state.show_scores         = ext_config.show_scores == nil and false or ext_config.show_scores
     state.show_unindexed      = ext_config.show_unindexed == nil and true or ext_config.show_unindexed
-    state.show_filter_column  = ext_config.show_filter_column or true
+    state.show_filter_column  = ext_config.show_filter_column == nil and true or ext_config.show_filter_column
+    state.persistent_filter   = ext_config.persistent_filter == nil and true or ext_config.persistent_filter
     state.user_workspaces     = ext_config.workspaces or {}
 
     -- start the database client
