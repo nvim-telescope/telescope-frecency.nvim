@@ -172,14 +172,7 @@ local function get_file_scores(show_unindexed, workspace_path)
 
   local scores = {}
   if vim.tbl_isempty(files) then return scores end
-
-  if workspace_path then
-    print("Workspace Filter: " .. workspace_path)
-    files = filter_workspace(workspace_path, show_unindexed)
-  else
-    -- print("Unfiltered query")
-    print(" ")
-  end
+  files = workspace_path and filter_workspace(workspace_path, show_unindexed) or files
 
   local score
   for _, file_entry in ipairs(files) do
