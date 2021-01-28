@@ -1,5 +1,5 @@
 local util    = require("telescope._extensions.frecency.util")
-local vim = vim
+local vim     = vim
 
 local has_sql, sql = pcall(require, "sql")
 if not has_sql then
@@ -10,9 +10,18 @@ end
 local MAX_TIMESTAMPS = 10
 
 local db_table = {}
-db_table.files      = "files"
-db_table.timestamps = "timestamps"
+db_table.files       = "files"
+db_table.timestamps  = "timestamps"
+db_table.workspaces  = "workspaces"
 --
+
+-- TODO: NEXT!
+-- extend substr sorter to have modes:
+-- when current string is prefixed by `:foo`, results are tag_names that come from tags/workspaces table. (if `:foo ` token is incomplete it is ignored)
+-- when a complete workspace tag is matched ':foobar:', results are indexed_files filtered by if their parent_dir is a descendant of the workspace_dir
+-- a recursive scan_dir() result is added to the  :foobar: filter results; any non-indexed_files are given a score of zero, and are alphabetically sorted below the indexed_results
+
+-- make tab completion for tab_names in insert mode`:foo|` state: cycles through available options
 
 local M = {}
 
@@ -45,9 +54,9 @@ function M:bootstrap(opts)
     first_run = true
     -- create tables if they don't exist
     self.db:create(db_table.files, {
-      id        = {"INTEGER", "PRIMARY", "KEY"},
-      count     = "INTEGER",
-      path      = "TEXT"
+      id           = {"INTEGER", "PRIMARY", "KEY"},
+      count        = "INTEGER",
+      path         = "TEXT"
     })
     self.db:create(db_table.timestamps, {
       id        = {"INTEGER", "PRIMARY", "KEY"},
@@ -85,6 +94,10 @@ local cmd = {
 }
 
 local queries = {
+  file_get_descendant_of = {
+    cmd      = cmd.eval,
+    cmd_data = "SELECT * FROM files WHERE path LIKE :path"
+  },
   file_add_entry = {
     cmd      = cmd.insert,
     cmd_data = db_table.files
