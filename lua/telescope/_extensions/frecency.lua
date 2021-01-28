@@ -1,5 +1,7 @@
 local has_telescope, telescope = pcall(require, "telescope")
--- TODO: don't pass opts anywhere. Read everything needed into state at startup
+
+-- TODO: make sure scandir unindexed have opts.ignore_patterns applied
+-- TODO: make filters handle mulitple directories
 
 if not has_telescope then
   error("This plugin requires telescope.nvim (https://github.com/nvim-telescope/telescope.nvim)")
@@ -82,13 +84,12 @@ local frecency = function(opts)
   state.previous_buffer = vim.fn.bufnr('%')
   state.cwd = vim.fn.expand(opts.cwd or vim.fn.getcwd())
 
-  local dir_col_width = 10
-
   local function get_display_cols()
+    local directory_col_width = state.active_filter and #state.active_filter or 2
     local res = {}
     res[1] = state.show_scores and {width = 8} or nil
     if state.show_filter_column then
-      table.insert(res, {width = dir_col_width })
+      table.insert(res, {width = directory_col_width})
     end
     table.insert(res, {remaining = true})
     return res
@@ -141,6 +142,7 @@ local frecency = function(opts)
   -- populate initial results
   update_results()
 
+  print(state.active_filter or "init")
   local entry_maker = function(entry)
     return {
       value   = entry.filename,
@@ -200,27 +202,26 @@ local frecency = function(opts)
   -- print(vim.inspect(picker))
   state.picker:find()
 
-
-  local disable_maps = {}
-  disable_maps.i = {
+  local restore_vim_maps = {}
+  restore_vim_maps.i = {
     ['<C-x>'] = "<C-x>",
     ['<C-u>'] = "<C-u>"
   }
-  -- print(vim.inspect(disable_maps))
-  mappings.apply_keymap(state.picker.prompt_bufnr, mappings.attach_mappings, disable_maps)
+  mappings.apply_keymap(state.picker.prompt_bufnr, mappings.attach_mappings, restore_vim_maps)
 
   vim.api.nvim_buf_set_option(state.picker.prompt_bufnr, "filetype", "frecency")
   vim.api.nvim_buf_set_option(state.picker.prompt_bufnr, "completefunc", "frecency#FrecencyComplete")
-  vim.api.nvim_buf_set_keymap(state.picker.prompt_bufnr, "i", "<Tab>", "pumvisible() ? '<C-n>'  : '<C-x><C-u>'", {expr = true, noremap = false})
+  vim.api.nvim_buf_set_keymap(state.picker.prompt_bufnr, "i", "<Tab>", "pumvisible() ? '<C-n>'  : '<C-x><C-u>'", {expr = true, noremap = true})
+  -- vim.api.nvim_buf_set_keymap(state.picker.prompt_bufnr, "i", "<Tab>", [[<C-\\><C-o>:call feedkeys({-> return pumvisible() ? "<C-n>" : "<C-x><C-u>"}, 't')]], {expr = false, noremap = true})
 end
 
 
 return telescope.register_extension {
   setup = function(ext_config)
-    state.show_scores     = ext_config.show_scores == nil and false or ext_config.show_scores
-    state.show_unindexed  = ext_config.show_unindexed == nil and true or ext_config.show_unindexed
-    state.show_filter_column = ext_config.show_filter_column or true
-    state.user_workspaces = ext_config.workspaces or {}
+    state.show_scores         = ext_config.show_scores == nil and false or ext_config.show_scores
+    state.show_unindexed      = ext_config.show_unindexed == nil and true or ext_config.show_unindexed
+    state.show_filter_column  = ext_config.show_filter_column or true
+    state.user_workspaces     = ext_config.workspaces or {}
 
     -- start the database client
     db_client.init(ext_config.ignore_patterns)
