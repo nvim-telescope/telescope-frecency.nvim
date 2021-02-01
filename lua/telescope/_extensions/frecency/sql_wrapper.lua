@@ -43,7 +43,7 @@ function M:bootstrap(opts)
   -- create the db if it doesn't exist
   local db_root = opts.docs_root or vim.fn.stdpath('data')
   local db_filename = db_root .. "/file_frecency.sqlite3"
-  self.db = sql.open(db_filename)
+  self.db = sql:open(db_filename)
   if not self.db then
     print("error")
     return
