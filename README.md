@@ -34,7 +34,7 @@ The score is calculated using the age of the 10 most recent timestamps and the t
 ```
 score = frequency * recency_score / max_number_of_timestamps
 ```
-## What about files that are neither 'recent' _or_ 'frequent'?
+## What about files that are neither 'frequent' _or_ 'recent' ?
 
 Frecency works best on files that have already indexed and have been given a reasonably high score.
 
