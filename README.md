@@ -40,7 +40,7 @@ Frecency works best on files that have already indexed and have been given a rea
 
 New projects or rarely used files with generic names either don't get listed at all or can be buried under results with a higher score.
 
-Frecency tackles this with [Workspace Filters](workspace-filters):
+Frecency tackles this with *Workspace Filters*:
 
 <img src="https://raw.githubusercontent.com/sunjon/images/master/frecency_workspace_folders.gif" alt="screenshot" width="800"/>
 
