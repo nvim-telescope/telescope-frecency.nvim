@@ -34,8 +34,14 @@ The score is calculated using the age of the 10 most recent timestamps and the t
 ```
 score = frequency * recency_score / max_number_of_timestamps
 ```
+## What about files that are neither 'recent' _or_ 'frequent'?
 
-### Workspace Filters
+Frecency works best on files that have already indexed and have been given a reasonably high score,
+but new projects or rarely used files with generic names either don't get listed at all or are buried under results with a higher score.
+
+Frecency tackles this with [Workspace Filters](workspace-filters):
+
+<img src="https://raw.githubusercontent.com/sunjon/images/master/frecency_workspace_folders.gif" alt="screenshot" width="800"/>
 
 The _Workspace filter_ feature enables you to select from user defined _filter tags_ that map to a directory or collection of directories.
 Filters are applied by entering `:workspace_tag:` anywhere in the query.
@@ -48,7 +54,6 @@ When a non-indexed file is opened, it gains a score value and is available in fu
 
 If the active buffer (prior to the finder being launched) is attached to an LSP server, an automatic `LSP` tag is available, which maps to the workspace directories provided by the language server.
 
-TODO: insert filter screenshot
 
 ## Requirements
 
