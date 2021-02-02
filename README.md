@@ -36,7 +36,7 @@ score = frequency * recency_score / max_number_of_timestamps
 ```
 ## What about files that are neither 'frequent' _or_ 'recent' ?
 
-Frecency works best on files that have already indexed and have been given a reasonably high score.
+Frecency naturally works best for indexed files that have been given a reasonably high score.
 
 New projects or rarely used files with generic names either don't get listed at all or can be buried under results with a higher score.
 
