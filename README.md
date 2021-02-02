@@ -44,7 +44,7 @@ Frecency tackles this with *Workspace Filters*:
 
 <img src="https://raw.githubusercontent.com/sunjon/images/master/frecency_workspace_folders.gif" alt="screenshot" width="800"/>
 
-The _Workspace filter_ feature enables you to select from user defined _filter tags_ that map to a directory or collection of directories.
+The workspace filter feature enables you to select from user defined _filter tags_ that map to a directory or collection of directories.
 Filters are applied by entering `:workspace_tag:` anywhere in the query.
 Filter name completion is available by pressing `<Tab>` after the first `:` character.
 
