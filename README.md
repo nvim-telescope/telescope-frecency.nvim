@@ -4,7 +4,7 @@ A [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) extension t
 
 Using an implementation of Mozilla's [Frecency algorithm](https://developer.mozilla.org/en-US/docs/Mozilla/Tech/Places/Frecency_algorithm) (used in [Firefox's address bar](https://support.mozilla.org/en-US/kb/address-bar-autocomplete-firefox)), files edited _frecently_ are given higher precedence in the list index.
 
-As the extension learns your editing habits over time, the sorting of the list is dynamically altered to priotize the files you're likely to need.
+As the extension learns your editing habits over time, the sorting of the list is dynamically altered to prioritize the files you're likely to need.
 
 <img src="https://raw.githubusercontent.com/sunjon/images/master/gh_readme_telescope_frecency.png" alt="screenshot" width="800"/>
 
