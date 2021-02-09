@@ -185,11 +185,11 @@ local frecency = function(opts)
       local new_finder
       local results_updated = update_results(new_filter)
       if results_updated then
-	displayer = entry_display.create {
-	  separator = "",
-	  hl_chars = {[os_path_sep] = "TelescopePathSeparator"},
-	  items = get_display_cols()
-	}
+        displayer = entry_display.create {
+          separator = "",
+          hl_chars = {[os_path_sep] = "TelescopePathSeparator"},
+          items = get_display_cols()
+        }
 
         state.last_filter = new_filter
         new_finder = finders.new_table {
