@@ -11,7 +11,6 @@ local actions       = require('telescope.actions')
 local conf          = require('telescope.config').values
 local entry_display = require "telescope.pickers.entry_display"
 local finders       = require "telescope.finders"
-local mappings      = require('telescope.mappings')
 local path          = require('telescope.path')
 local pickers       = require "telescope.pickers"
 local sorters       = require "telescope.sorters"
@@ -227,13 +226,6 @@ local frecency = function(opts)
   if state.persistent_filter and state.last_filter then
     vim.fn.nvim_feedkeys(":" .. state.last_filter .. ":", "n", true)
   end
-
-  local restore_vim_maps = {}
-  restore_vim_maps.i = {
-    ['<C-x>'] = "<C-x>",
-    ['<C-u>'] = "<C-u>"
-  }
-  mappings.apply_keymap(state.picker.prompt_bufnr, mappings.attach_mappings, restore_vim_maps)
 
   vim.api.nvim_buf_set_option(state.picker.prompt_bufnr, "filetype", "frecency")
   vim.api.nvim_buf_set_option(state.picker.prompt_bufnr, "completefunc", "frecency#FrecencyComplete")
