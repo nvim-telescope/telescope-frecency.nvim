@@ -162,11 +162,11 @@ local frecency = function(opts)
 
   local entry_maker = function(entry)
     return {
-      value   = entry.filename,
-      display = make_display,
-      ordinal = entry.filename,
-      name    = entry.filename,
-      score   = entry.score
+      filename = entry.filename,
+      display  = make_display,
+      ordinal  = entry.filename,
+      name     = entry.filename,
+      score    = entry.score
     }
   end
 
