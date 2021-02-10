@@ -169,26 +169,26 @@ local frecency = function(opts)
     }
   end
 
+  local delim = opts.filter_delimiter or ":"
+  local filter_re = "^(" .. delim .. "(%S+)" .. delim .. ")"
+
   state.picker = pickers.new(opts, {
     prompt_title = "Frecency",
     on_input_filter_cb = function(query_text)
-      local delim = opts.filter_delimiter or ":"
       -- check for :filter: in query text
-      local new_filter = query_text:gmatch(delim .. "%S+" .. delim)()
-
-      if new_filter then
-        query_text = query_text:gsub(new_filter, "")
-        new_filter = new_filter:gsub(delim, "")
+      local matched, new_filter = query_text:match(filter_re)
+      if matched then
+        query_text = query_text:sub(matched:len() + 1)
       end
 
       local new_finder
       local results_updated = update_results(new_filter)
       if results_updated then
-	displayer = entry_display.create {
-	  separator = "",
-	  hl_chars = {[os_path_sep] = "TelescopePathSeparator"},
-	  items = get_display_cols()
-	}
+        displayer = entry_display.create {
+          separator = "",
+          hl_chars = {[os_path_sep] = "TelescopePathSeparator"},
+          items = get_display_cols()
+        }
 
         state.last_filter = new_filter
         new_finder = finders.new_table {
