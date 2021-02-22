@@ -200,15 +200,14 @@ local frecency = function(opts)
       return {prompt = query_text, updated_finder = new_finder}
     end,
     attach_mappings = function(prompt_bufnr)
-      actions.goto_file_selection_edit:replace(function()
+      actions.select_default:replace_if(function()
         local compinfo = vim.fn.complete_info()
-        if compinfo.pum_visible == 1 then
-          local keys = compinfo.selected == -1 and "<C-e><Bs><Right>" or "<C-y><Right>:"
-          local accept_completion = vim.api.nvim_replace_termcodes(keys, true, false, true)
-          vim.fn.nvim_feedkeys(accept_completion, "n", true)
-        else
-          actions._goto_file_selection(prompt_bufnr, "edit")
-        end
+        return compinfo.pum_visible == 1
+      end, function()
+        local compinfo = vim.fn.complete_info()
+        local keys = compinfo.selected == -1 and "<C-e><Bs><Right>" or "<C-y><Right>:"
+        local accept_completion = vim.api.nvim_replace_termcodes(keys, true, false, true)
+        vim.fn.nvim_feedkeys(accept_completion, "n", true)
       end)
 
       return true
