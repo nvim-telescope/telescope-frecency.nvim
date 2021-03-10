@@ -207,7 +207,7 @@ local frecency = function(opts)
         local compinfo = vim.fn.complete_info()
         local keys = compinfo.selected == -1 and "<C-e><Bs><Right>" or "<C-y><Right>:"
         local accept_completion = vim.api.nvim_replace_termcodes(keys, true, false, true)
-        vim.fn.nvim_feedkeys(accept_completion, "n", true)
+        vim.api.nvim_feedkeys(accept_completion, "n", true)
       end)
 
       return true
@@ -223,7 +223,7 @@ local frecency = function(opts)
 
   -- restore last filter
   if state.persistent_filter and state.last_filter then
-    vim.fn.nvim_feedkeys(":" .. state.last_filter .. ":", "n", true)
+    vim.api.nvim_feedkeys(":" .. state.last_filter .. ":", "n", true)
   end
 
   vim.api.nvim_buf_set_option(state.picker.prompt_bufnr, "filetype", "frecency")
