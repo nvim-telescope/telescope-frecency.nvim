@@ -43,7 +43,7 @@ local function file_is_ignored(filepath)
   return is_ignored
 end
 
-local function validate_db()
+local function validate_db(safe_mode)
   if not sql_wrapper then return {} end
 
   local queries = sql_wrapper.queries
@@ -56,11 +56,14 @@ local function validate_db()
     end
   end
 
-   -- don't allow removal of >N values from DB without confirmation
-  local confirmed = false
-  if #pending_remove > DB_REMOVE_SAFETY_THRESHOLD then
-    if vim.fn.confirm("Telescope-Frecency: remove " .. #pending_remove .. " entries from SQLite3 database?", "&Yes\n&No", 2) then
-    confirmed = true
+   -- don't allow removal of >N values from DB without confirmation (if safe mode is enabled)
+  local confirmed
+  if safe_mode then
+    confirmed = false
+    if #pending_remove > DB_REMOVE_SAFETY_THRESHOLD then
+      if vim.fn.confirm("Telescope-Frecency: remove " .. #pending_remove .. " entries from SQLite3 database?", "&Yes\n&No", 2) then
+        confirmed = true
+      end
     end
   else
     confirmed = true
@@ -77,12 +80,12 @@ local function validate_db()
   end
 end
 
-local function init(config_ignore_patterns)
+local function init(config_ignore_patterns, safe_mode)
   if sql_wrapper then return end
   sql_wrapper = sqlwrap:new()
   local first_run = sql_wrapper:bootstrap()
   ignore_patterns = config_ignore_patterns or default_ignore_patterns
-  validate_db()
+  validate_db(safe_mode)
 
   if first_run then
     -- TODO: this needs to be scheduled for after shada load
