@@ -58,16 +58,21 @@ local function format_filepath(filename, opts)
 end
 
 local function get_workspace_tags()
-  -- TODO: validate that workspaces are existing directories
+
+  -- Add user config workspaces. TODO: validate that workspaces are existing directories
   local tags = {}
   for k,_ in pairs(state.user_workspaces) do
     table.insert(tags, k)
   end
-  local lsp_workspaces = vim.api.nvim_buf_call(state.previous_buffer, vim.lsp.buf.list_workspace_folders)
 
+  -- Add CWD filter
+  table.insert(tags, 'CWD')
+
+  -- Add LSP workpace(s)
+  local lsp_workspaces = vim.api.nvim_buf_call(state.previous_buffer, vim.lsp.buf.list_workspace_folders)
   if not vim.tbl_isempty(lsp_workspaces) then
     state.lsp_workspaces = lsp_workspaces
-    tags[#tags+1] = "LSP"
+    table.insert(tags, 'LSP')
   else
     state.lsp_workspaces = {}
   end
@@ -123,7 +128,7 @@ local frecency = function(opts)
     -- TODO: only include filter_paths column if opts.show_filter_col is true
     local filter_path = ""
     if state.active_filter then
-      if state.active_filter_tag == "LSP" then
+      if state.active_filter_tag == "LSP" or state.active_filter_tag == "CWD" then
         filter_path = utils.path_tail(state.active_filter) .. os_path_sep
       else
         filter_path = path.make_relative(state.active_filter, os_home) .. os_path_sep
@@ -142,6 +147,10 @@ local frecency = function(opts)
     local ws_dir = filter and state.user_workspaces[filter]
     if filter == "LSP" and not vim.tbl_isempty(state.lsp_workspaces) then
       ws_dir = state.lsp_workspaces[1]
+    end
+
+    if filter == "CWD" then
+      ws_dir = state.cwd
     end
 
     if ws_dir ~= state.active_filter then
