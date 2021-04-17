@@ -56,17 +56,16 @@ local function validate_db(safe_mode)
     end
   end
 
-   -- don't allow removal of >N values from DB without confirmation (if safe mode is enabled)
-  local confirmed
-  if safe_mode then
-    confirmed = false
-    if #pending_remove > DB_REMOVE_SAFETY_THRESHOLD then
-      if vim.fn.confirm("Telescope-Frecency: remove " .. #pending_remove .. " entries from SQLite3 database?", "&Yes\n&No", 2) then
-        confirmed = true
-      end
-    end
-  else
+  local confirmed = false
+  if not safe_mode then
     confirmed = true
+  elseif #pending_remove > DB_REMOVE_SAFETY_THRESHOLD then
+     -- don't allow removal of >N values from DB without confirmation
+    if vim.fn.confirm("Telescope-Frecency: remove " .. #pending_remove .. " entries from SQLite3 database?", "&Yes\n&No", 2) then
+      confirmed = true
+    else
+      print("TelescopeFrecency: validation aborted.")
+    end
   end
 
   if confirmed then
@@ -75,8 +74,6 @@ local function validate_db(safe_mode)
       sql_wrapper:do_transaction(queries.file_delete_entry , {where = {id = entry.id }})
       sql_wrapper:do_transaction(queries.timestamp_delete_entry, {where = {file_id = entry.id}})
     end
-  else
-    print("TelescopeFrecency: validation aborted.")
   end
 end
 
