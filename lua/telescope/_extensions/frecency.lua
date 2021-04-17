@@ -238,6 +238,7 @@ local frecency = function(opts)
   vim.api.nvim_buf_set_option(state.picker.prompt_bufnr, "filetype", "frecency")
   vim.api.nvim_buf_set_option(state.picker.prompt_bufnr, "completefunc", "frecency#FrecencyComplete")
   vim.api.nvim_buf_set_keymap(state.picker.prompt_bufnr, "i", "<Tab>", "pumvisible() ? '<C-n>'  : '<C-x><C-u>'", {expr = true, noremap = true})
+  vim.api.nvim_buf_set_keymap(state.picker.prompt_bufnr, "i", "<S-Tab>", "pumvisible() ? '<C-p>'  : ''", {expr = true, noremap = true})
 end
 
 
