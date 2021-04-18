@@ -30,7 +30,4 @@ function! frecency#FrecencyComplete(findstart, base)
   end
 endfunction
 
-
-  " lua require'telescope'.extensions.frecency.completefunc(action)
-  " lua require'telescope'.extensions.frecency.completefunc(res)
-  " require'telescope._extensions.frecency.db_client'.autocmd_handler(vim.fn.expand('<amatch>'))
+command FrecencyValidate lua require'telescope'.extensions.frecency.validate_db()

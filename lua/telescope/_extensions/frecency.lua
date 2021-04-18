@@ -253,13 +253,13 @@ return telescope.register_extension {
     set_config_state('show_filter_column',  ext_config.show_filter_column, true)
     set_config_state('persistent_filter',   ext_config.persistent_filter, true)
     set_config_state('user_workspaces',     ext_config.workspaces, {})
-    set_config_state('db_safe_mode',        ext_config.db_safe_mode, true) -- require user confirmation by default
 
     -- start the database client
-    db_client.init(ext_config.ignore_patterns, state.db_safe_mode)
+    db_client.init(ext_config.ignore_patterns, ext_config.db_safe_mode or true, ext_config.auto_validate or true)
   end,
   exports = {
     frecency           = frecency,
     get_workspace_tags = get_workspace_tags,
+    validate_db        = db_client.validate,
   },
 }
