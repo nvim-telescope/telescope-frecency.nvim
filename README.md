@@ -134,7 +134,7 @@ See [default configuration](https://github.com/nvim-telescope/telescope.nvim#tel
 telescope.setup {
   extensions = {
     frecency = {
-      db_root = "home/my_username/path/to/db_root"
+      db_root = "home/my_username/path/to/db_root",
       show_scores = false,
       show_unindexed = true,
       ignore_patterns = {"*.git/*", "*/tmp/*"},
