@@ -4,33 +4,34 @@ local has_telescope, telescope = pcall(require, "telescope")
 -- TODO: make filters handle mulitple directories
 
 if not has_telescope then
-  error("This plugin requires telescope.nvim (https://github.com/nvim-telescope/telescope.nvim)")
+  error "This plugin requires telescope.nvim (https://github.com/nvim-telescope/telescope.nvim)"
 end
 
-local actions       = require('telescope.actions')
-local conf          = require('telescope.config').values
+local has_devicons, devicons = pcall(require, "nvim-web-devicons")
+local actions = require "telescope.actions"
+local conf = require("telescope.config").values
 local entry_display = require "telescope.pickers.entry_display"
-local finders       = require "telescope.finders"
-local Path          = require('plenary.path')
-local pickers       = require "telescope.pickers"
-local sorters       = require "telescope.sorters"
-local utils         = require('telescope.utils')
-local db_client     = require("telescope._extensions.frecency.db_client")
+local finders = require "telescope.finders"
+local Path = require "plenary.path"
+local pickers = require "telescope.pickers"
+local sorters = require "telescope.sorters"
+local utils = require "telescope.utils"
+local db_client = require "telescope._extensions.frecency.db_client"
 
-local os_home       = vim.loop.os_homedir()
-local os_path_sep   = utils.get_separator()
+local os_home = vim.loop.os_homedir()
+local os_path_sep = utils.get_separator()
 
 local state = {
-  results           = {},
-  active_filter     = nil,
+  results = {},
+  active_filter = nil,
   active_filter_tag = nil,
-  last_filter       = nil,
-  previous_buffer   = nil,
-  cwd               = nil,
-  show_scores       = false,
-  user_workspaces   = {},
-  lsp_workspaces    = {},
-  picker            = {}
+  last_filter = nil,
+  previous_buffer = nil,
+  cwd = nil,
+  show_scores = false,
+  user_workspaces = {},
+  lsp_workspaces = {},
+  picker = {},
 }
 
 local function format_filepath(filename, opts)
@@ -58,21 +59,20 @@ local function format_filepath(filename, opts)
 end
 
 local function get_workspace_tags()
-
   -- Add user config workspaces. TODO: validate that workspaces are existing directories
   local tags = {}
-  for k,_ in pairs(state.user_workspaces) do
+  for k, _ in pairs(state.user_workspaces) do
     table.insert(tags, k)
   end
 
   -- Add CWD filter
-  table.insert(tags, 'CWD')
+  table.insert(tags, "CWD")
 
   -- Add LSP workpace(s)
   local lsp_workspaces = vim.api.nvim_buf_call(state.previous_buffer, vim.lsp.buf.list_workspace_folders)
   if not vim.tbl_isempty(lsp_workspaces) then
     state.lsp_workspaces = lsp_workspaces
-    table.insert(tags, 'LSP')
+    table.insert(tags, "LSP")
   else
     state.lsp_workspaces = {}
   end
@@ -85,7 +85,7 @@ end
 local frecency = function(opts)
   opts = opts or {}
 
-  state.previous_buffer = vim.fn.bufnr('%')
+  state.previous_buffer = vim.fn.bufnr "%"
   state.cwd = vim.fn.expand(opts.cwd or vim.fn.getcwd())
 
   local function get_display_cols()
@@ -99,29 +99,32 @@ local frecency = function(opts)
       end
     end
     local res = {}
-    res[1] = state.show_scores and {width = 8} or nil
+    res[1] = state.show_scores and { width = 8 } or nil
     if state.show_filter_column then
-      table.insert(res, {width = directory_col_width})
+      table.insert(res, { width = directory_col_width })
     end
-    table.insert(res, {remaining = true})
+    if has_devicons and not state.disable_devicons then
+      table.insert(res, { width = 2 }) -- icon column
+    end
+    table.insert(res, { remaining = true })
     return res
   end
 
   local displayer = entry_display.create {
     separator = "",
-    hl_chars = {[os_path_sep] = "TelescopePathSeparator"},
-    items = get_display_cols()
+    hl_chars = { [os_path_sep] = "TelescopePathSeparator" },
+    items = get_display_cols(),
   }
 
-  local bufnr, buf_is_loaded, filename, hl_filename, display_items
+  local bufnr, buf_is_loaded, display_filename, hl_filename, display_items, icon, icon_highlight
   local make_display = function(entry)
     bufnr = vim.fn.bufnr
     buf_is_loaded = vim.api.nvim_buf_is_loaded
-    filename      = entry.name
-    hl_filename   = buf_is_loaded(bufnr(filename)) and "TelescopeBufferLoaded" or ""
-    filename      = format_filepath(filename, opts)
+    display_filename = entry.name
+    hl_filename = buf_is_loaded(bufnr(display_filename)) and "TelescopeBufferLoaded" or ""
+    display_filename = format_filepath(display_filename, opts)
 
-    display_items = state.show_scores and {{entry.score, "TelescopeFrecencyScores"}} or {}
+    display_items = state.show_scores and { { entry.score, "TelescopeFrecencyScores" } } or {}
 
     -- TODO: store the column lengths here, rather than recalculating in get_display_cols()
     -- TODO: only include filter_paths column if opts.show_filter_col is true
@@ -133,8 +136,12 @@ local frecency = function(opts)
         filter_path = Path:new(state.active_filter):make_relative(os_home) .. os_path_sep
       end
     end
-    table.insert(display_items, {filter_path, "Directory"})
-    table.insert(display_items, {filename, hl_filename})
+    table.insert(display_items, { filter_path, "Directory" })
+    if has_devicons and not state.disable_devicons then
+      icon, icon_highlight = devicons.get_icon(entry.name, string.match(entry.name, "%a+$"), { default = true })
+      table.insert(display_items, { icon, icon_highlight })
+    end
+    table.insert(display_items, { display_filename, hl_filename })
 
     return displayer(display_items)
   end
@@ -154,7 +161,7 @@ local frecency = function(opts)
 
     if ws_dir ~= state.active_filter then
       filter_updated = true
-      state.active_filter     = ws_dir
+      state.active_filter = ws_dir
       state.active_filter_tag = filter
     end
 
@@ -170,10 +177,10 @@ local frecency = function(opts)
   local entry_maker = function(entry)
     return {
       filename = entry.filename,
-      display  = make_display,
-      ordinal  = entry.filename,
-      name     = entry.filename,
-      score    = entry.score
+      display = make_display,
+      ordinal = entry.filename,
+      name = entry.filename,
+      score = entry.score,
     }
   end
 
@@ -194,18 +201,18 @@ local frecency = function(opts)
       if results_updated then
         displayer = entry_display.create {
           separator = "",
-          hl_chars = {[os_path_sep] = "TelescopePathSeparator"},
-          items = get_display_cols()
+          hl_chars = { [os_path_sep] = "TelescopePathSeparator" },
+          items = get_display_cols(),
         }
 
         state.last_filter = new_filter
         new_finder = finders.new_table {
-          results     = state.results,
-          entry_maker = entry_maker
+          results = state.results,
+          entry_maker = entry_maker,
         }
       end
 
-      return {prompt = query_text, updated_finder = new_finder}
+      return { prompt = query_text, updated_finder = new_finder }
     end,
     attach_mappings = function(prompt_bufnr)
       actions.select_default:replace_if(function()
@@ -221,20 +228,31 @@ local frecency = function(opts)
       return true
     end,
     finder = finders.new_table {
-      results     = state.results,
-      entry_maker = entry_maker
+      results = state.results,
+      entry_maker = entry_maker,
     },
     previewer = conf.file_previewer(opts),
-    sorter    = sorters.get_substr_matcher(opts),
+    sorter = sorters.get_substr_matcher(opts),
   })
   state.picker:find()
 
   vim.api.nvim_buf_set_option(state.picker.prompt_bufnr, "filetype", "frecency")
   vim.api.nvim_buf_set_option(state.picker.prompt_bufnr, "completefunc", "frecency#FrecencyComplete")
-  vim.api.nvim_buf_set_keymap(state.picker.prompt_bufnr, "i", "<Tab>", "pumvisible() ? '<C-n>'  : '<C-x><C-u>'", {expr = true, noremap = true})
-  vim.api.nvim_buf_set_keymap(state.picker.prompt_bufnr, "i", "<S-Tab>", "pumvisible() ? '<C-p>'  : ''", {expr = true, noremap = true})
+  vim.api.nvim_buf_set_keymap(
+    state.picker.prompt_bufnr,
+    "i",
+    "<Tab>",
+    "pumvisible() ? '<C-n>'  : '<C-x><C-u>'",
+    { expr = true, noremap = true }
+  )
+  vim.api.nvim_buf_set_keymap(
+    state.picker.prompt_bufnr,
+    "i",
+    "<S-Tab>",
+    "pumvisible() ? '<C-p>'  : ''",
+    { expr = true, noremap = true }
+  )
 end
-
 
 local function set_config_state(opt_name, value, default)
   state[opt_name] = value == nil and default or value
@@ -246,28 +264,34 @@ local health_error = vim.fn["health#report_error"]
 local function checkhealth()
   local has_sql, _ = pcall(require, "sql")
   if has_sql then
-    health_ok("sql.nvim installed.")
-  -- return "MOOP"
+    health_ok "sql.nvim installed."
+    -- return "MOOP"
   else
-    health_error("NOOO")
+    health_error "NOOO"
   end
 end
 
 return telescope.register_extension {
   setup = function(ext_config)
-    set_config_state('db_root',             ext_config.db_root, nil)
-    set_config_state('show_scores',         ext_config.show_scores, false)
-    set_config_state('show_unindexed',      ext_config.show_unindexed, true)
-    set_config_state('show_filter_column',  ext_config.show_filter_column, true)
-    set_config_state('user_workspaces',     ext_config.workspaces, {})
+    set_config_state("db_root", ext_config.db_root, nil)
+    set_config_state("show_scores", ext_config.show_scores, false)
+    set_config_state("show_unindexed", ext_config.show_unindexed, true)
+    set_config_state("show_filter_column", ext_config.show_filter_column, true)
+    set_config_state("user_workspaces", ext_config.workspaces, {})
+    set_config_state("disable_devicons", ext_config.disable_devicons, false)
 
     -- start the database client
-    db_client.init(ext_config.db_root, ext_config.ignore_patterns, ext_config.db_safe_mode or true, ext_config.auto_validate or true)
+    db_client.init(
+      ext_config.db_root,
+      ext_config.ignore_patterns,
+      ext_config.db_safe_mode or true,
+      ext_config.auto_validate or true
+    )
   end,
   exports = {
-    frecency           = frecency,
+    frecency = frecency,
     get_workspace_tags = get_workspace_tags,
-    validate_db        = db_client.validate,
+    validate_db = db_client.validate,
     health = checkhealth,
   },
 }
