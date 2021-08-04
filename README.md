@@ -123,6 +123,7 @@ Determines if non-indexed files are included in workspace filter results.
 telescope.setup {
   extensions = {
     frecency = {
+      db_root = "home/my_username/path/to/db_root"
       show_scores = false,
       show_unindexed = true,
       ignore_patterns = {"*.git/*", "*/tmp/*"},
@@ -136,6 +137,11 @@ telescope.setup {
   },
 }
 ```
+
+### SQL database location
+
+The default location for the sqlite3 database is `$XDG_DATA_HOME/nvim` (eg `~/.local/share/nvim/` on linux).
+This can be configured with the `db_root` config option.
 
 ### SQL database maintainance
 
