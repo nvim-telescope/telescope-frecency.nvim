@@ -105,7 +105,7 @@ local frecency = function(opts)
     if state.show_filter_column then
       table.insert(res, {width = directory_col_width})
     end
-    if has_devicons and not opts.disable_devicons then
+    if has_devicons and not state.disable_devicons then
       table.insert(res, {width = 2}) -- icon column
     end
     table.insert(res, {remaining = true})
@@ -139,7 +139,7 @@ local frecency = function(opts)
       end
     end
     table.insert(display_items, {filter_path, "Directory"})
-    if has_devicons and not opts.disable_devicons then
+    if has_devicons and not state.disable_devicons then
       icon, icon_highlight = devicons.get_icon(entry.name, string.match(entry.name, "%a+$"), { default = true })
       table.insert(display_items, {icon, icon_highlight})
     end
@@ -269,6 +269,7 @@ return telescope.register_extension {
     set_config_state('show_unindexed',      ext_config.show_unindexed, true)
     set_config_state('show_filter_column',  ext_config.show_filter_column, true)
     set_config_state('user_workspaces',     ext_config.workspaces, {})
+    set_config_state('disable_devicons',   ext_config.disable_devicons, false)
 
     -- start the database client
     db_client.init(ext_config.db_root, ext_config.ignore_patterns, ext_config.db_safe_mode or true, ext_config.auto_validate or true)
