@@ -60,6 +60,7 @@ If the active buffer (prior to the finder being launched) is attached to an LSP 
 
 - [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) (required)
 - [sql.nvim](https://github.com/tami5/sql.nvim) (required)
+- [nvim-web-devicons](https://github.com/kyazdani42/nvim-web-devicons) (optional)
 
 Timestamps and file records are stored in an [SQLite3](https://www.sqlite.org/index.html) database for persistence and speed.
 This plugin uses `sql.nvim` to perform the database transactions.
