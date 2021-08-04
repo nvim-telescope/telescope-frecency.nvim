@@ -246,6 +246,19 @@ local function set_config_state(opt_name, value, default)
   state[opt_name] = value == nil and default or value
 end
 
+local health_ok = vim.fn["health#report_ok"]
+local health_error = vim.fn["health#report_error"]
+
+local function checkhealth()
+  local has_sql, _ = pcall(require, "sql")
+  if has_sql then
+    health_ok("sql.nvim installed.")
+  -- return "MOOP"
+  else
+    health_error("NOOO")
+  end
+end
+
 return telescope.register_extension {
   setup = function(ext_config)
     set_config_state('show_scores',         ext_config.show_scores, false)
@@ -260,5 +273,6 @@ return telescope.register_extension {
   exports = {
     frecency           = frecency,
     get_workspace_tags = get_workspace_tags,
+    health = checkhealth,
   },
 }
