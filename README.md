@@ -99,6 +99,11 @@ Entering `:<Tab>` will trigger omnicompletion for available tags.
 
 See [default configuration](https://github.com/nvim-telescope/telescope.nvim#telescope-defaults) for full details on configuring Telescope.
 
+- db_root (default: `nil`)
+
+  Path to parent directory of custom database location.
+  Defaults to `$XDG_DATA_HOME/nvim` if unset.
+
 - `ignore_patterns` (default: `{"*.git/*", "*/tmp/*"}`)
 
   Patterns in this table control which files are indexed (and subsequently which you'll see in the finder results).
@@ -114,6 +119,10 @@ See [default configuration](https://github.com/nvim-telescope/telescope.nvim#tel
     The value corresponds to the top level directory by which results will be filtered.
 
 - `show_unindexed` (default: `true`)
+
+- devicons_disabled (default: `false`)
+
+  Disable devicons (if available)
 
 Determines if non-indexed files are included in workspace filter results.
 
