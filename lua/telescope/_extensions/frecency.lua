@@ -230,11 +230,6 @@ local frecency = function(opts)
   })
   state.picker:find()
 
-  -- restore last filter
-  -- if state.persistent_filter and state.last_filter then
-  --   vim.api.nvim_feedkeys(":" .. state.last_filter .. ":", "n", true)
-  -- end
-
   vim.api.nvim_buf_set_option(state.picker.prompt_bufnr, "filetype", "frecency")
   vim.api.nvim_buf_set_option(state.picker.prompt_bufnr, "completefunc", "frecency#FrecencyComplete")
   vim.api.nvim_buf_set_keymap(state.picker.prompt_bufnr, "i", "<Tab>", "pumvisible() ? '<C-n>'  : '<C-x><C-u>'", {expr = true, noremap = true})
@@ -264,7 +259,6 @@ return telescope.register_extension {
     set_config_state('show_scores',         ext_config.show_scores, false)
     set_config_state('show_unindexed',      ext_config.show_unindexed, true)
     set_config_state('show_filter_column',  ext_config.show_filter_column, true)
-    -- set_config_state('persistent_filter',   ext_config.persistent_filter, true)
     set_config_state('user_workspaces',     ext_config.workspaces, {})
 
     -- start the database client
