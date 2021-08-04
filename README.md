@@ -137,6 +137,17 @@ telescope.setup {
 }
 ```
 
+### SQL database maintainance
+
+By default, frecency will prune files that no longer exist from the database.
+In certain workflows, switching branches in a repository, that behaviour might not be desired.
+The following configuration control this behaviour:
+
+`db_safe_mode` - When this is enabled, the user will be prompted before any entries are removed from the database.
+`auto_validate` - When this to false, stale entries will never be automatically removed.
+
+The command `FrecencyValidate` can be used to clean the database when `auto_validate` is disabled.
+
 ### Highlight Groups
 
 ```vim
