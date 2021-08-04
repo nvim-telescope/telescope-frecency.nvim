@@ -34,14 +34,14 @@ function M:new()
   return o
 end
 
-function M:bootstrap(opts)
+function M:bootstrap(db_root)
   if self.db then return end
 
-  opts = opts or {}
-  self.max_entries = opts.max_entries or 2000
+  -- opts = opts or {}
+  -- self.max_entries = opts.max_entries or 2000
 
   -- create the db if it doesn't exist
-  local db_root = opts.docs_root or vim.fn.stdpath('data')
+  db_root = db_root or vim.fn.stdpath('data')
   local db_filename = db_root .. "/file_frecency.sqlite3"
   self.db = sql:open(db_filename)
   if not self.db then

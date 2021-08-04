@@ -85,10 +85,11 @@ local function validate_db(safe_mode)
   end
 end
 
-local function init(config_ignore_patterns, safe_mode, auto_validate)
+-- TODO: make init params a keyed table
+local function init(db_root, config_ignore_patterns, safe_mode, auto_validate)
   if sql_wrapper then return end
   sql_wrapper = sqlwrap:new()
-  local first_run = sql_wrapper:bootstrap()
+  local first_run = sql_wrapper:bootstrap(db_root)
   ignore_patterns = config_ignore_patterns or default_ignore_patterns
 
   if auto_validate then

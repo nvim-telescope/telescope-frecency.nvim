@@ -117,10 +117,9 @@ local frecency = function(opts)
   local make_display = function(entry)
     bufnr = vim.fn.bufnr
     buf_is_loaded = vim.api.nvim_buf_is_loaded
-
-    filename    = entry.name
-    hl_filename = buf_is_loaded(bufnr(filename)) and "TelescopeBufferLoaded" or ""
-    filename    = format_filepath(filename, opts)
+    filename      = entry.name
+    hl_filename   = buf_is_loaded(bufnr(filename)) and "TelescopeBufferLoaded" or ""
+    filename      = format_filepath(filename, opts)
 
     display_items = state.show_scores and {{entry.score, "TelescopeFrecencyScores"}} or {}
 
@@ -256,13 +255,14 @@ end
 
 return telescope.register_extension {
   setup = function(ext_config)
+    set_config_state('db_root',             ext_config.db_root, nil)
     set_config_state('show_scores',         ext_config.show_scores, false)
     set_config_state('show_unindexed',      ext_config.show_unindexed, true)
     set_config_state('show_filter_column',  ext_config.show_filter_column, true)
     set_config_state('user_workspaces',     ext_config.workspaces, {})
 
     -- start the database client
-    db_client.init(ext_config.ignore_patterns, ext_config.db_safe_mode or true, ext_config.auto_validate or true)
+    db_client.init(ext_config.db_root, ext_config.ignore_patterns, ext_config.db_safe_mode or true, ext_config.auto_validate or true)
   end,
   exports = {
     frecency           = frecency,
