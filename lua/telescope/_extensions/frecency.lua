@@ -11,7 +11,7 @@ local actions       = require('telescope.actions')
 local conf          = require('telescope.config').values
 local entry_display = require "telescope.pickers.entry_display"
 local finders       = require "telescope.finders"
-local path          = require('telescope.path')
+local Path          = require('plenary.path')
 local pickers       = require "telescope.pickers"
 local sorters       = require "telescope.sorters"
 local utils         = require('telescope.utils')
@@ -37,12 +37,12 @@ local function format_filepath(filename, opts)
   local original_filename = filename
 
   if state.active_filter then
-    filename = path.make_relative(filename, state.active_filter)
+    filename = Path:new(filename):make_relative(state.active_filter)
   else
-    filename = path.make_relative(filename, state.cwd)
+    filename = Path:new(filename):make_relative(state.cwd)
     -- check relative to home/current
     if vim.startswith(filename, os_home) then
-      filename = "~/" ..  path.make_relative(filename, os_home)
+      filename = "~/" .. Path:new(filename):make_relative(os_home)
     elseif filename ~= original_filename then
       filename = "./" .. filename
     end
@@ -95,7 +95,7 @@ local frecency = function(opts)
         -- TODO: Only add +1 if opts.show_filter_thing is true, +1 is for the trailing slash
         directory_col_width = #(utils.path_tail(state.active_filter)) + 1
       else
-        directory_col_width = #(path.make_relative(state.active_filter, os_home)) + 1
+        directory_col_width = #(Path:new(state.active_filter):make_relative(os_home)) + 1
       end
     end
     local res = {}
@@ -131,7 +131,7 @@ local frecency = function(opts)
       if state.active_filter_tag == "LSP" or state.active_filter_tag == "CWD" then
         filter_path = utils.path_tail(state.active_filter) .. os_path_sep
       else
-        filter_path = path.make_relative(state.active_filter, os_home) .. os_path_sep
+        filter_path = Path:new(state.active_filter):make_relative(os_home) .. os_path_sep
       end
     end
     table.insert(display_items, {filter_path, "Directory"})
@@ -246,6 +246,19 @@ local function set_config_state(opt_name, value, default)
   state[opt_name] = value == nil and default or value
 end
 
+local health_ok = vim.fn["health#report_ok"]
+local health_error = vim.fn["health#report_error"]
+
+local function checkhealth()
+  local has_sql, _ = pcall(require, "sql")
+  if has_sql then
+    health_ok("sql.nvim installed.")
+  -- return "MOOP"
+  else
+    health_error("NOOO")
+  end
+end
+
 return telescope.register_extension {
   setup = function(ext_config)
     set_config_state('show_scores',         ext_config.show_scores, false)
@@ -261,5 +274,6 @@ return telescope.register_extension {
     frecency           = frecency,
     get_workspace_tags = get_workspace_tags,
     validate_db        = db_client.validate,
+    health = checkhealth,
   },
 }
