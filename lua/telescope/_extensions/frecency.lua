@@ -7,6 +7,8 @@ if not has_telescope then
   error("This plugin requires telescope.nvim (https://github.com/nvim-telescope/telescope.nvim)")
 end
 
+
+local has_devicons, devicons = pcall(require, "nvim-web-devicons")
 local actions       = require('telescope.actions')
 local conf          = require('telescope.config').values
 local entry_display = require "telescope.pickers.entry_display"
@@ -103,6 +105,9 @@ local frecency = function(opts)
     if state.show_filter_column then
       table.insert(res, {width = directory_col_width})
     end
+    if has_devicons and not opts.disable_devicons then
+      table.insert(res, {width = 2}) -- icon column
+    end
     table.insert(res, {remaining = true})
     return res
   end
@@ -113,13 +118,13 @@ local frecency = function(opts)
     items = get_display_cols()
   }
 
-  local bufnr, buf_is_loaded, filename, hl_filename, display_items
+  local bufnr, buf_is_loaded, display_filename, hl_filename, display_items, icon, icon_highlight
   local make_display = function(entry)
     bufnr = vim.fn.bufnr
     buf_is_loaded = vim.api.nvim_buf_is_loaded
-    filename      = entry.name
-    hl_filename   = buf_is_loaded(bufnr(filename)) and "TelescopeBufferLoaded" or ""
-    filename      = format_filepath(filename, opts)
+    display_filename      = entry.name
+    hl_filename   = buf_is_loaded(bufnr(display_filename)) and "TelescopeBufferLoaded" or ""
+    display_filename      = format_filepath(display_filename, opts)
 
     display_items = state.show_scores and {{entry.score, "TelescopeFrecencyScores"}} or {}
 
@@ -134,7 +139,11 @@ local frecency = function(opts)
       end
     end
     table.insert(display_items, {filter_path, "Directory"})
-    table.insert(display_items, {filename, hl_filename})
+    if has_devicons and not opts.disable_devicons then
+      icon, icon_highlight = devicons.get_icon(entry.name, string.match(entry.name, "%a+$"), { default = true })
+      table.insert(display_items, {icon, icon_highlight})
+    end
+    table.insert(display_items, {display_filename, hl_filename})
 
     return displayer(display_items)
   end
