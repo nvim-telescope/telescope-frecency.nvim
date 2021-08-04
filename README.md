@@ -127,6 +127,7 @@ telescope.setup {
       show_scores = false,
       show_unindexed = true,
       ignore_patterns = {"*.git/*", "*/tmp/*"},
+      disable_devicons = false,
       workspaces = {
         ["conf"]    = "/home/my_username/.config",
         ["data"]    = "/home/my_username/.local/share",
