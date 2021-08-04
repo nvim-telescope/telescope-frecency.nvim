@@ -43,7 +43,7 @@ local function file_is_ignored(filepath)
   return is_ignored
 end
 
-local function validate_db()
+local function validate_db(safe_mode)
   if not sql_wrapper then return {} end
 
   local queries = sql_wrapper.queries
@@ -56,33 +56,44 @@ local function validate_db()
     end
   end
 
-   -- don't allow removal of >N values from DB without confirmation
   local confirmed = false
-  if #pending_remove > DB_REMOVE_SAFETY_THRESHOLD then
-    if vim.fn.confirm("Telescope-Frecency: remove " .. #pending_remove .. " entries from SQLite3 database?", "&Yes\n&No", 2) then
+  if not safe_mode then
     confirmed = true
+  elseif #pending_remove > DB_REMOVE_SAFETY_THRESHOLD then
+     -- don't allow removal of >N values from DB without confirmation
+    local user_response = vim.fn.confirm("Telescope-Frecency: remove " .. #pending_remove .. " entries from SQLite3 database?", "&Yes\n&No", 2)
+    if user_response == 1 then
+      confirmed = true
+    else
+      vim.defer_fn(function() print("TelescopeFrecency: validation aborted.") end, 50)
     end
   else
     confirmed = true
   end
 
-  if confirmed then
-    for _, entry in pairs(pending_remove) do
-      -- remove entries from file and timestamp tables
-      sql_wrapper:do_transaction(queries.file_delete_entry , {where = {id = entry.id }})
-      sql_wrapper:do_transaction(queries.timestamp_delete_entry, {where = {file_id = entry.id}})
+  if #pending_remove > 0 then
+    if confirmed == true then
+      for _, entry in pairs(pending_remove) do
+        -- remove entries from file and timestamp tables
+        sql_wrapper:do_transaction(queries.file_delete_entry , {where = {id = entry.id }})
+        sql_wrapper:do_transaction(queries.timestamp_delete_entry, {where = {file_id = entry.id}})
+      end
+      print(('Telescope-Frecency: removed %d missing entries.'):format(#pending_remove))
+    else
+      print("Telescope-Frecency: validation aborted.")
     end
-  else
-    print("TelescopeFrecency: validation aborted.")
   end
 end
 
-local function init(config_ignore_patterns)
+local function init(config_ignore_patterns, safe_mode, auto_validate)
   if sql_wrapper then return end
   sql_wrapper = sqlwrap:new()
   local first_run = sql_wrapper:bootstrap()
   ignore_patterns = config_ignore_patterns or default_ignore_patterns
-  validate_db()
+
+  if auto_validate then
+    validate_db(safe_mode)
+  end
 
   if first_run then
     -- TODO: this needs to be scheduled for after shada load
@@ -210,4 +221,5 @@ return {
   init            = init,
   get_file_scores = get_file_scores,
   autocmd_handler = autocmd_handler,
+  validate        = validate_db,
 }

@@ -268,11 +268,12 @@ return telescope.register_extension {
     set_config_state('user_workspaces',     ext_config.workspaces, {})
 
     -- start the database client
-    db_client.init(ext_config.ignore_patterns)
+    db_client.init(ext_config.ignore_patterns, ext_config.db_safe_mode or true, ext_config.auto_validate or true)
   end,
   exports = {
     frecency           = frecency,
     get_workspace_tags = get_workspace_tags,
+    validate_db        = db_client.validate,
     health = checkhealth,
   },
 }
