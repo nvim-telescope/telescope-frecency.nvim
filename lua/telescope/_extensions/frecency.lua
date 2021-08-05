@@ -185,7 +185,7 @@ local frecency = function(opts)
   end
 
   local delim = opts.filter_delimiter or ":"
-  local filter_re = "^(" .. delim .. "(%S+)" .. delim .. ")"
+  local filter_re = "^%s*(" .. delim .. "(%S+)" .. delim .. ")"
 
   state.picker = pickers.new(opts, {
     prompt_title = "Frecency",
@@ -210,6 +210,7 @@ local frecency = function(opts)
           results = state.results,
           entry_maker = entry_maker,
         }
+        -- print(vim.inspect(new_finder))
       end
 
       return { prompt = query_text, updated_finder = new_finder }
