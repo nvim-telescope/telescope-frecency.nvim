@@ -74,8 +74,8 @@ use {
   "nvim-telescope/telescope-frecency.nvim",
   config = function()
     require"telescope".load_extension("frecency")
-    requires = {"tami5/sql.nvim"}
   end
+  requires = {"tami5/sql.nvim"}
 }
 ```
 
