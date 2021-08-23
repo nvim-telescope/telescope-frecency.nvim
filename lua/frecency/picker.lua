@@ -1,7 +1,7 @@
 local M = {}
 local has_devicons, devicons = pcall(require, "nvim-web-devicons")
 local Path = require "plenary.path"
-local util = require "telescope._extensions.frecency.util"
+local util = require "frecency.util"
 local os_home = vim.loop.os_homedir()
 local os_path_sep = Path.path.sep
 local actions = require "telescope.actions"
@@ -138,7 +138,7 @@ end
 ---Create entry maker function.
 ---@param entry table
 ---@return function
----FIXME: path trascated with icons being pre-appended instead of appended
+---FIXME: path transacted with icons being pre-appended instead of appended
 M.maker = function(entry)
   local items = {}
   if M.config.show_scores then

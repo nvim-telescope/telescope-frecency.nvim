@@ -1,4 +1,4 @@
-local util = require "telescope._extensions.frecency.util"
+local util = require "frecency.util"
 local const = require "frecency.const"
 local algo = require "frecency.algo"
 
@@ -32,6 +32,8 @@ db.config = {
   auto_validate = true,
 }
 
+---Set database configuration
+---@param config FrecencyDBConfig
 db.set_config = function(config)
   db.config = vim.tbl_extend("keep", config, db.config)
 end

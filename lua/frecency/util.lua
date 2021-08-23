@@ -34,33 +34,6 @@ util.file_is_ignored = function(filepath, ignore_patters)
   return is_ignored
 end
 
----Format filename. Mainly os_home to {~/} or current to {./}
----@param filename string
----@return string
-util.file_format = function(filename, opts)
-  local original_filename = filename
-
-  if opts.active_filter then
-    filename = Path:new(filename):make_relative(opts.active_filter)
-  else
-    filename = Path:new(filename):make_relative(opts.cwd)
-    -- check relative to home/current
-    if vim.startswith(filename, os_home) then
-      filename = "~/" .. Path:new(filename):make_relative(os_home)
-    elseif filename ~= original_filename then
-      filename = "./" .. filename
-    end
-  end
-
-  if opts.tail_path then
-    filename = util.path_tail(filename)
-  elseif opts.shorten_path then
-    filename = util.path_shorten(filename)
-  end
-
-  return filename
-end
-
 util.fs_stat = function(path)
   local stat = path and uv.fs_stat(path) or nil
   local res = {}
@@ -125,6 +98,8 @@ end
 util.include_unindexed = function (files, ws_path)
   local scan_opts = { respect_gitignore = true, depth = 100, hidden = true, }
 
+  -- TODO: make sure scandir unindexed have opts.ignore_patterns applied
+  -- TODO: make filters handle mulitple directories
   local unindexed_files = require("plenary.scandir").scan_dir(ws_path, scan_opts)
   for _, file in pairs(unindexed_files) do
     if not util.file_is_ignored(file) then -- this causes some slowdown on large dirs
