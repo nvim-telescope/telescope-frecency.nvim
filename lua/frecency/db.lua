@@ -115,8 +115,8 @@ db.update = function(path)
     local file_id = not entry.id and db.files.insert { path = path } or entry.id
 
     ---Update count if entry.id is non-nil.
-    if entry.id then
-      db.files.update { where = { id = entry.id }, set = { count = entry.count + 1 } }
+    if entry.id then ---FIXME: or 0 because sometimes with toggle terminal I get count = nil
+      db.files.update { where = { id = entry.id }, set = { count = (entry.count or 0) + 1 } }
     end
 
     ---Register timestamp for this update.

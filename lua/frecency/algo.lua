@@ -2,7 +2,7 @@ local const = require("frecency.const")
 local algo = {}
 
 algo.calculate_file_score = function (file)
-  if file.count == 0 then
+  if not file.count or file.count == 0 then
     return 0
   end
   local recency_score = 0
