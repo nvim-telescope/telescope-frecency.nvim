@@ -1,12 +1,7 @@
 local util = require "frecency.util"
 local const = require "frecency.const"
 local algo = require "frecency.algo"
-
-local ok, sql = pcall(require, "sql")
-if not ok then
-  error "ERROR: frecency-telescope.nvim: sql.nvim (https://github.com/tami5/sql.nvim) is not found. Please install"
-  return
-end
+local sql = require "sql"
 local s = sql.lib
 
 ---@class FrecencyDB: SQLDatabaseExt
@@ -52,7 +47,7 @@ db.init = function()
   if db.files.count() == 0 then
     -- TODO: this needs to be scheduled for after shada load??
     local oldfiles = vim.api.nvim_get_vvar "oldfiles"
-    for _, path in pairs(oldfiles) do
+    for _, path in ipairs(oldfiles) do
       db.files.insert { path = path }
     end
     print(("Telescope-Frecency: Imported %d entries from oldfiles."):format(#oldfiles))
