@@ -65,9 +65,7 @@ end
 ---@param opts table: telescope picker opts
 M.fd = function(opts)
   opts = opts or {}
-  if not M.db.is_initialized then
-    M.db.init()
-  end
+  M.db.init()
   M.previous_buffer, M.cwd = vim.fn.bufnr "%", vim.fn.expand(opts.cwd or vim.loop.cwd())
   M.update_results()
   M.picker = pickers.new(opts, {

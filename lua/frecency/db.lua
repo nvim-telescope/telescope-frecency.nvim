@@ -38,19 +38,18 @@ db.set_config = function(config)
   db.config = vim.tbl_extend("keep", config, db.config)
 end
 
----Initialize frecency Database
----@param config FrecencyDBConfig
----@overload func()
+---Initialize frecency Database. if { db.is_initialized } then skip return early.
 ---@return FrecencyDB
-db.init = function(config)
-  config = config or {}
-  db.db.uri = config.db_root and config.db_root or db.db.uri
-  db.config = config and db.set_config(config) or db.config
-  db.db:init()
-  db.is_initialized = db.db.is_initialized ---TODO: remove when sql.nvim@#93 is fixed
+db.init = function()
+  if db.is_initialized then
+    return
+  end
 
-  ---Use oldfiles on first run.
-  if db.files:count() == 0 then
+  db.db.uri = db.config.db_root and db.config.db_root or db.db.uri
+  db.is_initialized = true
+
+  ---Seed files table with oldfiles when it's empty.
+  if db.files.count() == 0 then
     -- TODO: this needs to be scheduled for after shada load??
     local oldfiles = vim.api.nvim_get_vvar "oldfiles"
     for _, path in pairs(oldfiles) do
@@ -176,9 +175,7 @@ db.register = function()
     return
   else
     vim.b.telescope_frecency_registered = 1
-    if not db.is_initialized then
-      db.init()
-    end
+    db.init()
     db.update(path)
   end
 end
