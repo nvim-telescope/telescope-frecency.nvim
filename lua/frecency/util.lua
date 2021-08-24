@@ -20,10 +20,10 @@ util.filemask = function(mask)
   return "^" .. mask:gsub("%%%*", ".*"):gsub("%%%?", ".") .. "$"
 end
 
-util.file_is_ignored = function(filepath, ignore_patters)
+util.path_is_ignore = function(filepath, ignore_patters)
+  local i = ignore_patters and vim.tbl_flatten({ ignore_patters, const.ignore_patterns }) or const.ignore_patterns
   local is_ignored = false
-  --- TODO: it should be merged or flatten
-  for _, pattern in pairs(ignore_patterns and ignore_patters or const.ignore_patterns) do
+  for _, pattern in ipairs(i) do
     if filepath:find(util.filemask(pattern)) ~= nil then
       is_ignored = true
       goto continue
@@ -34,21 +34,13 @@ util.file_is_ignored = function(filepath, ignore_patters)
   return is_ignored
 end
 
-util.fs_stat = function(path)
-  local stat = path and uv.fs_stat(path) or nil
-  local res = {}
-  res.exists = stat and true or false -- TODO: this is silly
-  res.isdirectory = (stat and stat.type == "directory") and true or false
-
-  return res
+util.path_exists = function(path)
+  return Path:new(path):exists()
 end
 
 util.path_invalid = function(path)
-  local stat = util.fs_stat(path)
-  if stat == {} or stat.isdirectory then
-    return true
-  end
-  return false
+  local p = Path:new(path)
+  return not p:is_file()
 end
 
 util.confirm_deletion = function (num_of_entries)
@@ -69,9 +61,8 @@ end
 
 ---Wrappe around Path:new():make_relative
 ---@return string
----@FIXME: errors out, path is nil
-util.path_make_relative = function (path, cwd)
-  return Path:new(cwd..path):make_relative()
+util.path_make_relative = function (cwd, path)
+  return Path:new(path):make_relative(cwd)
 end
 
 ---Given a filename, check if there's a buffer with the given name.
@@ -102,7 +93,7 @@ util.include_unindexed = function (files, ws_path)
   -- TODO: make filters handle mulitple directories
   local unindexed_files = require("plenary.scandir").scan_dir(ws_path, scan_opts)
   for _, file in pairs(unindexed_files) do
-    if not util.file_is_ignored(file) then -- this causes some slowdown on large dirs
+    if not util.path_is_ignored(file) then -- this causes some slowdown on large dirs
       table.insert(files, { id = 0, path = file, count = 0, directory_id = 0 })
     end
   end

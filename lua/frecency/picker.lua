@@ -148,7 +148,7 @@ M.maker = function(entry)
     if M.active_filter and M.active_filter_tag == "LSP" then
       width = #(utils.path_tail(M.active_filter)) + 1
     elseif M.active_filter then
-      width = #(Path:new(M.active_filter):make_relative(os_home)) + 1
+      width = #(util.path_make_relative(os_home, M.active_filter)) + 1
     end
     table.insert(items, { width = width })
   end
@@ -185,7 +185,7 @@ M.display_items = function(e)
       if M.active_filter_tag == "LSP" or M.active_filter_tag == "CWD" then
         return ts_util.path_tail(M.active_filter) .. os_path_sep
       elseif M.active_filter then
-        return Path:new(M.active_filter):make_relative(os_home) .. os_path_sep
+        return util.path_make_relative(os_home, M.active_filter) .. os_path_sep
       else
         return ""
       end
@@ -212,12 +212,12 @@ M.file_format = function(filename)
   local original_filename = filename
 
   if M.active_filter then
-    filename = Path:new(filename):make_relative(M.active_filter)
+    filename = util.path_make_relative(M.active_filter, filename)
   else
-    filename = Path:new(filename):make_relative(M.cwd)
+    filename = util.path_make_relative(M.cwd, filename)
     -- check relative to home/current
     if vim.startswith(filename, os_home) then
-      filename = "~/" .. Path:new(filename):make_relative(os_home)
+      filename = "~/" .. util.path_make_relative(os_home, filename)
     elseif filename ~= original_filename then
       filename = "./" .. filename
     end

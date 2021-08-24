@@ -146,7 +146,8 @@ db.validate = function(safe_mode)
   safe_mode = vim.F.if_nil(safe_mode, false)
   local threshold = const.db_remove_safety_threshold
   local unlinked = db.files.map(function(entry)
-    return (not util.fs_stat(entry.path).exists or util.file_is_ignored(entry.path)) and entry or nil
+    local invalid = (not util.path_exists(entry.path) or util.path_is_ignored(entry.path, ignore_patterns))
+    return invalid and entry or nil
   end)
 
   local confirmed = (#unlinked > threshold and safe_mode) and util.confirm_deletion(#unlinked) or not safe_mode
@@ -165,7 +166,7 @@ end
 db.register = function()
   local path = vim.fn.expand "%:p"
   local registered = vim.b.telescope_frecency_registered
-  local skip = (not registered and (util.fs_stat(path).exists or util.file_is_ignored(path)))
+  local skip = (not registered and (util.path_exists(path) or util.path_is_ignored(path)))
   if skip or util.string_isempty(path) then
     return
   else
