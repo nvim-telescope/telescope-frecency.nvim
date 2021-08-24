@@ -55,7 +55,6 @@ M.config = {
 ---@param config FrecencyConfig
 M.setup = function(db, config)
   M.db = db
-  M.db.set_config(config)
   M.config = vim.tbl_extend("keep", config, M.config)
 end
 

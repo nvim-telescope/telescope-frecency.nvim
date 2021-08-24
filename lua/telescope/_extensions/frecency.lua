@@ -11,6 +11,7 @@ local db = require "frecency.db"
 local picker = require "frecency.picker"
 
 p.setup = function(ext_config)
+  db.set_config(ext_config)
   picker.setup(db, ext_config)
   vim.cmd [[
     augroup TelescopeFrecency
