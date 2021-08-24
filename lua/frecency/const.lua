@@ -13,5 +13,7 @@ return {
   ignore_patterns = {
     "*.git/*",
     "*/tmp/*",
+    "term://*",
+    "octo://*",
   },
 }
