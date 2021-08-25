@@ -16,6 +16,7 @@ local db = sql {
   timestamps = { id = true, timestamp = "real", file_id = "integer" },
 }
 
+local fs, ts = db.files, db.timestamps
 ---@class FrecencyDBConfig
 ---@field db_root string: default "${stdpath.data}/file_frecency.sqlite3"
 ---@field ignore_patterns table: extra ignore patterns: default empty
@@ -45,11 +46,11 @@ db.init = function()
   db.is_initialized = true
 
   ---Seed files table with oldfiles when it's empty.
-  if db.files.count() == 0 then
+  if fs.count() == 0 then
     -- TODO: this needs to be scheduled for after shada load??
     local oldfiles = vim.api.nvim_get_vvar "oldfiles"
     for _, path in ipairs(oldfiles) do
-      db.files.insert { path = path, count = 0 } -- TODO: remove when sql.nvim#97 is closed
+      fs.insert { path = path, count = 0 } -- TODO: remove when sql.nvim#97 is closed
     end
     print(("Telescope-Frecency: Imported %d entries from oldfiles."):format(#oldfiles))
   end
@@ -62,20 +63,20 @@ end
 ---- { with_age } boolean: whether to include age, default false.
 ---@return table { id, file_id, age }
 ---@overload func()
-db.timestamps.get = function(opts)
+ts.get = function(opts)
   opts = opts or {}
   local where = opts.file_id and { file_id = opts.file_id } or nil
   local compute_age = opts.with_age and s.cast((s.julianday() - s.julianday "timestamp") * 24 * 60, "integer") or nil
-  return db.timestamps._get { where = where, keys = { age = compute_age, "id", "file_id" } }
+  return ts._get { where = where, keys = { age = compute_age, "id", "file_id" } }
 end
 
 ---Trim database entries
 ---@param file_id any
-db.timestamps.trim = function(file_id)
-  local timestamps = db.timestamps.get { file_id = file_id, with_age = true }
+ts.trim = function(file_id)
+  local timestamps = ts.get { file_id = file_id, with_age = true }
   local trim_at = timestamps[(#timestamps - const.max_timestamps) + 1]
   if trim_at then
-    db.timestamps.remove { file_id = file_id, id = "<" .. trim_at.id }
+    ts.remove { file_id = file_id, id = "<" .. trim_at.id }
   end
 end
 
@@ -86,15 +87,15 @@ end
 ---- { with_score } boolean: whether to include score in the result and sort the files by score.
 ---@overload func()
 ---@return table[]: files entries
-db.files.get = function(opts)
+fs.get = function(opts)
   opts = opts or {}
   local contains = opts.ws_path and { path = { opts.ws_path .. "*" } } or nil
-  local files = db.files._get { contains = contains }
+  local files = fs._get { contains = contains }
 
   if opts.with_score then
     ---NOTE: this might get slower with big db, it might be better to query with db.get_timestamp.
     ---TODO: test the above assumption
-    local timestamps = db.timestamps.get { with_age = true }
+    local timestamps = ts.get { with_age = true }
     for _, file in ipairs(files) do
       file.timestamps = util.tbl_match("file_id", file.id, timestamps)
       file.score = algo.calculate_file_score(file)
@@ -115,38 +116,38 @@ end
 ---Insert or update a given path
 ---@param path string
 ---@return number: row id
-db.files.insert_or_update = function(path)
-  local entry = (db.files.where { path = path } or {})
+fs.insert_or_update = function(path)
+  local entry = (fs.where { path = path } or {})
   local file_id = entry.id
 
   if file_id then
-    db.files.update { where = { id = file_id }, set = { count = entry.count + 1 } }
+    fs.update { where = { id = file_id }, set = { count = entry.count + 1 } }
   else
-    file_id = db.files.insert { path = path, count = 0 } -- TODO: remove when sql.nvim#97 is closed
+    file_id = fs.insert { path = path, count = 0 } -- TODO: remove when sql.nvim#97 is closed
   end
 
   return file_id
 end
 
--- db.files.insert_or_update ""
 ---Add or update file path
 ---@param path string|nil: path to file or use current
 ---@overload func()
 db.update = function(path)
   path = path or vim.fn.expand "%:p"
-  vim.b.telescope_frecency_registered = false
   if vim.b.telescope_frecency_registered or util.path_invalid(path, db.ignore_patterns) then
     print "ignoring autocmd"
     return
+  else
+    vim.b.telescope_frecency_registered = 1
   end
   -- In case that it isn't initialize yet
   db.init()
   --- Insert or update path
-  local file_id = db.files.insert_or_update(path)
+  local file_id = fs.insert_or_update(path)
   --- Register timestamp for this update.
-  db.timestamps.insert { file_id = file_id, timestamp = s.julianday "now" }
+  ts.insert { file_id = file_id, timestamp = s.julianday "now" }
   --- Trim timestamps to max_timestamps per file
-  db.timestamps.trim(file_id)
+  ts.trim(file_id)
 end
 
 ---Remove unlinked file entries, along with timestamps linking to it.
@@ -154,9 +155,9 @@ end
 ---@param silent boolean: whether to notify user on changes made, default false
 db.remove = function(entries, silent)
   if type(entries) == "nil" then
-    local count = db.files.count()
-    db.files.remove()
-    db.timestamps.remove()
+    local count = fs.count()
+    fs.remove()
+    ts.remove()
     if not vim.F.if_nil(silent, false) then
       print(("Telescope-frecency: removed all entries. number of entries removed %d ."):format(count))
     end
@@ -165,8 +166,8 @@ db.remove = function(entries, silent)
 
   entries = (entries[1] and entries[1].id) and entries or { entries }
   for _, entry in pairs(entries) do
-    db.files.remove { id = entry.id }
-    db.timestamps.remove { file_id = entry.id }
+    fs.remove { id = entry.id }
+    ts.remove { file_id = entry.id }
   end
 
   if not vim.F.if_nil(silent, false) then
@@ -178,7 +179,7 @@ end
 db.validate = function()
   print "running validate"
   local threshold = const.db_remove_safety_threshold
-  local unlinked = db.files.map(function(entry)
+  local unlinked = fs.map(function(entry)
     local invalid = (not util.path_exists(entry.path) or util.path_is_ignored(entry.path, db.ignore_patterns))
     return invalid and entry or nil
   end)

@@ -17,7 +17,7 @@ M.setup = function(ext_config)
   vim.cmd [[
   augroup TelescopeFrecency
     autocmd!
-    autocmd BufWinEnter,BufWritePost * lua require'frecency.db'.register()
+    autocmd BufWinEnter,BufWritePost * lua require'frecency.db'.update()
   augroup END
   ]]
 end
