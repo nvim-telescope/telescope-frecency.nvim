@@ -165,11 +165,11 @@ end
 ---@return function
 m.maker = function(entry)
   local filter_column_width = (function()
-    if m.active_filter and m.active_filter_tag == "LSP" then
-      -- TODO: Only add +1 if m.show_filter_thing is true, +1 is for the trailing slash
-      return #(ts_util.path_tail(m.active_filter)) + 1
-    elseif m.active_filter then
-      return #(Path:new(m.active_filter):make_relative(os_home)) - 30
+    -- TODO: Only add +1 if m.show_filter_thing is true, +1 is for the trailing slash
+    if m.active_filter then
+      return m.active_filter_tag == "LSP" and #(ts_util.path_tail(m.active_filter)) + 1 or #(Path
+        :new(m.active_filter)
+        :make_relative(os_home)) - 30
     else
       return 0
     end
@@ -214,7 +214,10 @@ m.maker = function(entry)
           table.insert(i, { devicons.get_icon(e.name, string.match(e.name, "%a+$"), { default = true }) })
           -- ts_util.transform_devicons(e.path, m.path_format(e.path), m.config.disable_devicons),
         end
-        table.insert(i, { m.path_format(e.name, m.opts), util.buf_is_loaded(e.name) and "TelescopeBufferLoaded" or "" })
+        table.insert(i, {
+          m.path_format(e.name, m.opts),
+          util.buf_is_loaded(e.name) and "TelescopeBufferLoaded" or "",
+        })
         return i
       end)())
     end,

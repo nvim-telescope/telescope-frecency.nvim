@@ -69,7 +69,7 @@ end
 
 ---Wrappe around Path:new():make_relative
 ---@return string
-util.path_make_relative = function (cwd, path)
+util.path_relative = function (path, cwd)
   return Path:new(path):make_relative(cwd)
 end
 
@@ -89,7 +89,9 @@ util.buf_set = function(opts)
   for k, lhs in pairs(opts.mappings) do
     if k ~= "expr" then
       local rhs = vim.split(k, "|")
-      vim.api.nvim_buf_set_keymap(bufnr, rhs[1], rhs[2], lhs, { expr = opts.expr, noremap = true })
+      vim.api.nvim_buf_set_keymap(bufnr, rhs[1], rhs[2], lhs, {
+        expr = opts.mappings.expr, noremap = true
+      })
     end
   end
 end
