@@ -92,7 +92,7 @@ fs.get = function(opts)
   local contains = opts.ws_path and { path = { opts.ws_path .. "*" } } or nil
   local files = fs._get { contains = contains }
 
-  if opts.with_score then
+  if vim.F.if_nil(opts.with_score, true) then
     ---NOTE: this might get slower with big db, it might be better to query with db.get_timestamp.
     ---TODO: test the above assumption
     local timestamps = ts.get { with_age = true }
@@ -156,8 +156,9 @@ end
 db.remove = function(entries, silent)
   if type(entries) == "nil" then
     local count = fs.count()
-    fs.remove()
-    ts.remove()
+    for _, t in ipairs { fs, ts } do
+      t.remove()
+    end
     if not vim.F.if_nil(silent, false) then
       print(("Telescope-frecency: removed all entries. number of entries removed %d ."):format(count))
     end

@@ -5,35 +5,31 @@ local telescope = (function()
   end
   return m
 end)()
-local M = {}
 
-local db = require "frecency.db"
 local picker = require "frecency.picker"
 
-M.setup = function(ext_config)
-  db.set_config(ext_config)
-  picker.setup(db, ext_config)
-  -- TODO: perhaps ignore buffer without file path here?
-  vim.cmd [[
-  augroup TelescopeFrecency
-    autocmd!
-    autocmd BufWinEnter,BufWritePost * lua require'frecency.db'.update()
-  augroup END
-  ]]
-end
+return telescope.register_extension {
+  setup = function(config)
+    picker.setup(config)
 
-M.health = function()
-  if ({ pcall(require, "sql") })[1] then
-    vim.fn["health#report_ok"] "sql.nvim installed."
-  else
-    vim.fn["health#report_error"] "sql.nvim is required for telescope-frecency.nvim to work."
-  end
-end
-
-M.exports = {
-  frecency = picker.fd,
-  get_workspace_tags = picker.workspace_tags, --TODO: what is the use case for this?
-  validate_db = db.validate,
+    -- TODO: perhaps ignore buffer without file path here?
+    vim.cmd [[
+    augroup TelescopeFrecency
+      autocmd!
+      autocmd BufWinEnter,BufWritePost * lua require'frecency.db'.update()
+    augroup END
+    ]]
+  end,
+  health = function()
+    if ({ pcall(require, "sql") })[1] then
+      vim.fn["health#report_ok"] "sql.nvim installed."
+    else
+      vim.fn["health#report_error"] "sql.nvim is required for telescope-frecency.nvim to work."
+    end
+  end,
+  exports = {
+    frecency = picker.fd,
+    get_workspace_tags = picker.workspace_tags, --TODO: what is the use case for this?
+    validate_db = require("frecency.db").validate,
+  },
 }
-
-return telescope.register_extension(M)
