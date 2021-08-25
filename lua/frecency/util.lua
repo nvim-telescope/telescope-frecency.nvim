@@ -20,7 +20,7 @@ util.filemask = function(mask)
   return "^" .. mask:gsub("%%%*", ".*"):gsub("%%%?", ".") .. "$"
 end
 
-util.path_is_ignore = function(filepath, ignore_patters)
+util.path_is_ignored = function(filepath, ignore_patters)
   local i = ignore_patters and vim.tbl_flatten({ ignore_patters, const.ignore_patterns }) or const.ignore_patterns
   local is_ignored = false
   for _, pattern in ipairs(i) do
@@ -38,9 +38,17 @@ util.path_exists = function(path)
   return Path:new(path):exists()
 end
 
-util.path_invalid = function(path)
+util.path_invalid = function(path, ignore_patterns)
   local p = Path:new(path)
-  return not p:is_file()
+  if
+    util.string_isempty(path)
+    or (not p:is_file())
+    or (not p:exists())
+    or util.path_is_ignored(path, ignore_patterns) then
+    return true
+  else
+    return false
+  end
 end
 
 util.confirm_deletion = function (num_of_entries)

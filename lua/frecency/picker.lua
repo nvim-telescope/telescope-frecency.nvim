@@ -127,7 +127,11 @@ M.update_results = function(filter)
   end
 
   if vim.tbl_isempty(M.results) or filter_updated then
-    M.results = M.db.get_files { ws_dir = ws_dir, show_unindexed = M.config.show_unindexed, with_score = true }
+    M.results = M.db.files.get {
+      ws_dir = ws_dir,
+      show_unindexed = M.config.show_unindexed,
+      with_score = true,
+    }
   end
   return filter_updated
 end
