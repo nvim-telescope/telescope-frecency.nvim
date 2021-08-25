@@ -88,50 +88,6 @@ m.update = function(filter)
   return filter_updated
 end
 
----Find files
----@param opts table: telescope picker opts
-m.fd = function(opts)
-  opts = opts or {}
-  m.previous_buffer, m.cwd, m.opts = vim.fn.bufnr "%", vim.fn.expand(opts.cwd or vim.loop.cwd()), opts
-  m.update()
-
-  local p = {
-    prompt_title = "Frecency",
-    finder = finders.new_table { results = m.results, entry_maker = m.maker },
-    previewer = conf.file_previewer(opts),
-    sorter = sorters.get_substr_matcher(opts),
-  }
-
-  p.on_input_filter_cb = function(query_text)
-    local o = {}
-    local delim = m.config.filter_delimiter or ":" -- check for :filter: in query text
-    local matched, new_filter = query_text:match("^%s*(" .. delim .. "(%S+)" .. delim .. ")")
-
-    o.prompt = matched and query_text:sub(matched:len() + 1) or query_text
-    if m.update(new_filter) then
-      m.last_filter = new_filter
-      o.updated_finder = finders.new_table { results = m.results, entry_maker = m.maker }
-    end
-
-    return o
-  end
-
-  p.attach_mappings = function(prompt_bufnr)
-    actions.select_default:replace_if(function()
-      return vim.fn.complete_info().pum_visible == 1
-    end, function()
-      local keys = vim.fn.complete_info().selected == -1 and "<C-e><Bs><Right>" or "<C-y><Right>:"
-      local accept_completion = vim.api.nvim_replace_termcodes(keys, true, false, true)
-      vim.api.nvim_feedkeys(accept_completion, "n", true)
-    end)
-    return true
-  end
-
-  m.picker = pickers.new(opts, p)
-  m.picker:find()
-  m.set_buf()
-end
-
 ---Format filename. Mainly os_home to {~/} or current to {./}
 ---@param filename string
 ---@TODO: use telescope.path_display configuration options
@@ -222,6 +178,50 @@ m.maker = function(entry)
       end)())
     end,
   }
+end
+
+---Find files
+---@param opts table: telescope picker opts
+m.fd = function(opts)
+  opts = opts or {}
+  m.previous_buffer, m.cwd, m.opts = vim.fn.bufnr "%", vim.fn.expand(opts.cwd or vim.loop.cwd()), opts
+  m.update()
+
+  local p = {
+    prompt_title = "Frecency",
+    finder = finders.new_table { results = m.results, entry_maker = m.maker },
+    previewer = conf.file_previewer(opts),
+    sorter = sorters.get_substr_matcher(opts),
+  }
+
+  p.on_input_filter_cb = function(query_text)
+    local o = {}
+    local delim = m.config.filter_delimiter or ":" -- check for :filter: in query text
+    local matched, new_filter = query_text:match("^%s*(" .. delim .. "(%S+)" .. delim .. ")")
+
+    o.prompt = matched and query_text:sub(matched:len() + 1) or query_text
+    if m.update(new_filter) then
+      m.last_filter = new_filter
+      o.updated_finder = finders.new_table { results = m.results, entry_maker = m.maker }
+    end
+
+    return o
+  end
+
+  p.attach_mappings = function(prompt_bufnr)
+    actions.select_default:replace_if(function()
+      return vim.fn.complete_info().pum_visible == 1
+    end, function()
+      local keys = vim.fn.complete_info().selected == -1 and "<C-e><Bs><Right>" or "<C-y><Right>:"
+      local accept_completion = vim.api.nvim_replace_termcodes(keys, true, false, true)
+      vim.api.nvim_feedkeys(accept_completion, "n", true)
+    end)
+    return true
+  end
+
+  m.picker = pickers.new(opts, p)
+  m.picker:find()
+  m.set_buf()
 end
 
 ---TODO: this seems to be forgotten and just exported in old implementation.
