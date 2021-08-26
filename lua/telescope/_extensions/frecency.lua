@@ -9,17 +9,7 @@ end)()
 local picker = require "frecency.picker"
 
 return telescope.register_extension {
-  setup = function(config)
-    picker.setup(config)
-
-    -- TODO: perhaps ignore buffer without file path here?
-    vim.cmd [[
-    augroup TelescopeFrecency
-      autocmd!
-      autocmd BufWinEnter,BufWritePost * lua require'frecency.db'.update()
-    augroup END
-    ]]
-  end,
+  setup = picker.setup,
   health = function()
     if ({ pcall(require, "sql") })[1] then
       vim.fn["health#report_ok"] "sql.nvim installed."

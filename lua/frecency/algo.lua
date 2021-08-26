@@ -1,7 +1,7 @@
-local const = require("frecency.const")
+local const = require "frecency.const"
 local algo = {}
 
-algo.calculate_file_score = function (file)
+algo.calculate_file_score = function(file)
   if not file.count or file.count == 0 then
     return 0
   end

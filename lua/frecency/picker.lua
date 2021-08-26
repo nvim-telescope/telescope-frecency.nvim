@@ -1,13 +1,12 @@
 local has_devicons, devicons = pcall(require, "nvim-web-devicons")
-local Path = require "plenary.path"
+local p = require "plenary.path"
 local util = require "frecency.util"
 local os_home = vim.loop.os_homedir()
-local os_path_sep = Path.path.sep
+local os_path_sep = p.path.sep
 local actions = require "telescope.actions"
 local conf = require("telescope.config").values
 local entry_display = require "telescope.pickers.entry_display"
 local finders = require "telescope.finders"
-local Path = require "plenary.path"
 local pickers = require "telescope.pickers"
 local sorters = require "telescope.sorters"
 local ts_util = require "telescope.utils"
@@ -93,7 +92,7 @@ end
 ---@TODO: use telescope.path_display configuration options
 ---@return string
 m.path_format = function(filename)
-  filename = Path:new(filename)
+  filename = p:new(filename)
   local original_filename = filename
 
   if m.active_filter then
@@ -101,7 +100,7 @@ m.path_format = function(filename)
   else
     filename = filename:make_relative(m.cwd)
     if vim.startswith(filename, os_home) then -- check relative to home/current
-      filename = "~/" .. Path:new(filename):make_relative(os_home)
+      filename = "~/" .. p:new(filename):make_relative(os_home)
     elseif filename ~= original_filename then
       filename = "./" .. filename
     end
@@ -110,7 +109,7 @@ m.path_format = function(filename)
   if m.opts.tail_path then
     filename = ts_util.path_tail(filename)
   elseif m.opts.shorten_path then
-    filename = Path:new(filename).shorten()
+    filename = p:new(filename).shorten()
   end
 
   return filename
@@ -123,7 +122,7 @@ m.maker = function(entry)
   local filter_column_width = (function()
     -- TODO: Only add +1 if m.show_filter_thing is true, +1 is for the trailing slash
     if m.active_filter then
-      return m.active_filter_tag == "LSP" and #(ts_util.path_tail(m.active_filter)) + 1 or #(Path
+      return m.active_filter_tag == "LSP" and #(ts_util.path_tail(m.active_filter)) + 1 or #(p
         :new(m.active_filter)
         :make_relative(os_home)) - 30
     else
@@ -151,7 +150,7 @@ m.maker = function(entry)
     if m.active_filter_tag == "LSP" or m.active_filter_tag == "CWD" then
       return ts_util.path_tail(m.active_filter) .. os_path_sep
     elseif m.active_filter then
-      return Path:new(m.active_filter):make_relative(os_home) .. os_path_sep
+      return p:new(m.active_filter):make_relative(os_home) .. os_path_sep
     else
       return ""
     end
@@ -256,8 +255,26 @@ end
 ---@param db FrecencyDB
 ---@param config FrecencyConfig
 m.setup = function(config)
-  db.set_config(config)
   m.config = vim.tbl_extend("keep", config, m.config)
+  db.set_config(config)
+
+  --- Seed files table with oldfiles when it's empty.
+  if not p:new(db.db.uri):exists() then
+    -- TODO: this needs to be scheduled for after shada load??
+    local oldfiles = vim.api.nvim_get_vvar "oldfiles"
+    for _, path in ipairs(oldfiles) do
+      fs.insert { path = path, count = 0 } -- TODO: remove when sql.nvim#97 is closed
+    end
+    print(("Telescope-Frecency: Imported %d entries from oldfiles."):format(#oldfiles))
+  end
+
+  -- TODO: perhaps ignore buffer without file path here?
+  vim.cmd [[
+    augroup TelescopeFrecency
+      autocmd!
+      autocmd BufWinEnter,BufWritePost * lua require'frecency.db'.update()
+    augroup END
+    ]]
 end
 
 return m

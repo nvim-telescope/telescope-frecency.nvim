@@ -33,27 +33,7 @@ db.config = {
 ---@param config FrecencyDBConfig
 db.set_config = function(config)
   db.config = vim.tbl_extend("keep", config, db.config)
-end
-
----Initialize frecency Database. if { db.is_initialized } then skip return early.
----@return FrecencyDB
-db.init = function()
-  if db.is_initialized then
-    return
-  end
-
   db.db.uri = db.config.db_root and db.config.db_root or db.db.uri
-  db.is_initialized = true
-
-  ---Seed files table with oldfiles when it's empty.
-  if fs.count() == 0 then
-    -- TODO: this needs to be scheduled for after shada load??
-    local oldfiles = vim.api.nvim_get_vvar "oldfiles"
-    for _, path in ipairs(oldfiles) do
-      fs.insert { path = path, count = 0 } -- TODO: remove when sql.nvim#97 is closed
-    end
-    print(("Telescope-Frecency: Imported %d entries from oldfiles."):format(#oldfiles))
-  end
 end
 
 ---Get timestamps with a computed filed called age.
@@ -140,8 +120,6 @@ db.update = function(path)
   else
     vim.b.telescope_frecency_registered = 1
   end
-  -- In case that it isn't initialize yet
-  db.init()
   --- Insert or update path
   local file_id = fs.insert_or_update(path)
   --- Register timestamp for this update.
