@@ -12,11 +12,20 @@ local s = sql.lib
 ---@field config FrecencyConfig
 local db = sql {
   uri = vim.fn.stdpath "data" .. "/file_frecency.sqlite3",
-  files = { id = true, count = { "integer" }, path = "string" },
-  timestamps = { id = true, timestamp = "real", file_id = "integer" },
+  files = {
+    id = true,
+    count = { "integer", default = 0, required = true },
+    path = "string",
+  },
+  timestamps = {
+    id = true,
+    timestamp = "real",
+    file_id = { "integer", reference = "files.id", on_delete = "cascade" },
+  },
 }
 
 local fs, ts = db.files, db.timestamps
+
 ---@class FrecencyDBConfig
 ---@field db_root string: default "${stdpath.data}/file_frecency.sqlite3"
 ---@field ignore_patterns table: extra ignore patterns: default empty
@@ -103,9 +112,8 @@ fs.insert_or_update = function(path)
   if file_id then
     fs.update { where = { id = file_id }, set = { count = entry.count + 1 } }
   else
-    file_id = fs.insert { path = path, count = 0 } -- TODO: remove when sql.nvim#97 is closed
+    file_id = fs.insert { path = path }
   end
-
   return file_id
 end
 
@@ -115,7 +123,7 @@ end
 db.update = function(path)
   path = path or vim.fn.expand "%:p"
   if vim.b.telescope_frecency_registered or util.path_invalid(path, db.ignore_patterns) then
-    print "ignoring autocmd"
+    -- print "ignoring autocmd"
     return
   else
     vim.b.telescope_frecency_registered = 1
@@ -134,9 +142,7 @@ end
 db.remove = function(entries, silent)
   if type(entries) == "nil" then
     local count = fs.count()
-    for _, t in ipairs { fs, ts } do
-      t.remove()
-    end
+    fs.remove()
     if not vim.F.if_nil(silent, false) then
       print(("Telescope-frecency: removed all entries. number of entries removed %d ."):format(count))
     end
@@ -144,9 +150,9 @@ db.remove = function(entries, silent)
   end
 
   entries = (entries[1] and entries[1].id) and entries or { entries }
+
   for _, entry in pairs(entries) do
     fs.remove { id = entry.id }
-    ts.remove { file_id = entry.id }
   end
 
   if not vim.F.if_nil(silent, false) then
@@ -156,7 +162,7 @@ end
 
 ---Remove file entries that no longer exists.
 db.validate = function()
-  print "running validate"
+  -- print "running validate"
   local threshold = const.db_remove_safety_threshold
   local unlinked = fs.map(function(entry)
     local invalid = (not util.path_exists(entry.path) or util.path_is_ignored(entry.path, db.ignore_patterns))
