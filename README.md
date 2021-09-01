@@ -23,11 +23,11 @@ The score is calculated using the age of the 10 most recent timestamps and the t
 | Timestamp age | Value |
 | -------- | ---------- |
 | 4 hours  | 100        |
-| 1 day    | 80         | 
-| 3 days   | 60         | 
-| 1 week   | 40         | 
-| 1 month  | 20         | 
-| 90 days  | 10         | 
+| 1 day    | 80         |
+| 3 days   | 60         |
+| 1 week   | 40         |
+| 1 month  | 20         |
+| 90 days  | 10         |
 
 ### Score calculation
 
@@ -59,22 +59,22 @@ If the active buffer (prior to the finder being launched) is attached to an LSP 
 ## Requirements
 
 - [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) (required)
-- [sql.nvim](https://github.com/tami5/sql.nvim) (required)
+- [sqlite.lua](https://github.com/tami5/sqlite.lua) (required)
 - [nvim-web-devicons](https://github.com/kyazdani42/nvim-web-devicons) (optional)
 
 Timestamps and file records are stored in an [SQLite3](https://www.sqlite.org/index.html) database for persistence and speed.
-This plugin uses `sql.nvim` to perform the database transactions.
+This plugin uses `sqlite.lua` to perform the database transactions.
 
 ## Installation
 
-### [Packer.nvim](https://github.com/wbthomason/packer.nvim) 
+### [Packer.nvim](https://github.com/wbthomason/packer.nvim)
 
 ```lua
 use {
   "nvim-telescope/telescope-frecency.nvim",
   config = function()
     require"telescope".load_extension("frecency"),
-    requires = {"tami5/sql.nvim"}
+    requires = {"tami5/sqlite.lua"}
   end
 }
 ```
