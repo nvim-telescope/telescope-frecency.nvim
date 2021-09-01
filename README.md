@@ -73,9 +73,9 @@ This plugin uses `sqlite.lua` to perform the database transactions.
 use {
   "nvim-telescope/telescope-frecency.nvim",
   config = function()
-    require"telescope".load_extension("frecency"),
-    requires = {"tami5/sqlite.lua"}
-  end
+    require"telescope".load_extension("frecency")
+  end,
+  requires = {"tami5/sqlite.lua"}
 }
 ```
 
