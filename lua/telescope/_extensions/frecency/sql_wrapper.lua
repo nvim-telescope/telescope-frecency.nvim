@@ -1,9 +1,9 @@
 local util    = require("telescope._extensions.frecency.util")
 local vim     = vim
 
-local has_sql, sql = pcall(require, "sql")
-if not has_sql then
-  error("This plugin requires sql.nvim (https://github.com/tami5/sql.nvim)")
+local has_sqlite, sqlite = pcall(require, "sqlite")
+if not has_sqlite then
+  error("This plugin requires sqlite.lua (https://github.com/tami5/sqlite.lua) " .. tostring(sqlite))
 end
 
 -- TODO: pass in max_timestamps from db.lua
@@ -43,7 +43,7 @@ function M:bootstrap(db_root)
   -- create the db if it doesn't exist
   db_root = db_root or vim.fn.stdpath('data')
   local db_filename = db_root .. "/file_frecency.sqlite3"
-  self.db = sql:open(db_filename)
+  self.db = sqlite:open(db_filename)
   if not self.db then
     print("error")
     return
