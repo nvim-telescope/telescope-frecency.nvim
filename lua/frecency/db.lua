@@ -1,16 +1,16 @@
 local util = require "frecency.util"
 local const = require "frecency.const"
 local algo = require "frecency.algo"
-local sql = require "sql"
+local sqlite = require "sqlite"
 local p = require "plenary.path"
-local s = sql.lib
+local s = sqlite.lib
 
----@class FrecencyDB: SQLDatabaseExt
----@field files SQLTableExt
----@field timestamps SQLTableExt
----@field workspaces SQLTableExt
+---@class FrecencyDB: sqlite_db
+---@field files sqlite_tbl
+---@field timestamps sqlite_tbl
+---@field workspaces sqlite_tbl
 ---@field config FrecencyConfig
-local db = sql {
+local db = sqlite {
   uri = vim.fn.stdpath "data" .. "/file_frecency.sqlite3",
   files = {
     id = true,
@@ -19,7 +19,7 @@ local db = sql {
   },
   timestamps = {
     id = true,
-    timestamp = "real",
+    timestamp = { "real", default = s.julianday "now" },
     file_id = { "integer", reference = "files.id", on_delete = "cascade" },
   },
 }
@@ -52,20 +52,20 @@ end
 ---- { with_age } boolean: whether to include age, default false.
 ---@return table { id, file_id, age }
 ---@overload func()
-ts.get = function(opts)
+function ts:get(opts)
   opts = opts or {}
   local where = opts.file_id and { file_id = opts.file_id } or nil
   local compute_age = opts.with_age and s.cast((s.julianday() - s.julianday "timestamp") * 24 * 60, "integer") or nil
-  return ts._get { where = where, keys = { age = compute_age, "id", "file_id" } }
+  return ts:__get { where = where, keys = { age = compute_age, "id", "file_id" } }
 end
 
 ---Trim database entries
 ---@param file_id any
-ts.trim = function(file_id)
-  local timestamps = ts.get { file_id = file_id, with_age = true }
+function ts:trim(file_id)
+  local timestamps = ts:get { file_id = file_id, with_age = true }
   local trim_at = timestamps[(#timestamps - const.max_timestamps) + 1]
   if trim_at then
-    ts.remove { file_id = file_id, id = "<" .. trim_at.id }
+    ts:remove { file_id = file_id, id = "<" .. trim_at.id }
   end
 end
 
@@ -76,15 +76,15 @@ end
 ---- { with_score } boolean: whether to include score in the result and sort the files by score.
 ---@overload func()
 ---@return table[]: files entries
-fs.get = function(opts)
+function fs:get(opts)
   opts = opts or {}
   local contains = opts.ws_path and { path = { opts.ws_path .. "*" } } or nil
-  local files = fs._get { contains = contains }
+  local files = fs:__get { contains = contains }
 
   if vim.F.if_nil(opts.with_score, true) then
     ---NOTE: this might get slower with big db, it might be better to query with db.get_timestamp.
     ---TODO: test the above assumption
-    local timestamps = ts.get { with_age = true }
+    local timestamps = ts:get { with_age = true }
     for _, file in ipairs(files) do
       file.timestamps = util.tbl_match("file_id", file.id, timestamps)
       file.score = algo.calculate_file_score(file)
@@ -101,18 +101,17 @@ fs.get = function(opts)
 
   return files
 end
-
 ---Insert or update a given path
 ---@param path string
 ---@return number: row id
-fs.insert_or_update = function(path)
-  local entry = (fs.where { path = path } or {})
+function fs:insert_or_update(path)
+  local entry = (self:where { path = path } or {})
   local file_id = entry.id
 
   if file_id then
-    fs.update { where = { id = file_id }, set = { count = entry.count + 1 } }
+    self:update { where = { id = file_id }, set = { count = entry.count + 1 } }
   else
-    file_id = fs.insert { path = path }
+    file_id = self:insert { path = path }
   end
   return file_id
 end
@@ -120,7 +119,7 @@ end
 ---Add or update file path
 ---@param path string|nil: path to file or use current
 ---@overload func()
-db.update = function(path)
+function db.update(path)
   path = path or vim.fn.expand "%:p"
   if vim.b.telescope_frecency_registered or util.path_invalid(path, db.ignore_patterns) then
     -- print "ignoring autocmd"
@@ -129,20 +128,20 @@ db.update = function(path)
     vim.b.telescope_frecency_registered = 1
   end
   --- Insert or update path
-  local file_id = fs.insert_or_update(path)
+  local file_id = fs:insert_or_update(path)
   --- Register timestamp for this update.
-  ts.insert { file_id = file_id, timestamp = s.julianday "now" }
+  ts:insert { file_id = file_id }
   --- Trim timestamps to max_timestamps per file
-  ts.trim(file_id)
+  ts:trim(file_id)
 end
 
 ---Remove unlinked file entries, along with timestamps linking to it.
 ---@param entries table[]|table|nil: if nil it will remove all entries
 ---@param silent boolean: whether to notify user on changes made, default false
-db.remove = function(entries, silent)
+function db.remove(entries, silent)
   if type(entries) == "nil" then
-    local count = fs.count()
-    fs.remove()
+    local count = fs:count()
+    fs:remove()
     if not vim.F.if_nil(silent, false) then
       print(("Telescope-frecency: removed all entries. number of entries removed %d ."):format(count))
     end
@@ -152,7 +151,7 @@ db.remove = function(entries, silent)
   entries = (entries[1] and entries[1].id) and entries or { entries }
 
   for _, entry in pairs(entries) do
-    fs.remove { id = entry.id }
+    fs:remove { id = entry.id }
   end
 
   if not vim.F.if_nil(silent, false) then
@@ -161,10 +160,10 @@ db.remove = function(entries, silent)
 end
 
 ---Remove file entries that no longer exists.
-db.validate = function()
+function db.validate()
   -- print "running validate"
   local threshold = const.db_remove_safety_threshold
-  local unlinked = fs.map(function(entry)
+  local unlinked = fs:map(function(entry)
     local invalid = (not util.path_exists(entry.path) or util.path_is_ignored(entry.path, db.ignore_patterns))
     return invalid and entry or nil
   end)
