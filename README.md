@@ -105,6 +105,10 @@ See [default configuration](https://github.com/nvim-telescope/telescope.nvim#tel
   Path to parent directory of custom database location.
   Defaults to `$XDG_DATA_HOME/nvim` if unset.
 
+- `default_workspace` (default: `nil`)
+
+  Default workspace tag to filter by e.g. `'CWD'` to filter by default to the current directory. Can be overridden at query time by specifying another filter like `':*:'`.
+
 - `ignore_patterns` (default: `{"*.git/*", "*/tmp/*"}`)
 
   Patterns in this table control which files are indexed (and subsequently which you'll see in the finder results).
