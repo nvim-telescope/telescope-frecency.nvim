@@ -49,13 +49,7 @@ local function format_filepath(filename, opts)
     end
   end
 
-  if opts.tail_path then
-    filename = utils.path_tail(filename)
-  elseif opts.shorten_path then
-    filename = utils.path_shorten(filename)
-  end
-
-  return filename
+  return utils.transform_path(opts, filename)
 end
 
 local function get_workspace_tags()
