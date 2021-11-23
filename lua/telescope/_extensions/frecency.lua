@@ -29,6 +29,7 @@ local state = {
   previous_buffer = nil,
   cwd = nil,
   show_scores = false,
+  default_workspace = nil,
   user_workspaces = {},
   lsp_workspaces = {},
   picker = {},
@@ -189,6 +190,7 @@ local frecency = function(opts)
       if matched then
         query_text = query_text:sub(matched:len() + 1)
       end
+      new_filter = new_filter or state.default_workspace
 
       local new_finder
       local results_updated = update_results(new_filter)
@@ -274,6 +276,7 @@ return telescope.register_extension {
     set_config_state("show_filter_column", ext_config.show_filter_column, true)
     set_config_state("user_workspaces", ext_config.workspaces, {})
     set_config_state("disable_devicons", ext_config.disable_devicons, false)
+    set_config_state("default_workspace", ext_config.default_workspace, nil)
 
     -- start the database client
     db_client.init(
