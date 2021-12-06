@@ -122,16 +122,19 @@ local frecency = function(opts)
     display_items = state.show_scores and { { entry.score, "TelescopeFrecencyScores" } } or {}
 
     -- TODO: store the column lengths here, rather than recalculating in get_display_cols()
-    -- TODO: only include filter_paths column if opts.show_filter_col is true
-    local filter_path = ""
-    if state.active_filter then
-      if state.active_filter_tag == "LSP" or state.active_filter_tag == "CWD" then
-        filter_path = utils.path_tail(state.active_filter) .. os_path_sep
-      else
-        filter_path = Path:new(state.active_filter):make_relative(os_home) .. os_path_sep
+    if state.show_filter_column then
+      local filter_path = ""
+      if state.active_filter then
+        if state.active_filter_tag == "LSP" or state.active_filter_tag == "CWD" then
+          filter_path = utils.path_tail(state.active_filter) .. os_path_sep
+        else
+          filter_path = Path:new(state.active_filter):make_relative(os_home) .. os_path_sep
+        end
       end
+
+      table.insert(display_items, { filter_path, "Directory" })
     end
-    table.insert(display_items, { filter_path, "Directory" })
+
     if has_devicons and not state.disable_devicons then
       icon, icon_highlight = devicons.get_icon(entry.name, string.match(entry.name, "%a+$"), { default = true })
       table.insert(display_items, { icon, icon_highlight })
