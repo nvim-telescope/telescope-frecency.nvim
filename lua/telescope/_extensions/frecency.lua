@@ -281,12 +281,19 @@ return telescope.register_extension {
     set_config_state("disable_devicons", ext_config.disable_devicons, false)
     set_config_state("default_workspace", ext_config.default_workspace, nil)
 
+    if ext_config.auto_validate == nil then
+        ext_config.auto_validate = true
+    end
+    if ext_config.db_safe_mode == nil then
+        ext_config.db_safe_mode = true
+    end
+
     -- start the database client
     db_client.init(
       ext_config.db_root,
       ext_config.ignore_patterns,
-      ext_config.db_safe_mode or true,
-      ext_config.auto_validate or true
+      ext_config.db_safe_mode,
+      ext_config.auto_validate
     )
   end,
   exports = {
