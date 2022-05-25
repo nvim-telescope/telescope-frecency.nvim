@@ -285,8 +285,8 @@ return telescope.register_extension {
     db_client.init(
       ext_config.db_root,
       ext_config.ignore_patterns,
-      ext_config.db_safe_mode or true,
-      ext_config.auto_validate or true
+      vim.F.if_nil(ext_config.db_safe_mode, true),
+      vim.F.if_nil(ext_config.auto_validate, true)
     )
   end,
   exports = {
