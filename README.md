@@ -59,7 +59,7 @@ If the active buffer (prior to the finder being launched) is attached to an LSP 
 ## Requirements
 
 - [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) (required)
-- [sqlite.lua](https://github.com/tami5/sqlite.lua) (required)
+- [sqlite.lua](https://github.com/kkharji/sqlite.lua) (required)
 - [nvim-web-devicons](https://github.com/kyazdani42/nvim-web-devicons) (optional)
 
 Timestamps and file records are stored in an [SQLite3](https://www.sqlite.org/index.html) database for persistence and speed.
@@ -75,7 +75,7 @@ use {
   config = function()
     require"telescope".load_extension("frecency")
   end,
-  requires = {"tami5/sqlite.lua"}
+  requires = {"kkharji/sqlite.lua"}
 }
 ```
 
