@@ -262,7 +262,7 @@ local health_ok = vim.fn["health#report_ok"]
 local health_error = vim.fn["health#report_error"]
 
 local function checkhealth()
-  local has_sql, _ = pcall(require, "sql")
+  local has_sql, _ = pcall(require, "sqlite")
   if has_sql then
     health_ok "sql.nvim installed."
     -- return "MOOP"
@@ -293,6 +293,6 @@ return telescope.register_extension {
     frecency = frecency,
     get_workspace_tags = get_workspace_tags,
     validate_db = db_client.validate,
-    health = checkhealth,
   },
+  health = checkhealth,
 }
