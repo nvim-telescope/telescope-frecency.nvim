@@ -86,7 +86,7 @@ local frecency = function(opts)
   local function get_display_cols()
     local directory_col_width = 0
     if state.active_filter then
-      if state.active_filter_tag == "LSP" then
+      if state.active_filter_tag == "LSP" or state.active_filter_tag == "CWD" then
         -- TODO: Only add +1 if opts.show_filter_thing is true, +1 is for the trailing slash
         directory_col_width = #(utils.path_tail(state.active_filter)) + 1
       else
