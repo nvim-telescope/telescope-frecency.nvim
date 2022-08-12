@@ -194,7 +194,7 @@ local frecency = function(opts)
       if matched then
         query_text = query_text:sub(matched:len() + 1)
       end
-      new_filter = new_filter or state.default_workspace
+      new_filter = new_filter or opts.workspace or state.default_workspace
 
       local new_finder
       local results_updated = update_results(new_filter)

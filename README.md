@@ -85,14 +85,28 @@ If no database is found when running Neovim with the plugin installed, a new one
 
 ## Usage
 
-```
+```vim
 :Telescope frecency
 ```
-..or to map to a key:
+
+or to map to a key:
 
 ```lua
 vim.api.nvim_set_keymap("n", "<leader><leader>", "<Cmd>lua require('telescope').extensions.frecency.frecency()<CR>", {noremap = true, silent = true})
 ```
+
+Use a specific workspace tag:
+
+```vim
+:Telescope frecency workspace=CWD
+```
+
+or
+
+```lua
+vim.api.nvim_set_keymap("n", "<leader><leader>", "<Cmd>lua require('telescope').extensions.frecency.frecency({ workspace = 'CWD' })<CR>", {noremap = true, silent = true})
+```
+
 Filter tags are applied by typing the `:tag:` name (adding surrounding colons) in the finder query.
 Entering `:<Tab>` will trigger omnicompletion for available tags.
 
