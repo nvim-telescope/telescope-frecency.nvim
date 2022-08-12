@@ -53,21 +53,6 @@ local function format_filepath(filename, opts)
   return utils.transform_path(opts, filename)
 end
 
-local function fetch_lsp_workspaces(bufnr, force)
-  if not vim.tbl_isempty(state.lsp_workspaces) and not force then
-    return state.lsp_workspaces
-  end
-
-  local lsp_workspaces = vim.api.nvim_buf_call(bufnr, vim.lsp.buf.list_workspace_folders)
-  if not vim.tbl_isempty(lsp_workspaces) then
-    state.lsp_workspaces = lsp_workspaces
-  else
-    state.lsp_workspaces = {}
-  end
-
-  return state.lsp_workspaces
-end
-
 local function get_workspace_tags()
   -- Add user config workspaces. TODO: validate that workspaces are existing directories
   local tags = {}
@@ -79,8 +64,12 @@ local function get_workspace_tags()
   table.insert(tags, "CWD")
 
   -- Add LSP workpace(s)
-  if not vim.tbl_isempty(fetch_lsp_workspaces(state.previous_buffer, true)) then
+  local lsp_workspaces = vim.api.nvim_buf_call(state.previous_buffer, vim.lsp.buf.list_workspace_folders)
+  if not vim.tbl_isempty(lsp_workspaces) then
+    state.lsp_workspaces = lsp_workspaces
     table.insert(tags, "LSP")
+  else
+    state.lsp_workspaces = {}
   end
 
   -- print(vim.inspect(tags))
@@ -300,15 +289,6 @@ return telescope.register_extension {
       vim.F.if_nil(ext_config.db_safe_mode, true),
       vim.F.if_nil(ext_config.auto_validate, true)
     )
-
-    vim.api.nvim_create_autocmd("LspAttach", {
-      callback = function(args)
-        if not vim.tbl_isempty(fetch_lsp_workspaces(args.buf)) then
-          -- lsp workspaces found, remove the autocmd
-          return true
-        end
-      end,
-    })
   end,
   exports = {
     frecency = frecency,
