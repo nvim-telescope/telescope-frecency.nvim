@@ -95,11 +95,11 @@ local frecency = function(opts)
     end
     local res = {}
     res[1] = state.show_scores and { width = 8 } or nil
-    if state.show_filter_column then
-      table.insert(res, { width = directory_col_width })
-    end
     if has_devicons and not state.disable_devicons then
       table.insert(res, { width = 2 }) -- icon column
+    end
+    if state.show_filter_column then
+      table.insert(res, { width = directory_col_width })
     end
     table.insert(res, { remaining = true })
     return res
@@ -121,6 +121,11 @@ local frecency = function(opts)
 
     display_items = state.show_scores and { { entry.score, "TelescopeFrecencyScores" } } or {}
 
+    if has_devicons and not state.disable_devicons then
+      icon, icon_highlight = devicons.get_icon(entry.name, string.match(entry.name, "%a+$"), { default = true })
+      table.insert(display_items, { icon, icon_highlight })
+    end
+
     -- TODO: store the column lengths here, rather than recalculating in get_display_cols()
     if state.show_filter_column then
       local filter_path = ""
@@ -135,10 +140,6 @@ local frecency = function(opts)
       table.insert(display_items, { filter_path, "Directory" })
     end
 
-    if has_devicons and not state.disable_devicons then
-      icon, icon_highlight = devicons.get_icon(entry.name, string.match(entry.name, "%a+$"), { default = true })
-      table.insert(display_items, { icon, icon_highlight })
-    end
     table.insert(display_items, { display_filename, hl_filename })
 
     return displayer(display_items)
