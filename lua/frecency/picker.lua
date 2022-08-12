@@ -200,6 +200,7 @@ m.fd = function(opts)
     local o = {}
     local delim = m.config.filter_delimiter or ":" -- check for :filter: in query text
     local matched, new_filter = query_text:match("^%s*(" .. delim .. "(%S+)" .. delim .. ")")
+    new_filter = new_filter or opts.workspace
 
     o.prompt = matched and query_text:sub(matched:len() + 1) or query_text
     if m.update(new_filter) then
