@@ -53,6 +53,25 @@ local function format_filepath(filename, opts)
   return utils.transform_path(opts, filename)
 end
 
+-- returns `true` if workspaces exist
+---@param bufnr number
+---@param force? boolean
+---@return boolean workspaces_exist
+local function fetch_lsp_workspaces(bufnr, force)
+  if not vim.tbl_isempty(state.lsp_workspaces) and not force then
+    return true
+  end
+
+  local lsp_workspaces = vim.api.nvim_buf_call(bufnr, vim.lsp.buf.list_workspace_folders)
+  if not vim.tbl_isempty(lsp_workspaces) then
+    state.lsp_workspaces = lsp_workspaces
+    return true
+  end
+
+  state.lsp_workspaces = {}
+  return false
+end
+
 local function get_workspace_tags()
   -- Add user config workspaces. TODO: validate that workspaces are existing directories
   local tags = {}
@@ -64,12 +83,8 @@ local function get_workspace_tags()
   table.insert(tags, "CWD")
 
   -- Add LSP workpace(s)
-  local lsp_workspaces = vim.api.nvim_buf_call(state.previous_buffer, vim.lsp.buf.list_workspace_folders)
-  if not vim.tbl_isempty(lsp_workspaces) then
-    state.lsp_workspaces = lsp_workspaces
+  if fetch_lsp_workspaces(state.previous_buffer, true) then
     table.insert(tags, "LSP")
-  else
-    state.lsp_workspaces = {}
   end
 
   -- print(vim.inspect(tags))
@@ -82,6 +97,8 @@ local frecency = function(opts)
 
   state.previous_buffer = vim.fn.bufnr "%"
   state.cwd = vim.fn.expand(opts.cwd or vim.fn.getcwd())
+
+  fetch_lsp_workspaces(state.previous_buffer)
 
   local function get_display_cols()
     local directory_col_width = 0
