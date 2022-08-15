@@ -160,8 +160,16 @@ local function filter_workspace(workspace_path, show_unindexed)
     hidden            = true
   }
 
- -- TODO: handle duplicate entries
   if show_unindexed then
+    local is_indexed = {}
+    for _, item in ipairs(res) do
+      is_indexed[item.path] = true
+    end
+
+    scan_opts.search_pattern = function (file)
+      return not is_indexed[file]
+    end
+
     local unindexed_files = scandir(workspace_path, scan_opts)
     for _, file in pairs(unindexed_files) do
       if not file_is_ignored(file) then -- this causes some slowdown on large dirs
