@@ -202,7 +202,7 @@ end
 m.fd = function(opts)
   opts = opts or {}
   m.previous_buffer, m.cwd, m.opts = vim.fn.bufnr "%", vim.fn.expand(opts.cwd or vim.loop.cwd()), opts
-  -- TODO: should we update this to call frecency on other buffers?
+  -- TODO: should we update this every time it calls frecency on other buffers?
   m.fetch_lsp_workspaces(m.previous_buffer)
   m.update()
 
