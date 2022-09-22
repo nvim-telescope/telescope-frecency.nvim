@@ -45,7 +45,7 @@ function M:bootstrap(db_root)
   local db_filename = db_root .. "/file_frecency.sqlite3"
   self.db = sqlite:open(db_filename)
   if not self.db then
-    print("error")
+    vim.notify("Telescope-Frecency: error in opening DB", vim.log.levels.ERROR)
     return
   end
 

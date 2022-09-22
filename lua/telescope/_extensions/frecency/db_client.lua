@@ -27,7 +27,7 @@ local function import_oldfiles()
   for _, filepath in pairs(oldfiles) do
     sql_wrapper:update(filepath)
   end
-  print(("Telescope-Frecency: Imported %d entries from oldfiles."):format(#oldfiles))
+  vim.notify(("Telescope-Frecency: Imported %d entries from oldfiles."):format(#oldfiles))
 end
 
 local function file_is_ignored(filepath)
@@ -65,7 +65,7 @@ local function validate_db(safe_mode)
     if user_response == 1 then
       confirmed = true
     else
-      vim.defer_fn(function() print("TelescopeFrecency: validation aborted.") end, 50)
+      vim.defer_fn(function() vim.notify("TelescopeFrecency: validation aborted.") end, 50)
     end
   else
     confirmed = true
@@ -78,9 +78,9 @@ local function validate_db(safe_mode)
         sql_wrapper:do_transaction(queries.file_delete_entry , {where = {id = entry.id }})
         sql_wrapper:do_transaction(queries.timestamp_delete_entry, {where = {file_id = entry.id}})
       end
-      print(('Telescope-Frecency: removed %d missing entries.'):format(#pending_remove))
+      vim.notify(('Telescope-Frecency: removed %d missing entries.'):format(#pending_remove))
     else
-      print("Telescope-Frecency: validation aborted.")
+      vim.notify("Telescope-Frecency: validation aborted.")
     end
   end
 end
