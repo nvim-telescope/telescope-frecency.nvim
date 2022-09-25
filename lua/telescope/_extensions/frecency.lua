@@ -100,10 +100,15 @@ local frecency = function(opts)
 
   fetch_lsp_workspaces(state.previous_buffer)
 
+  local function should_show_tail()
+    local filters = type(state.show_filter_column) == "table" and state.show_filter_column or { "LSP", "CWD" }
+    return vim.tbl_contains(filters, state.active_filter_tag)
+  end
+
   local function get_display_cols()
     local directory_col_width = 0
     if state.active_filter then
-      if state.active_filter_tag == "LSP" or state.active_filter_tag == "CWD" then
+      if should_show_tail() then
         -- TODO: Only add +1 if opts.show_filter_thing is true, +1 is for the trailing slash
         directory_col_width = #(utils.path_tail(state.active_filter)) + 1
       else
@@ -147,7 +152,7 @@ local frecency = function(opts)
     if state.show_filter_column then
       local filter_path = ""
       if state.active_filter then
-        if state.active_filter_tag == "LSP" or state.active_filter_tag == "CWD" then
+        if should_show_tail() then
           filter_path = utils.path_tail(state.active_filter) .. os_path_sep
         else
           filter_path = Path:new(state.active_filter):make_relative(os_home) .. os_path_sep
