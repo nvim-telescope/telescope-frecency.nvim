@@ -145,6 +145,15 @@ See [default configuration](https://github.com/nvim-telescope/telescope.nvim#tel
 
   Disable devicons (if available)
 
+- `show_filter_column` (default: `true`)
+
+  Show the path of the active filter before file paths. In default, it uses the tail of paths for `'LSP'` and `'CWD'` tags. You can configure this by setting a table for this option.
+
+   ```lua
+   -- show the tail for "LSP", "CWD" and "FOO"
+   show_filter_column = { "LSP", "CWD", "FOO" }
+   ```
+
 
 ### Example Configuration:
 

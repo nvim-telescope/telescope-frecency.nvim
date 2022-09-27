@@ -38,7 +38,7 @@ m.__index = m
 
 ---@class FrecencyConfig
 ---@field show_unindexed boolean: default true
----@field show_filter_column boolean: default true
+---@field show_filter_column boolean|string[]: default true
 ---@field user_workspaces table: default {}
 ---@field disable_devicons boolean: default false
 ---@field default_workspace string: default nil
@@ -122,19 +122,21 @@ m.filepath_formatter = function(opts)
   end
 end
 
+m.should_show_tail = function()
+  local filters = type(m.config.show_filter_column) == "table" and m.config.show_filter_column or { "LSP", "CWD" }
+  return vim.tbl_contains(filters, m.active_filter_tag)
+end
+
 ---Create entry maker function.
 ---@param entry table
 ---@return function
 m.maker = function(entry)
   local filter_column_width = (function()
-    -- TODO: Only add +1 if m.show_filter_thing is true, +1 is for the trailing slash
-    if m.active_filter then
-      return (m.active_filter_tag == "LSP" or m.active_filter_tag == "CWD")
-          and #(ts_util.path_tail(m.active_filter)) + 1
-        or #(p:new(m.active_filter):make_relative(os_home)) - 30
-    else
-      return 0
+    if m.should_show_tail() then
+      -- TODO: Only add +1 if m.show_filter_thing is true, +1 is for the trailing slash
+      return #(ts_util.path_tail(m.active_filter)) + 1
     end
+    return #(p:new(m.active_filter):make_relative(os_home)) - 30
   end)()
 
   local displayer = entry_display.create {
@@ -154,12 +156,9 @@ m.maker = function(entry)
   }
 
   local filter_path = (function()
-    if m.config.show_filter_column then
-      if m.active_filter_tag == "LSP" or m.active_filter_tag == "CWD" then
-        return ts_util.path_tail(m.active_filter) .. os_path_sep
-      elseif m.active_filter then
-        return p:new(m.active_filter):make_relative(os_home) .. os_path_sep
-      end
+    if m.config.show_filter_column and m.active_filter then
+      return m.should_show_tail() and ts_util.path_tail(m.active_filter) .. os_path_sep
+        or p:new(m.active_filter):make_relative(os_home) .. os_path_sep
     end
     return nil
   end)()
