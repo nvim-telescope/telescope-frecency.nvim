@@ -35,22 +35,16 @@ local state = {
   picker = {},
 }
 
-local function format_filepath(filename, opts)
-  local original_filename = filename
-
-  if state.active_filter then
-    filename = Path:new(filename):make_relative(state.active_filter)
-  else
-    filename = Path:new(filename):make_relative(state.cwd)
-    -- check relative to home/current
-    if vim.startswith(filename, os_home) then
-      filename = "~/" .. Path:new(filename):make_relative(os_home)
-    elseif filename ~= original_filename then
-      filename = "./" .. filename
-    end
+local function filepath_formatter(opts)
+  local path_opts = {}
+  for k, v in pairs(opts) do
+    path_opts[k] = v
   end
 
-  return utils.transform_path(opts, filename)
+  return function (filename)
+    path_opts.cwd = state.active_filter or state.cwd
+    return utils.transform_path(path_opts, filename)
+  end
 end
 
 -- returns `true` if workspaces exist
@@ -128,13 +122,32 @@ local frecency = function(opts)
     items = get_display_cols(),
   }
 
+  if not opts.path_display then
+    opts.path_display = function (path_opts, filename)
+      local original_filename = filename
+
+      filename = Path:new(filename):make_relative(path_opts.cwd)
+      if not state.active_filter then
+        if vim.startswith(filename, os_home) then
+          filename = "~/" .. Path:new(filename):make_relative(os_home)
+        elseif filename ~= original_filename then
+          filename = "./" .. filename
+        end
+      end
+
+      return filename
+    end
+  end
+
+  local formatter = filepath_formatter(opts)
+
   local bufnr, buf_is_loaded, display_filename, hl_filename, display_items, icon, icon_highlight
   local make_display = function(entry)
     bufnr = vim.fn.bufnr
     buf_is_loaded = vim.api.nvim_buf_is_loaded
     display_filename = entry.name
     hl_filename = buf_is_loaded(bufnr(display_filename)) and "TelescopeBufferLoaded" or ""
-    display_filename = format_filepath(display_filename, opts)
+    display_filename = formatter(display_filename)
 
     display_items = state.show_scores and { { entry.score, "TelescopeFrecencyScores" } } or {}
 
