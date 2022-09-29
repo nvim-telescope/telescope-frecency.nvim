@@ -294,16 +294,18 @@ local function set_config_state(opt_name, value, default)
   state[opt_name] = value == nil and default or value
 end
 
-local health_ok = vim.fn["health#report_ok"]
-local health_error = vim.fn["health#report_error"]
-
 local function checkhealth()
   local has_sql, _ = pcall(require, "sqlite")
   if has_sql then
-    health_ok "sql.nvim installed."
+    vim.health.report_ok "sql.nvim installed."
     -- return "MOOP"
   else
-    health_error "NOOO"
+    vim.health.report_error "Need sql.nvim to be installed."
+  end
+  if has_devicons then
+    vim.health.report_ok "nvim-web-devicons installed."
+  else
+    vim.health.report_info "nvim-web-devicons is not installed."
   end
 end
 
