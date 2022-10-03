@@ -86,6 +86,29 @@ local function get_workspace_tags()
   return tags
 end
 
+local function complete(findstart, base)
+  if findstart == 1 then
+    local line = vim.api.nvim_get_current_line()
+    local start = line:find ":"
+    -- don't complete if there's already a completed `:tag:` in line
+    if not start or line:find(":", start + 1) then
+      return -3
+    end
+    return start
+  else
+    if vim.fn.pumvisible() == 1 and #vim.v.completed_item > 0 then
+      return ""
+    end
+
+    local tags = get_workspace_tags()
+    local matches = vim.tbl_filter(function(v)
+      return vim.startswith(v, base)
+    end, tags)
+
+    return #matches > 0 and matches or ""
+  end
+end
+
 local frecency = function(opts)
   opts = opts or {}
 
@@ -273,7 +296,7 @@ local frecency = function(opts)
   state.picker:find()
 
   vim.api.nvim_buf_set_option(state.picker.prompt_bufnr, "filetype", "frecency")
-  vim.api.nvim_buf_set_option(state.picker.prompt_bufnr, "completefunc", "frecency#FrecencyComplete")
+  vim.api.nvim_buf_set_option(state.picker.prompt_bufnr, "completefunc", "v:lua.require'telescope'.extensions.frecency.complete")
   vim.api.nvim_buf_set_keymap(
     state.picker.prompt_bufnr,
     "i",
@@ -327,8 +350,8 @@ return telescope.register_extension {
   end,
   exports = {
     frecency = frecency,
-    get_workspace_tags = get_workspace_tags,
     validate_db = db_client.validate,
+    complete = complete,
   },
   health = checkhealth,
 }
