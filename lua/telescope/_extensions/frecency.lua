@@ -347,10 +347,14 @@ return telescope.register_extension {
       vim.F.if_nil(ext_config.db_safe_mode, true),
       vim.F.if_nil(ext_config.auto_validate, true)
     )
+
+    vim.api.nvim_create_user_command("FrecencyValidate", function (cmd_info)
+      local safe_mode = not cmd_info.bang
+      db_client.validate(safe_mode)
+    end, { bang = true, desc = "Clean up DB for telescope-frecency" })
   end,
   exports = {
     frecency = frecency,
-    validate_db = db_client.validate,
     complete = complete,
   },
   health = checkhealth,
