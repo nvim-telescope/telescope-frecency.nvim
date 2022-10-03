@@ -102,10 +102,14 @@ local function init(db_root, config_ignore_patterns, safe_mode, auto_validate)
   end
 
   -- setup autocommands
-  vim.api.nvim_command("augroup TelescopeFrecency")
-  vim.api.nvim_command("autocmd!")
-  vim.api.nvim_command("autocmd BufWinEnter,BufWritePost * lua require'telescope._extensions.frecency.db_client'.autocmd_handler(vim.fn.expand('<amatch>'))")
-  vim.api.nvim_command("augroup END")
+  local group = vim.api.nvim_create_augroup("TelescopeFrecency", {})
+  vim.api.nvim_create_autocmd({ "BufWinEnter", "BufWritePost" }, {
+    group = group,
+    callback = function(args)
+      local db_client = require "telescope._extensions.frecency.db_client"
+      db_client.autocmd_handler(args.match)
+    end,
+  })
 end
 
 local function calculate_file_score(frequency, timestamps)
