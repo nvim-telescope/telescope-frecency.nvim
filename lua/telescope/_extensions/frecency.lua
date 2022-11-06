@@ -268,7 +268,7 @@ local frecency = function(opts)
       entry_maker = entry_maker,
     },
     previewer = conf.file_previewer(opts),
-    sorter = sorters.get_substr_matcher(opts),
+    sorter = sorters.fuzzy_with_index_bias(opts),
   })
   state.picker:find()
 
