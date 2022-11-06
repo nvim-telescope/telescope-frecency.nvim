@@ -272,7 +272,7 @@ local frecency = function(opts)
   })
   state.picker:find()
 
-  vim.api.nvim_buf_set_option(state.picker.prompt_bufnr, "filetype", "frecency")
+  vim.api.nvim_buf_set_option(state.picker.prompt_bufnr, "filetype", "TelescopePrompt")
   vim.api.nvim_buf_set_option(state.picker.prompt_bufnr, "completefunc", "frecency#FrecencyComplete")
   vim.api.nvim_buf_set_keymap(
     state.picker.prompt_bufnr,
