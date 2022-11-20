@@ -22,17 +22,17 @@ local os_home = vim.loop.os_homedir()
 local os_path_sep = utils.get_separator()
 
 local state = {
-  results = {},
   active_filter = nil,
   active_filter_tag = nil,
-  last_filter = nil,
-  previous_buffer = nil,
   cwd = nil,
-  show_scores = false,
   default_workspace = nil,
-  user_workspaces = {},
+  last_filter = nil,
   lsp_workspaces = {},
   picker = {},
+  previous_buffer = nil,
+  results = {},
+  show_scores = false,
+  user_workspaces = {},
 }
 
 local function filepath_formatter(opts)
@@ -41,7 +41,7 @@ local function filepath_formatter(opts)
     path_opts[k] = v
   end
 
-  return function (filename)
+  return function(filename)
     path_opts.cwd = state.active_filter or state.cwd
     return utils.transform_path(path_opts, filename)
   end
@@ -128,7 +128,7 @@ local frecency = function(opts)
   }
 
   if not opts.path_display then
-    opts.path_display = function (path_opts, filename)
+    opts.path_display = function(path_opts, filename)
       local original_filename = filename
 
       filename = Path:new(filename):make_relative(path_opts.cwd)
@@ -267,7 +267,7 @@ local frecency = function(opts)
       results = state.results,
       entry_maker = entry_maker,
     },
-    previewer = conf.file_previewer(opts),
+    previewer = not state.disable_previewer and conf.file_previewer(opts) or false,
     sorter = sorters.fuzzy_with_index_bias(opts),
   })
   state.picker:find()
@@ -312,12 +312,13 @@ end
 return telescope.register_extension {
   setup = function(ext_config)
     set_config_state("db_root", ext_config.db_root, nil)
+    set_config_state("default_workspace", ext_config.default_workspace, nil)
+    set_config_state("disable_devicons", ext_config.disable_devicons, false)
+    set_config_state("disable_previewer", ext_config.disable_previewer, false)
+    set_config_state("show_filter_column", ext_config.show_filter_column, true)
     set_config_state("show_scores", ext_config.show_scores, false)
     set_config_state("show_unindexed", ext_config.show_unindexed, true)
-    set_config_state("show_filter_column", ext_config.show_filter_column, true)
     set_config_state("user_workspaces", ext_config.workspaces, {})
-    set_config_state("disable_devicons", ext_config.disable_devicons, false)
-    set_config_state("default_workspace", ext_config.default_workspace, nil)
 
     -- start the database client
     db_client.init(
