@@ -154,9 +154,11 @@ function M:update(filepath)
   -- create entry if it doesn't exist
   local file_id
   file_id = row_id(self:do_transaction(queries.file_get_entries, {where = {path = filepath}}))
+  local has_added_entry
   if not file_id then
     self:do_transaction(queries.file_add_entry, {path = filepath, count = 1})
     file_id = row_id(self:do_transaction(queries.file_get_entries, {where = {path = filepath}}))
+    has_added_entry = true
   else
   -- ..or update existing entry
     self:do_transaction(queries.file_update_counter, {path = filepath})
@@ -171,6 +173,8 @@ function M:update(filepath)
   if trim_at then
     self:do_transaction(queries.timestamp_delete_before_id, {id = trim_at.id, file_id = file_id})
   end
+
+  return has_added_entry
 end
 
 return M

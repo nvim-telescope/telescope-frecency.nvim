@@ -199,7 +199,7 @@ local frecency = function(opts)
       state.active_filter_tag = filter
     end
 
-    if vim.tbl_isempty(state.results) or filter_updated then
+    if vim.tbl_isempty(state.results) or db_client.has_updated_results() or filter_updated then
       state.results = db_client.get_file_scores(state.show_unindexed, ws_dir)
     end
     return filter_updated
