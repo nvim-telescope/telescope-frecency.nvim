@@ -7,19 +7,7 @@ if not has_telescope then
   error "This plugin requires telescope.nvim (https://github.com/nvim-telescope/telescope.nvim)"
 end
 
-local has_devicons, devicons = pcall(require, "nvim-web-devicons")
-local actions = require "telescope.actions"
-local conf = require("telescope.config").values
-local entry_display = require "telescope.pickers.entry_display"
-local finders = require "telescope.finders"
-local Path = require "plenary.path"
-local pickers = require "telescope.pickers"
-local sorters = require "telescope.sorters"
-local utils = require "telescope.utils"
-local db_client = require "telescope._extensions.frecency.db_client"
-
-local os_home = vim.loop.os_homedir()
-local os_path_sep = utils.get_separator()
+local config = {}
 
 local state = {
   results = {},
@@ -34,18 +22,6 @@ local state = {
   lsp_workspaces = {},
   picker = {},
 }
-
-local function filepath_formatter(opts)
-  local path_opts = {}
-  for k, v in pairs(opts) do
-    path_opts[k] = v
-  end
-
-  return function (filename)
-    path_opts.cwd = state.active_filter or state.cwd
-    return utils.transform_path(path_opts, filename)
-  end
-end
 
 -- returns `true` if workspaces exist
 ---@param bufnr number
@@ -87,12 +63,31 @@ local function get_workspace_tags()
 end
 
 local frecency = function(opts)
+  local has_devicons, devicons = pcall(require, "nvim-web-devicons")
+  local entry_display = require "telescope.pickers.entry_display"
+  local finders = require "telescope.finders"
+  local Path = require "plenary.path"
+  local pickers = require "telescope.pickers"
+  local utils = require "telescope.utils"
+
+  local db_client = require "telescope._extensions.frecency.db_client"
+
+  -- start the database client
+  db_client.init(
+    config.db_root,
+    config.ignore_patterns,
+    vim.F.if_nil(config.db_safe_mode, true),
+    vim.F.if_nil(config.auto_validate, true)
+  )
+
   opts = opts or {}
 
   state.previous_buffer = vim.fn.bufnr "%"
   state.cwd = vim.fn.expand(opts.cwd or vim.fn.getcwd())
 
   fetch_lsp_workspaces(state.previous_buffer)
+
+  local os_home = vim.loop.os_homedir()
 
   local function should_show_tail()
     local filters = type(state.show_filter_column) == "table" and state.show_filter_column or { "LSP", "CWD" }
@@ -120,6 +115,7 @@ local frecency = function(opts)
     table.insert(res, { remaining = true })
     return res
   end
+  local os_path_sep = utils.get_separator()
 
   local displayer = entry_display.create {
     separator = "",
@@ -141,6 +137,18 @@ local frecency = function(opts)
       end
 
       return filename
+    end
+  end
+
+  local function filepath_formatter(path_opts0)
+    local path_opts = {}
+    for k, v in pairs(path_opts0) do
+      path_opts[k] = v
+    end
+
+    return function (filename)
+      path_opts.cwd = state.active_filter or state.cwd
+      return utils.transform_path(path_opts, filename)
     end
   end
 
@@ -251,7 +259,7 @@ local frecency = function(opts)
       return { prompt = query_text, updated_finder = new_finder }
     end,
     attach_mappings = function(prompt_bufnr)
-      actions.select_default:replace_if(function()
+      require "telescope.actions".select_default:replace_if(function()
         local compinfo = vim.fn.complete_info()
         return compinfo.pum_visible == 1
       end, function()
@@ -267,8 +275,8 @@ local frecency = function(opts)
       results = state.results,
       entry_maker = entry_maker,
     },
-    previewer = conf.file_previewer(opts),
-    sorter = sorters.fuzzy_with_index_bias(opts),
+    previewer = require("telescope.config").values.file_previewer(opts),
+    sorter = require'telescope.sorters'.fuzzy_with_index_bias(opts),
   })
   state.picker:find()
 
@@ -302,7 +310,7 @@ local function checkhealth()
   else
     vim.health.report_error "Need sql.nvim to be installed."
   end
-  if has_devicons then
+  if pcall(require, "nvim-web-devicons") then
     vim.health.report_ok "nvim-web-devicons installed."
   else
     vim.health.report_info "nvim-web-devicons is not installed."
@@ -318,19 +326,14 @@ return telescope.register_extension {
     set_config_state("user_workspaces", ext_config.workspaces, {})
     set_config_state("disable_devicons", ext_config.disable_devicons, false)
     set_config_state("default_workspace", ext_config.default_workspace, nil)
-
-    -- start the database client
-    db_client.init(
-      ext_config.db_root,
-      ext_config.ignore_patterns,
-      vim.F.if_nil(ext_config.db_safe_mode, true),
-      vim.F.if_nil(ext_config.auto_validate, true)
-    )
+    config = vim.deepcopy(ext_config)
   end,
   exports = {
     frecency = frecency,
     get_workspace_tags = get_workspace_tags,
-    validate_db = db_client.validate,
+    validate_db = function(...)
+      require"telescope._extensions.frecency.db_client".validate(...)
+    end
   },
   health = checkhealth,
 }
