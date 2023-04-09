@@ -295,12 +295,13 @@ m.setup = function(config)
   end
 
   -- TODO: perhaps ignore buffer without file path here?
-  vim.cmd [[
-    augroup TelescopeFrecency
-      autocmd!
-      autocmd BufWinEnter,BufWritePost * lua require'frecency.db'.update()
-    augroup END
-    ]]
+  local group = vim.api.nvim_create_augroup("TelescopeFrecency", {})
+  vim.api.nvim_create_autocmd({ "BufWinEnter", "BufWritePost" }, {
+    group = group,
+    callback = function(_)
+      db.update()
+    end,
+  })
 end
 
 return m
