@@ -122,9 +122,8 @@ m.maker = function(entry)
   local filter_column_width = (function()
     -- TODO: Only add +1 if m.show_filter_thing is true, +1 is for the trailing slash
     if m.active_filter then
-      return m.active_filter_tag == "LSP" and #(ts_util.path_tail(m.active_filter)) + 1 or #(p
-        :new(m.active_filter)
-        :make_relative(os_home)) - 30
+      return m.active_filter_tag == "LSP" and #(ts_util.path_tail(m.active_filter)) + 1
+        or #(p:new(m.active_filter):make_relative(os_home)) - 30
     else
       return 0
     end
