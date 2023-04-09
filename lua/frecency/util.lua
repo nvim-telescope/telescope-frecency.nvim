@@ -58,7 +58,7 @@ end
 
 util.abort_remove_unlinked_files = function()
   ---TODO: refactor all messages to a lua file. alarts.lua?
-  print "TelescopeFrecency: validation aborted."
+  vim.notify "TelescopeFrecency: validation aborted."
 end
 
 util.tbl_match = function(field, val, tbl)

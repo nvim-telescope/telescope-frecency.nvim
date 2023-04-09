@@ -281,7 +281,7 @@ m.setup = function(config)
     for _, path in ipairs(oldfiles) do
       fs.insert { path = path, count = 0 } -- TODO: remove when sql.nvim#97 is closed
     end
-    print(("Telescope-Frecency: Imported %d entries from oldfiles."):format(#oldfiles))
+    vim.notify(("Telescope-Frecency: Imported %d entries from oldfiles."):format(#oldfiles))
   end
 
   -- TODO: perhaps ignore buffer without file path here?

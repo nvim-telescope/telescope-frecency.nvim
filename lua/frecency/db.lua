@@ -143,7 +143,7 @@ function db.remove(entries, silent)
     local count = fs:count()
     fs:remove()
     if not vim.F.if_nil(silent, false) then
-      print(("Telescope-frecency: removed all entries. number of entries removed %d ."):format(count))
+      vim.notify(("Telescope-frecency: removed all entries. number of entries removed %d ."):format(count))
     end
     return
   end
@@ -155,7 +155,7 @@ function db.remove(entries, silent)
   end
 
   if not vim.F.if_nil(silent, false) then
-    print(("Telescope-frecency: removed %d missing entries."):format(#entries))
+    vim.notify(("Telescope-frecency: removed %d missing entries."):format(#entries))
   end
 end
 
