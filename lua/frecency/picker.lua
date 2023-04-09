@@ -135,11 +135,11 @@ m.maker = function(entry)
     hl_chars = { [os_path_sep] = "TelescopePathSeparator" },
     items = (function()
       local i = m.config.show_scores and { { width = 8 } } or {}
-      if m.config.show_filter_column then
-        table.insert(i, { width = filter_column_width })
-      end
       if has_devicons and not m.config.disable_devicons then
         table.insert(i, { width = 2 })
+      end
+      if m.config.show_filter_column then
+        table.insert(i, { width = filter_column_width })
       end
       table.insert(i, { remaining = true })
       return i
@@ -164,11 +164,11 @@ m.maker = function(entry)
     display = function(e)
       return displayer((function()
         local i = m.config.show_scores and { { entry.score, "TelescopeFrecencyScores" } } or {}
-        table.insert(i, { filter_path, "Directory" })
         if has_devicons and not m.config.disable_devicons then
           table.insert(i, { devicons.get_icon(e.name, string.match(e.name, "%a+$"), { default = true }) })
           -- ts_util.transform_devicons(e.path, m.path_format(e.path), m.config.disable_devicons),
         end
+        table.insert(i, { filter_path, "Directory" })
         table.insert(i, {
           m.path_format(e.name, m.opts),
           util.buf_is_loaded(e.name) and "TelescopeBufferLoaded" or "",
