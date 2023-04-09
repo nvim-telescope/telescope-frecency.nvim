@@ -41,12 +41,14 @@ m.__index = m
 ---@field show_filter_column boolean: default true
 ---@field user_workspaces table: default {}
 ---@field disable_devicons boolean: default false
+---@field default_workspace string: default nil
 m.config = {
   show_scores = true,
   show_unindexed = true,
   show_filter_column = true,
   user_workspaces = {},
   disable_devicons = false,
+  default_workspace = nil,
 }
 
 ---Setup frecency picker
@@ -194,7 +196,7 @@ m.fd = function(opts)
     local o = {}
     local delim = m.config.filter_delimiter or ":" -- check for :filter: in query text
     local matched, new_filter = query_text:match("^%s*(" .. delim .. "(%S+)" .. delim .. ")")
-    new_filter = new_filter or opts.workspace
+    new_filter = new_filter or opts.workspace or m.config.default_workspace
 
     o.prompt = matched and query_text:sub(matched:len() + 1) or query_text
     if m.update(new_filter) then
