@@ -23,6 +23,7 @@ local db = require "frecency.db"
 ---@field cwd string
 ---@field lsp_workspaces table
 ---@field picker table
+---@field updated boolean: true if a new entry is added into DB
 local m = {
   results = {},
   active_filter = nil,
@@ -32,6 +33,7 @@ local m = {
   cwd = nil,
   lsp_workspaces = {},
   picker = {},
+  updated = false,
 }
 
 m.__index = m
@@ -101,7 +103,7 @@ m.update = function(filter)
     m.active_filter, m.active_filter_tag = ws_dir, filter
   end
 
-  m.results = (vim.tbl_isempty(m.results) or filter_updated)
+  m.results = (vim.tbl_isempty(m.results) or m.updated or filter_updated)
       and db.files.get { ws_dir = ws_dir, show_unindexed = m.config.show_unindexed }
     or m.results
 
@@ -299,7 +301,8 @@ m.setup = function(config)
   vim.api.nvim_create_autocmd({ "BufWinEnter", "BufWritePost" }, {
     group = group,
     callback = function(_)
-      db.update()
+      local has_added_entry = db.update()
+      m.updated = m.updated or has_added_entry
     end,
   })
 end

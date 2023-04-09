@@ -104,20 +104,23 @@ end
 ---Insert or update a given path
 ---@param path string
 ---@return number: row id
+---@return boolean: true if it has inserted
 function fs:insert_or_update(path)
   local entry = (self:where { path = path } or {})
   local file_id = entry.id
+  local has_added_entry = not file_id
 
   if file_id then
     self:update { where = { id = file_id }, set = { count = entry.count + 1 } }
   else
     file_id = self:insert { path = path }
   end
-  return file_id
+  return file_id, has_added_entry
 end
 
 ---Add or update file path
 ---@param path string|nil: path to file or use current
+---@return boolean: true if it has added an entry
 ---@overload func()
 function db.update(path)
   path = path or vim.fn.expand "%:p"
@@ -128,11 +131,12 @@ function db.update(path)
     vim.b.telescope_frecency_registered = 1
   end
   --- Insert or update path
-  local file_id = fs:insert_or_update(path)
+  local file_id, has_added_entry = fs:insert_or_update(path)
   --- Register timestamp for this update.
   ts:insert { file_id = file_id }
   --- Trim timestamps to max_timestamps per file
   ts:trim(file_id)
+  return has_added_entry
 end
 
 ---Remove unlinked file entries, along with timestamps linking to it.
