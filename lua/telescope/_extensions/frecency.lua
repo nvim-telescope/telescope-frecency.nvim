@@ -12,9 +12,14 @@ return telescope.register_extension {
   setup = picker.setup,
   health = function()
     if ({ pcall(require, "sqlite") })[1] then
-      vim.fn["health#report_ok"] "sql.nvim installed."
+      vim.health.report_ok "sql.nvim installed."
     else
-      vim.fn["health#report_error"] "sql.nvim is required for telescope-frecency.nvim to work."
+      vim.health.report_error "sql.nvim is required for telescope-frecency.nvim to work."
+    end
+    if ({ pcall(require, "nvim-web-devicons") })[1] then
+      vim.health.report_ok "nvim-web-devicons installed."
+    else
+      vim.health.report_info "nvim-web-devicons is not installed."
     end
   end,
   exports = {
