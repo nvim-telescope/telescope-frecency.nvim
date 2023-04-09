@@ -64,6 +64,25 @@ m.set_buf = function()
   }
 end
 
+---returns `true` if workspaces exit
+---@param bufnr integer
+---@param force boolean?
+---@return boolean workspaces_exist
+m.fetch_lsp_workspaces = function(bufnr, force)
+  if not vim.tbl_isempty(m.lsp_workspaces) and not force then
+    return true
+  end
+
+  local lsp_workspaces = vim.api.nvim_buf_call(bufnr, vim.lsp.buf.list_workspace_folders)
+  if not vim.tbl_isempty(lsp_workspaces) then
+    m.lsp_workspaces = lsp_workspaces
+    return true
+  end
+
+  m.lsp_workspaces = {}
+  return false
+end
+
 ---Update Frecency Picker result
 ---@param filter string
 ---@return boolean
@@ -183,6 +202,8 @@ end
 m.fd = function(opts)
   opts = opts or {}
   m.previous_buffer, m.cwd, m.opts = vim.fn.bufnr "%", vim.fn.expand(opts.cwd or vim.loop.cwd()), opts
+  -- TODO: should we update this to call frecency on other buffers?
+  m.fetch_lsp_workspaces(m.previous_buffer)
   m.update()
 
   local p = {
@@ -238,13 +259,8 @@ m.workspace_tags = function()
   table.insert(tags, "CWD")
 
   -- Add LSP workpace(s)
-  local lsp_workspaces = vim.api.nvim_buf_call(m.previous_buffer, vim.lsp.buf.list_workspace_folders)
-
-  if not vim.tbl_isempty(lsp_workspaces) then
-    m.lsp_workspaces = lsp_workspaces
+  if m.fetch_lsp_workspaces(m.previous_buffer, true) then
     table.insert(tags, "LSP")
-  else
-    m.lsp_workspaces = {}
   end
 
   -- TODO: sort tags - by collective frecency? (?????? is this still relevant)
