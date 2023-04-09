@@ -91,7 +91,7 @@ end
 ---@param filename string
 ---@TODO: use telescope.path_display configuration options
 ---@return string
-m.path_format = function(filename)
+m.path_format = function(filename, opts)
   filename = p:new(filename)
   local original_filename = filename
 
@@ -106,13 +106,7 @@ m.path_format = function(filename)
     end
   end
 
-  if m.opts.tail_path then
-    filename = ts_util.path_tail(filename)
-  elseif m.opts.shorten_path then
-    filename = p:new(filename).shorten()
-  end
-
-  return filename
+  return ts_util.transform_path(opts, filename)
 end
 
 ---Create entry maker function.
