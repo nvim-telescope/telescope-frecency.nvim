@@ -147,13 +147,14 @@ m.maker = function(entry)
   }
 
   local filter_path = (function()
-    if m.active_filter_tag == "LSP" or m.active_filter_tag == "CWD" then
-      return ts_util.path_tail(m.active_filter) .. os_path_sep
-    elseif m.active_filter then
-      return p:new(m.active_filter):make_relative(os_home) .. os_path_sep
-    else
-      return ""
+    if m.config.show_filter_column then
+      if m.active_filter_tag == "LSP" or m.active_filter_tag == "CWD" then
+        return ts_util.path_tail(m.active_filter) .. os_path_sep
+      elseif m.active_filter then
+        return p:new(m.active_filter):make_relative(os_home) .. os_path_sep
+      end
     end
+    return nil
   end)()
 
   return {
@@ -168,7 +169,9 @@ m.maker = function(entry)
           table.insert(i, { devicons.get_icon(e.name, string.match(e.name, "%a+$"), { default = true }) })
           -- ts_util.transform_devicons(e.path, m.path_format(e.path), m.config.disable_devicons),
         end
-        table.insert(i, { filter_path, "Directory" })
+        if filter_path then
+          table.insert(i, { filter_path, "Directory" })
+        end
         table.insert(i, {
           m.path_format(e.name, m.opts),
           util.buf_is_loaded(e.name) and "TelescopeBufferLoaded" or "",
