@@ -108,26 +108,18 @@ m.update = function(filter)
   return filter_updated
 end
 
----Format filename. Mainly os_home to {~/} or current to {./}
----@param filename string
----@TODO: use telescope.path_display configuration options
----@return string
-m.path_format = function(filename, opts)
-  filename = p:new(filename)
-  local original_filename = filename
-
-  if m.active_filter then
-    filename = filename:make_relative(m.active_filter)
-  else
-    filename = filename:make_relative(m.cwd)
-    if vim.startswith(filename, os_home) then -- check relative to home/current
-      filename = "~/" .. p:new(filename):make_relative(os_home)
-    elseif filename ~= original_filename then
-      filename = "./" .. filename
-    end
+---@param opts table telescope picker table
+---@return fun(filename: string): string
+m.filepath_formatter = function(opts)
+  local path_opts = {}
+  for k, v in pairs(opts) do
+    path_opts[k] = v
   end
 
-  return ts_util.transform_path(opts, filename)
+  return function(filename)
+    path_opts.cwd = m.active_filter or m.cwd
+    return ts_util.transform_path(path_opts, filename)
+  end
 end
 
 ---Create entry maker function.
@@ -172,6 +164,8 @@ m.maker = function(entry)
     return nil
   end)()
 
+  local formatter = m.filepath_formatter(m.opts)
+
   return {
     filename = entry.path,
     ordinal = entry.path,
@@ -182,13 +176,12 @@ m.maker = function(entry)
         local i = m.config.show_scores and { { entry.score, "TelescopeFrecencyScores" } } or {}
         if has_devicons and not m.config.disable_devicons then
           table.insert(i, { devicons.get_icon(e.name, string.match(e.name, "%a+$"), { default = true }) })
-          -- ts_util.transform_devicons(e.path, m.path_format(e.path), m.config.disable_devicons),
         end
         if filter_path then
           table.insert(i, { filter_path, "Directory" })
         end
         table.insert(i, {
-          m.path_format(e.name, m.opts),
+          formatter(e.name),
           util.buf_is_loaded(e.name) and "TelescopeBufferLoaded" or "",
         })
         return i
@@ -201,19 +194,37 @@ end
 ---@param opts table: telescope picker opts
 m.fd = function(opts)
   opts = opts or {}
+
+  if not opts.path_display then
+    opts.path_display = function(path_opts, filename)
+      local original_filename = filename
+
+      filename = p:new(filename):make_relative(path_opts.cwd)
+      if not m.active_filter then
+        if vim.startswith(filename, os_home) then
+          filename = "~/" .. p:new(filename):make_relative(os_home)
+        elseif filename ~= original_filename then
+          filename = "./" .. filename
+        end
+      end
+
+      return filename
+    end
+  end
+
   m.previous_buffer, m.cwd, m.opts = vim.fn.bufnr "%", vim.fn.expand(opts.cwd or vim.loop.cwd()), opts
   -- TODO: should we update this every time it calls frecency on other buffers?
   m.fetch_lsp_workspaces(m.previous_buffer)
   m.update()
 
-  local p = {
+  local picker_opts = {
     prompt_title = "Frecency",
     finder = finders.new_table { results = m.results, entry_maker = m.maker },
     previewer = conf.file_previewer(opts),
     sorter = sorters.get_substr_matcher(opts),
   }
 
-  p.on_input_filter_cb = function(query_text)
+  picker_opts.on_input_filter_cb = function(query_text)
     local o = {}
     local delim = m.config.filter_delimiter or ":" -- check for :filter: in query text
     local matched, new_filter = query_text:match("^%s*(" .. delim .. "(%S+)" .. delim .. ")")
@@ -228,7 +239,7 @@ m.fd = function(opts)
     return o
   end
 
-  p.attach_mappings = function(prompt_bufnr)
+  picker_opts.attach_mappings = function(prompt_bufnr)
     actions.select_default:replace_if(function()
       return vim.fn.complete_info().pum_visible == 1
     end, function()
@@ -239,7 +250,7 @@ m.fd = function(opts)
     return true
   end
 
-  m.picker = pickers.new(opts, p)
+  m.picker = pickers.new(opts, picker_opts)
   m.picker:find()
   m.set_buf()
 end
