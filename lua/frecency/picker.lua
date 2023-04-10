@@ -223,7 +223,7 @@ m.fd = function(opts)
     prompt_title = "Frecency",
     finder = finders.new_table { results = m.results, entry_maker = m.maker },
     previewer = conf.file_previewer(opts),
-    sorter = sorters.fuzzy_with_index_bias(opts),
+    sorter = sorters.get_substr_matcher(opts),
   }
 
   picker_opts.on_input_filter_cb = function(query_text)
