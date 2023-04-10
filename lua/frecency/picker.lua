@@ -134,11 +134,14 @@ end
 ---@return function
 m.maker = function(entry)
   local filter_column_width = (function()
-    if m.should_show_tail() then
-      -- TODO: Only add +1 if m.show_filter_thing is true, +1 is for the trailing slash
-      return #(ts_util.path_tail(m.active_filter)) + 1
+    if m.active_filter then
+      if m.should_show_tail() then
+        -- TODO: Only add +1 if m.show_filter_thing is true, +1 is for the trailing slash
+        return #(ts_util.path_tail(m.active_filter)) + 1
+      end
+      return #(p:new(m.active_filter):make_relative(os_home)) + 1
     end
-    return #(p:new(m.active_filter):make_relative(os_home)) - 30
+    return 0
   end)()
 
   local displayer = entry_display.create {
@@ -162,7 +165,7 @@ m.maker = function(entry)
       return m.should_show_tail() and ts_util.path_tail(m.active_filter) .. os_path_sep
         or p:new(m.active_filter):make_relative(os_home) .. os_path_sep
     end
-    return nil
+    return ""
   end)()
 
   local formatter = m.filepath_formatter(m.opts)
@@ -178,9 +181,7 @@ m.maker = function(entry)
         if has_devicons and not m.config.disable_devicons then
           table.insert(i, { devicons.get_icon(e.name, string.match(e.name, "%a+$"), { default = true }) })
         end
-        if filter_path then
-          table.insert(i, { filter_path, "Directory" })
-        end
+        table.insert(i, { filter_path, "Directory" })
         table.insert(i, {
           formatter(e.name),
           util.buf_is_loaded(e.name) and "TelescopeBufferLoaded" or "",
