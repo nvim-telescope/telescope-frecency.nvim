@@ -54,16 +54,11 @@ m.config = {
 }
 
 ---Setup frecency picker
-m.set_buf = function()
-  util.buf_set {
-    m.picker.prompt_bufnr,
-    options = { filetype = "frecency", completefunc = "frecency#FrecencyComplete" },
-    mappings = {
-      expr = true,
-      ["i|<Tab>"] = "pumvisible() ? '<C-n>'  : '<C-x><C-u>'",
-      ["i|<S-Tab>"] = "pumvisible() ? '<C-p>'  : ''",
-    },
-  }
+m.set_prompt_options = function(buffer)
+  vim.bo[buffer].filetype = "frecency"
+  vim.bo[buffer].completefunc = "v:lua.require'telescope'.extensions.frecency.complete"
+  vim.keymap.set("i", "<Tab>", "pumvisible() ? '<C-n>' : '<C-x><C-u>'", { buffer = buffer, expr = true })
+  vim.keymap.set("i", "<S-Tab>", "pumvisible() ? '<C-p>' : ''", { buffer = buffer, expr = true })
 end
 
 ---returns `true` if workspaces exit
@@ -254,7 +249,7 @@ m.fd = function(opts)
 
   m.picker = pickers.new(opts, picker_opts)
   m.picker:find()
-  m.set_buf()
+  m.set_prompt_options(m.picker.prompt_bufnr)
 end
 
 ---TODO: this seems to be forgotten and just exported in old implementation.
@@ -278,6 +273,28 @@ m.workspace_tags = function()
 
   -- TODO: sort tags - by collective frecency? (?????? is this still relevant)
   return tags
+end
+
+m.complete = function(findstart, base)
+  if findstart == 1 then
+    local line = vim.api.nvim_get_current_line()
+    local start = line:find ":"
+    -- don't complete if there's already a completed `:tag:` in line
+    if not start or line:find(":", start + 1) then
+      return -3
+    end
+    return start
+  else
+    if vim.fn.pumvisible() == 1 and #vim.v.completed_item > 0 then
+      return ""
+    end
+
+    local matches = vim.tbl_filter(function(v)
+      return vim.startswith(v, base)
+    end, m.workspace_tags())
+
+    return #matches > 0 and matches or ""
+  end
 end
 
 ---Setup Frecency Picker
@@ -306,6 +323,11 @@ m.setup = function(config)
       m.updated = m.updated or has_added_entry
     end,
   })
+
+  vim.api.nvim_create_user_command("FrecencyValidate", function(cmd_info)
+    local safe_mode = not cmd_info.bang
+    db.validate(safe_mode)
+  end, { bang = true, desc = "Clean up DB for telescope-frecency" })
 end
 
 return m

@@ -164,7 +164,7 @@ function db.remove(entries, silent)
 end
 
 ---Remove file entries that no longer exists.
-function db.validate()
+function db.validate(safe_mode)
   -- print "running validate"
   local threshold = const.db_remove_safety_threshold
   local unlinked = fs:map(function(entry)

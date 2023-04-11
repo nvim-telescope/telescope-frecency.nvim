@@ -24,7 +24,6 @@ return telescope.register_extension {
   end,
   exports = {
     frecency = picker.fd,
-    get_workspace_tags = picker.workspace_tags, --TODO: what is the use case for this?
-    validate_db = require("frecency.db").validate,
+    complete = picker.complete,
   },
 }

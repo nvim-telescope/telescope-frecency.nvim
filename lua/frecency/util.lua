@@ -79,23 +79,6 @@ util.buf_is_loaded = function (filename)
   return vim.api.nvim_buf_is_loaded(vim.fn.bufnr(filename))
 end
 
----Set buffer mappings and options
----@param opts: {bufnr, mappings = {}, options = {}}
-util.buf_set = function(opts)
-  local bufnr = opts[1]
-  for k, v in pairs(opts.options) do
-    vim.api.nvim_buf_set_option(bufnr, k, v)
-  end
-  for k, lhs in pairs(opts.mappings) do
-    if k ~= "expr" then
-      local rhs = vim.split(k, "|")
-      vim.api.nvim_buf_set_keymap(bufnr, rhs[1], rhs[2], lhs, {
-        expr = opts.mappings.expr, noremap = true
-      })
-    end
-  end
-end
-
 util.include_unindexed = function (files, ws_path)
   local scan_opts = { respect_gitignore = true, depth = 100, hidden = true, }
 
