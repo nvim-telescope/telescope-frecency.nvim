@@ -102,10 +102,14 @@ local function init(db_root, config_ignore_patterns, safe_mode, auto_validate)
   end
 
   -- setup autocommands
-  vim.api.nvim_command("augroup TelescopeFrecency")
-  vim.api.nvim_command("autocmd!")
-  vim.api.nvim_command("autocmd BufWinEnter,BufWritePost * lua require'telescope._extensions.frecency.db_client'.autocmd_handler(vim.fn.expand('<amatch>'))")
-  vim.api.nvim_command("augroup END")
+  local group = vim.api.nvim_create_augroup("TelescopeFrecency", {})
+  vim.api.nvim_create_autocmd({ "BufWinEnter", "BufWritePost" }, {
+    group = group,
+    callback = function(args)
+      local db_client = require "telescope._extensions.frecency.db_client"
+      db_client.autocmd_handler(args.match)
+    end,
+  })
 end
 
 local function calculate_file_score(frequency, timestamps)
@@ -178,6 +182,8 @@ local function filter_workspace(workspace_path, show_unindexed)
   return res
 end
 
+local updated = false
+
 local function get_file_scores(show_unindexed, workspace_path)
   if not sql_wrapper then return {} end
 
@@ -201,6 +207,8 @@ local function get_file_scores(show_unindexed, workspace_path)
   -- sort the table
   table.sort(scores, function(a, b) return a.score > b.score end)
 
+  updated = false
+
   return scores
 end
 
@@ -214,8 +222,12 @@ local function autocmd_handler(filepath)
     if file_is_ignored(filepath) then return end
 
     vim.b.telescope_frecency_registered = 1
-    sql_wrapper:update(filepath)
+    updated = sql_wrapper:update(filepath)
   end
+end
+
+local function has_updated_results()
+  return updated
 end
 
 return {
@@ -223,4 +235,5 @@ return {
   get_file_scores = get_file_scores,
   autocmd_handler = autocmd_handler,
   validate        = validate_db,
+  has_updated_results = has_updated_results,
 }
