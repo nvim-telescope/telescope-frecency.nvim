@@ -104,7 +104,7 @@ m.update = function(filter)
   end
 
   m.results = (vim.tbl_isempty(m.results) or m.updated or filter_updated)
-      and db.files.get { ws_dir = ws_dir, show_unindexed = m.config.show_unindexed }
+      and db.files:get { ws_path = ws_dir, show_unindexed = m.config.show_unindexed }
     or m.results
 
   return filter_updated
