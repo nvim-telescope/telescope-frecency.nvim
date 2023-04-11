@@ -193,6 +193,13 @@ The following configuration control this behaviour:
 
 The command `FrecencyValidate` can be used to clean the database when `auto_validate` is disabled.
 
+```vim
+" clean DB
+:FrecencyValidate
+" clean DB without prompts to confirm
+:FrecencyValidate!
+```
+
 ### Highlight Groups
 
 ```vim

@@ -62,6 +62,29 @@ local function get_workspace_tags()
   return tags
 end
 
+local function complete(findstart, base)
+  if findstart == 1 then
+    local line = vim.api.nvim_get_current_line()
+    local start = line:find ":"
+    -- don't complete if there's already a completed `:tag:` in line
+    if not start or line:find(":", start + 1) then
+      return -3
+    end
+    return start
+  else
+    if vim.fn.pumvisible() == 1 and #vim.v.completed_item > 0 then
+      return ""
+    end
+
+    local tags = get_workspace_tags()
+    local matches = vim.tbl_filter(function(v)
+      return vim.startswith(v, base)
+    end, tags)
+
+    return #matches > 0 and matches or ""
+  end
+end
+
 local frecency = function(opts)
   local has_devicons, devicons = pcall(require, "nvim-web-devicons")
   local entry_display = require "telescope.pickers.entry_display"
@@ -280,22 +303,11 @@ local frecency = function(opts)
   })
   state.picker:find()
 
-  vim.api.nvim_buf_set_option(state.picker.prompt_bufnr, "filetype", "frecency")
-  vim.api.nvim_buf_set_option(state.picker.prompt_bufnr, "completefunc", "frecency#FrecencyComplete")
-  vim.api.nvim_buf_set_keymap(
-    state.picker.prompt_bufnr,
-    "i",
-    "<Tab>",
-    "pumvisible() ? '<C-n>'  : '<C-x><C-u>'",
-    { expr = true, noremap = true }
-  )
-  vim.api.nvim_buf_set_keymap(
-    state.picker.prompt_bufnr,
-    "i",
-    "<S-Tab>",
-    "pumvisible() ? '<C-p>'  : ''",
-    { expr = true, noremap = true }
-  )
+  local buffer = state.picker.prompt_bufnr
+  vim.api.nvim_buf_set_option(buffer, "filetype", "frecency")
+  vim.api.nvim_buf_set_option(buffer, "completefunc", "v:lua.require'telescope'.extensions.frecency.complete")
+  vim.keymap.set("i", "<Tab>", "pumvisible() ? '<C-n>' : '<C-x><C-u>'", { buffer = buffer, expr = true })
+  vim.keymap.set("i", "<S-Tab>", "pumvisible() ? '<C-p>' : ''", { buffer = buffer, expr = true })
 end
 
 local function set_config_state(opt_name, value, default)
@@ -327,13 +339,15 @@ return telescope.register_extension {
     set_config_state("disable_devicons", ext_config.disable_devicons, false)
     set_config_state("default_workspace", ext_config.default_workspace, nil)
     config = vim.deepcopy(ext_config)
+
+    vim.api.nvim_create_user_command("FrecencyValidate", function (cmd_info)
+      local safe_mode = not cmd_info.bang
+      require"telescope._extensions.frecency.db_client".validate(safe_mode)
+    end, { bang = true, desc = "Clean up DB for telescope-frecency" })
   end,
   exports = {
     frecency = frecency,
-    get_workspace_tags = get_workspace_tags,
-    validate_db = function(...)
-      require"telescope._extensions.frecency.db_client".validate(...)
-    end
+    complete = complete,
   },
   health = checkhealth,
 }
