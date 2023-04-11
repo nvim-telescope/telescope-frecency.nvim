@@ -57,7 +57,7 @@ m.config = {
 m.set_buf = function()
   util.buf_set {
     m.picker.prompt_bufnr,
-    options = { filetype = "TelescopePrompt", completefunc = "frecency#FrecencyComplete" },
+    options = { filetype = "frecency", completefunc = "frecency#FrecencyComplete" },
     mappings = {
       expr = true,
       ["i|<Tab>"] = "pumvisible() ? '<C-n>'  : '<C-x><C-u>'",
