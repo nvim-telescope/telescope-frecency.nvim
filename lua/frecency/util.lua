@@ -87,7 +87,7 @@ util.include_unindexed = function (files, ws_path)
   local unindexed_files = require("plenary.scandir").scan_dir(ws_path, scan_opts)
   for _, file in pairs(unindexed_files) do
     if not util.path_is_ignored(file) then -- this causes some slowdown on large dirs
-      table.insert(files, { id = 0, path = file, count = 0, directory_id = 0 })
+      table.insert(files, { id = 0, path = file, count = 0, directory_id = 0, score=0 })
     end
   end
 end
