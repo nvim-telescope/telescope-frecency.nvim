@@ -41,14 +41,14 @@ m.__index = m
 ---@class FrecencyConfig
 ---@field show_unindexed boolean: default true
 ---@field show_filter_column boolean|string[]: default true
----@field user_workspaces table: default {}
+---@field workspaces table: default {}
 ---@field disable_devicons boolean: default false
 ---@field default_workspace string: default nil
 m.config = {
   show_scores = true,
   show_unindexed = true,
   show_filter_column = true,
-  user_workspaces = {},
+  workspaces = {},
   disable_devicons = false,
   default_workspace = nil,
 }
@@ -85,7 +85,7 @@ end
 ---@return boolean
 m.update = function(filter)
   local filter_updated = false
-  local ws_dir = filter and m.config.user_workspaces[filter] or nil
+  local ws_dir = filter and m.config.workspaces[filter] or nil
 
   if filter == "LSP" and not vim.tbl_isempty(m.lsp_workspaces) then
     ws_dir = m.lsp_workspaces[1]
@@ -258,7 +258,7 @@ m.workspace_tags = function()
   -- Add user config workspaces.
   -- TODO: validate that workspaces are existing directories
   local tags = {}
-  for k, _ in pairs(m.config.user_workspaces) do
+  for k, _ in pairs(m.config.workspaces) do
     table.insert(tags, k)
   end
 
