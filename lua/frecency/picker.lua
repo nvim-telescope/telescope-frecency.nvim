@@ -102,7 +102,7 @@ m.update = function(filter)
       and db.files:get { ws_path = ws_dir, show_unindexed = m.config.show_unindexed }
     or m.results
 
-  return filter_updated
+  return filter_updated, ws_dir
 end
 
 ---@param opts table telescope picker table
@@ -174,6 +174,7 @@ m.maker = function(entry)
       return displayer((function()
         local i = m.config.show_scores and { { entry.score, "TelescopeFrecencyScores" } } or {}
         if has_devicons and not m.config.disable_devicons then
+          vim.print(e)
           table.insert(i, { devicons.get_icon(e.name, string.match(e.name, "%a+$"), { default = true }) })
         end
         table.insert(i, { filter_path, "Directory" })
@@ -212,60 +213,16 @@ m.fd = function(opts)
   m.previous_buffer, m.cwd, m.opts = vim.fn.bufnr "%", vim.fn.expand(opts.cwd or vim.loop.cwd()), opts
   -- TODO: should we update this every time it calls frecency on other buffers?
   m.fetch_lsp_workspaces(m.previous_buffer)
-  m.update()
+  local _, ws_dir = m.update()
 
   local picker_opts = {
     prompt_title = "Frecency",
-    --finder = finders.new_table { results = m.results, entry_maker = m.maker },
-    finder = (function(opts)
-      --local it = vim.fs.dir(vim.fs.normalize "~", { depth = 5 })
-      local scan_opts = {
-        hidden = false,
-        add_dirs = false,
-        only_dirs = false,
-        respect_gitignore = true,
-        depth = 999,
-      }
-      local count = 0
-      return setmetatable({
-        close = function()
-          vim.print("closing……: " .. count)
-          scan_opts.depth = 0
-        end,
-      }, {
-        __call = function(_, _, process_result, process_complete)
-          local chunk = {}
-          local function process()
-            for _, path in ipairs(chunk) do
-              local entry = opts.entry_maker { path = path }
-              if entry then
-                count = count + 1
-                entry.index = count
-                if process_result(entry) then
-                  break
-                end
-              end
-            end
-            chunk = {}
-          end
-          scan_opts.on_insert = function(path)
-            table.insert(chunk, path)
-            if #chunk % 10000 == 0 then
-              vim.schedule(process)
-              vim.print("on_insert: " .. count)
-            end
-          end
-          scan_opts.on_exit = function()
-            if #chunk > 0 then
-              process()
-            end
-            vim.print("on_exit:   " .. count)
-            process_complete()
-          end
-          require("plenary.scandir").scan_dir_async(vim.fs.normalize "~", scan_opts)
-        end,
-      })
-    end) { entry_maker = m.maker },
+    finder = require("frecency.finder").new {
+      entry_maker = m.maker,
+      results = m.results,
+      ws_dir = ws_dir,
+      show_unindexed = m.config.show_unindexed,
+    },
     previewer = conf.file_previewer(opts),
     sorter = sorters.get_substr_matcher(opts),
   }
@@ -277,9 +234,15 @@ m.fd = function(opts)
     new_filter = new_filter or opts.workspace or m.config.default_workspace
 
     o.prompt = matched and query_text:sub(matched:len() + 1) or query_text
-    if m.update(new_filter) then
+    local filter_updated, ws_dir = m.update(new_filter)
+    if filter_updated then
       m.last_filter = new_filter
-      o.updated_finder = finders.new_table { results = m.results, entry_maker = m.maker }
+      o.updated_finder = require("frecency.finder").new {
+        entry_maker = m.maker,
+        results = m.results,
+        ws_dir = ws_dir,
+        show_unindexed = m.config.show_unindexed,
+      }
     end
 
     return o

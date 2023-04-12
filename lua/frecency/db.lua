@@ -95,10 +95,6 @@ function fs:get(opts)
     end)
   end
 
-  if opts.ws_path and opts.show_unindexed then
-    util.include_unindexed(files, opts.ws_path)
-  end
-
   return files
 end
 ---Insert or update a given path
