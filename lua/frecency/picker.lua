@@ -218,29 +218,54 @@ m.fd = function(opts)
     prompt_title = "Frecency",
     --finder = finders.new_table { results = m.results, entry_maker = m.maker },
     finder = (function(opts)
-      local it = vim.fs.dir(vim.fs.normalize "~", { depth = 5 })
+      --local it = vim.fs.dir(vim.fs.normalize "~", { depth = 5 })
+      local scan_opts = {
+        hidden = false,
+        add_dirs = false,
+        only_dirs = false,
+        respect_gitignore = true,
+        depth = 999,
+      }
       local count = 0
-      return setmetatable({ entry_maker = opts.entry_maker, close = function() end }, {
+      return setmetatable({
+        close = function()
+          vim.print("closing……: " .. count)
+          scan_opts.depth = 0
+        end,
+      }, {
         __call = function(_, _, process_result, process_complete)
-          for f, t in it do
-            if t ~= "directory" then
-              count = count + 1
-              local entry = opts.entry_maker { path = f }
+          local chunk = {}
+          local function process()
+            for _, path in ipairs(chunk) do
+              local entry = opts.entry_maker { path = path }
               if entry then
+                count = count + 1
                 entry.index = count
                 if process_result(entry) then
                   break
                 end
-                if count % 1000 == 0 then
-                  require("plenary.async").util.scheduler()
-                end
               end
             end
+            chunk = {}
           end
-          process_complete()
+          scan_opts.on_insert = function(path)
+            table.insert(chunk, path)
+            if #chunk % 10000 == 0 then
+              vim.schedule(process)
+              vim.print("on_insert: " .. count)
+            end
+          end
+          scan_opts.on_exit = function()
+            if #chunk > 0 then
+              process()
+            end
+            vim.print("on_exit:   " .. count)
+            process_complete()
+          end
+          require("plenary.scandir").scan_dir_async(vim.fs.normalize "~", scan_opts)
         end,
       })
-    end) { results = m.results, entry_maker = m.maker },
+    end) { entry_maker = m.maker },
     previewer = conf.file_previewer(opts),
     sorter = sorters.get_substr_matcher(opts),
   }
