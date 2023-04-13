@@ -174,7 +174,6 @@ m.maker = function(entry)
       return displayer((function()
         local i = m.config.show_scores and { { entry.score, "TelescopeFrecencyScores" } } or {}
         if has_devicons and not m.config.disable_devicons then
-          vim.print(e)
           table.insert(i, { devicons.get_icon(e.name, string.match(e.name, "%a+$"), { default = true }) })
         end
         table.insert(i, { filter_path, "Directory" })
