@@ -12,7 +12,9 @@ Finder.new = function(opts)
 end
 
 function Finder:close()
-  self.scan_opts.depth = 0
+  if self.cancel then
+    self.cancel()
+  end
 end
 
 function Finder:make_process(process_result)
@@ -51,7 +53,7 @@ function Finder:__call(_, process_result, process_complete)
       vim.print("on_exit:   " .. self.count)
       process_complete()
     end
-    scandir.scan_dir_async(self.opts.ws_dir, self.scan_opts)
+    self.cancel = scandir.scan_dir_async(self.opts.ws_dir, self.scan_opts)
   end
 end
 
