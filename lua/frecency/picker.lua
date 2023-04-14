@@ -318,8 +318,9 @@ m.setup = function(config)
   local group = vim.api.nvim_create_augroup("TelescopeFrecency", {})
   vim.api.nvim_create_autocmd({ "BufWinEnter", "BufWritePost" }, {
     group = group,
-    callback = function(_)
-      local has_added_entry = db.update()
+    callback = function(args)
+      local path = vim.api.nvim_buf_get_name(args.buf)
+      local has_added_entry = db.update(path)
       m.updated = m.updated or has_added_entry
     end,
   })
