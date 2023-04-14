@@ -78,8 +78,13 @@ end
 ---@return table[]: files entries
 function fs:get(opts)
   opts = opts or {}
-  local contains = opts.ws_path and { path = { opts.ws_path .. "*" } } or nil
-  local files = fs:__get { contains = contains }
+  local query = {}
+  if opts.ws_path then
+    query.contains = { path = { opts.ws_path .. "*" } }
+  elseif opts.path then
+    query.where = { path = opts.path }
+  end
+  local files = fs:__get(query)
 
   if vim.F.if_nil(opts.with_score, true) then
     ---NOTE: this might get slower with big db, it might be better to query with db.get_timestamp.
@@ -106,7 +111,7 @@ end
 ---@return number: row id
 ---@return boolean: true if it has inserted
 function fs:insert_or_update(path)
-  local entry = (self:where { path = path } or {})
+  local entry = (self:get({ path = path })[1] or {})
   local file_id = entry.id
   local has_added_entry = not file_id
 
