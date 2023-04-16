@@ -34,7 +34,7 @@ local fs, ts = db.files, db.timestamps
 db.config = {
   db_root = nil,
   ignore_patterns = {},
-  safe_mode = true,
+  db_safe_mode = true,
   auto_validate = true,
 }
 
@@ -169,7 +169,7 @@ function db.remove(entries, silent)
 end
 
 ---Remove file entries that no longer exists.
-function db.validate(safe_mode)
+function db.validate(force)
   -- print "running validate"
   local threshold = const.db_remove_safety_threshold
   local unlinked = fs:map(function(entry)
@@ -177,9 +177,8 @@ function db.validate(safe_mode)
     return invalid and entry or nil
   end)
 
-  local confirmed = (#unlinked > threshold and db.safe_mode) and util.confirm_deletion(#unlinked) or not safe_mode
   if #unlinked > 0 then
-    if confirmed then
+    if force or not db.config.db_safe_mode or (#unlinked > threshold and util.confirm_deletion(#unlinked)) then
       db.remove(unlinked)
     else
       util.abort_remove_unlinked_files()

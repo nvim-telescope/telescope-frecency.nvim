@@ -326,9 +326,12 @@ m.setup = function(config)
   })
 
   vim.api.nvim_create_user_command("FrecencyValidate", function(cmd_info)
-    local safe_mode = not cmd_info.bang
-    db.validate(safe_mode)
+    db.validate(cmd_info.bang)
   end, { bang = true, desc = "Clean up DB for telescope-frecency" })
+
+  if db.config.auto_validate then
+    db.validate()
+  end
 end
 
 return m
