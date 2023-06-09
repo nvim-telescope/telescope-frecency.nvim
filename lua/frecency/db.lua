@@ -5,44 +5,45 @@ local sqlite = require "sqlite"
 local p = require "plenary.path"
 local s = sqlite.lib
 
----@class FrecencyDB: sqlite_db
+---@class FrecencySqlite: sqlite_db
 ---@field files sqlite_tbl
 ---@field timestamps sqlite_tbl
----@field workspaces sqlite_tbl
----@field config FrecencyConfig
-local db = sqlite {
-  uri = vim.fn.stdpath "data" .. "/file_frecency.sqlite3",
-  files = {
-    id = true,
-    count = { "integer", default = 0, required = true },
-    path = "string",
-  },
-  timestamps = {
-    id = true,
-    timestamp = { "real", default = s.julianday "now" },
-    file_id = { "integer", reference = "files.id", on_delete = "cascade" },
-  },
-}
-
-local fs, ts = db.files, db.timestamps
 
 ---@class FrecencyDBConfig
----@field db_root string: default "${stdpath.data}/file_frecency.sqlite3"
+---@field db_root string: default "${stdpath.data}"
 ---@field ignore_patterns table: extra ignore patterns: default empty
 ---@field safe_mode boolean: When enabled, the user will be prompted when entries > 10, default true
 ---@field auto_validate boolean: When this to false, stale entries will never be automatically removed, default true
-db.config = {
-  db_root = nil,
-  ignore_patterns = {},
-  db_safe_mode = true,
-  auto_validate = true,
+
+---@class FrecencyDB
+---@field sqlite FrecencySqlite
+---@field config FrecencyConfig
+local db = {
+  config = {
+    db_root = vim.fn.stdpath "data",
+    ignore_patterns = {},
+    db_safe_mode = true,
+    auto_validate = true,
+  },
 }
 
 ---Set database configuration
 ---@param config FrecencyDBConfig
-db.set_config = function(config)
+function db.set_config(config)
   db.config = vim.tbl_extend("keep", config, db.config)
-  db.db.uri = db.config.db_root and db.config.db_root or db.db.uri
+  db.sqlite = sqlite {
+    uri = db.config.db_root .. "/file_frecency.sqlite3",
+    files = {
+      id = true,
+      count = { "integer", default = 0, required = true },
+      path = "string",
+    },
+    timestamps = {
+      id = true,
+      timestamp = { "real", default = s.julianday "now" },
+      file_id = { "integer", reference = "files.id", on_delete = "cascade" },
+    },
+  }
 end
 
 ---Get timestamps with a computed filed called age.
@@ -52,20 +53,20 @@ end
 ---- { with_age } boolean: whether to include age, default false.
 ---@return table { id, file_id, age }
 ---@overload func()
-function ts:get(opts)
+function db.get_timestamps(opts)
   opts = opts or {}
   local where = opts.file_id and { file_id = opts.file_id } or nil
   local compute_age = opts.with_age and s.cast((s.julianday() - s.julianday "timestamp") * 24 * 60, "integer") or nil
-  return ts:__get { where = where, keys = { age = compute_age, "id", "file_id" } }
+  return db.sqlite.timestamps:__get { where = where, keys = { age = compute_age, "id", "file_id" } }
 end
 
 ---Trim database entries
 ---@param file_id any
-function ts:trim(file_id)
-  local timestamps = ts:get { file_id = file_id, with_age = true }
+function db.trim_timestamps(file_id)
+  local timestamps = db.get_timestamps { file_id = file_id, with_age = true }
   local trim_at = timestamps[(#timestamps - const.max_timestamps) + 1]
   if trim_at then
-    ts:remove { file_id = file_id, id = "<" .. trim_at.id }
+    db.sqlite.timestamps:remove { file_id = file_id, id = "<" .. trim_at.id }
   end
 end
 
@@ -76,7 +77,7 @@ end
 ---- { with_score } boolean: whether to include score in the result and sort the files by score.
 ---@overload func()
 ---@return table[]: files entries
-function fs:get(opts)
+function db.get_files(opts)
   opts = opts or {}
   local query = {}
   if opts.ws_path then
@@ -84,12 +85,12 @@ function fs:get(opts)
   elseif opts.path then
     query.where = { path = opts.path }
   end
-  local files = fs:__get(query)
+  local files = db.sqlite.files:__get(query)
 
   if vim.F.if_nil(opts.with_score, true) then
     ---NOTE: this might get slower with big db, it might be better to query with db.get_timestamp.
     ---TODO: test the above assumption
-    local timestamps = ts:get { with_age = true }
+    local timestamps = db.get_timestamps { with_age = true }
     for _, file in ipairs(files) do
       file.timestamps = util.tbl_match("file_id", file.id, timestamps)
       file.score = algo.calculate_file_score(file)
@@ -110,15 +111,15 @@ end
 ---@param path string
 ---@return number: row id
 ---@return boolean: true if it has inserted
-function fs:insert_or_update(path)
-  local entry = (self:get({ path = path })[1] or {})
+function db.insert_or_update_files(path)
+  local entry = (db.get_files({ path = path })[1] or {})
   local file_id = entry.id
   local has_added_entry = not file_id
 
   if file_id then
-    self:update { where = { id = file_id }, set = { count = entry.count + 1 } }
+    db.sqlite.files:update { where = { id = file_id }, set = { count = entry.count + 1 } }
   else
-    file_id = self:insert { path = path }
+    file_id = db.sqlite.files:insert { path = path }
   end
   return file_id, has_added_entry
 end
@@ -136,11 +137,11 @@ function db.update(path)
     vim.b.telescope_frecency_registered = 1
   end
   --- Insert or update path
-  local file_id, has_added_entry = fs:insert_or_update(path)
+  local file_id, has_added_entry = db.insert_or_update_files(path)
   --- Register timestamp for this update.
-  ts:insert { file_id = file_id }
+  db.sqlite.timestamps:insert { file_id = file_id }
   --- Trim timestamps to max_timestamps per file
-  ts:trim(file_id)
+  db.trim_timestamps(file_id)
   return has_added_entry
 end
 
@@ -149,8 +150,8 @@ end
 ---@param silent boolean: whether to notify user on changes made, default false
 function db.remove(entries, silent)
   if type(entries) == "nil" then
-    local count = fs:count()
-    fs:remove()
+    local count = db.sqlite.files:count()
+    db.sqlite.files:remove()
     if not vim.F.if_nil(silent, false) then
       vim.notify(("Telescope-frecency: removed all entries. number of entries removed %d ."):format(count))
     end
@@ -160,7 +161,7 @@ function db.remove(entries, silent)
   entries = (entries[1] and entries[1].id) and entries or { entries }
 
   for _, entry in pairs(entries) do
-    fs:remove { id = entry.id }
+    db.sqlite.files:remove { id = entry.id }
   end
 
   if not vim.F.if_nil(silent, false) then
@@ -172,7 +173,7 @@ end
 function db.validate(force)
   -- print "running validate"
   local threshold = const.db_remove_safety_threshold
-  local unlinked = fs:map(function(entry)
+  local unlinked = db.sqlite.files:map(function(entry)
     local invalid = (not util.path_exists(entry.path) or util.path_is_ignored(entry.path, db.ignore_patterns))
     return invalid and entry or nil
   end)

@@ -99,7 +99,7 @@ m.update = function(filter)
   end
 
   m.results = (vim.tbl_isempty(m.results) or m.updated or filter_updated)
-      and db.files:get { ws_path = ws_dir, show_unindexed = m.config.show_unindexed }
+      and db.get_files { ws_path = ws_dir, show_unindexed = m.config.show_unindexed }
     or m.results
 
   return filter_updated
@@ -305,13 +305,12 @@ m.setup = function(config)
   db.set_config(config)
 
   --- Seed files table with oldfiles when it's empty.
-  if not p:new(db.db.uri):exists() then
+  if db.sqlite.files:count() == 0 then
     -- TODO: this needs to be scheduled for after shada load??
-    local oldfiles = vim.api.nvim_get_vvar "oldfiles"
-    for _, path in ipairs(oldfiles) do
-      fs.insert { path = path, count = 0 } -- TODO: remove when sql.nvim#97 is closed
+    for _, path in ipairs(vim.v.oldfiles) do
+      db.sqlite.files:insert { path = path, count = 0 } -- TODO: remove when sql.nvim#97 is closed
     end
-    vim.notify(("Telescope-Frecency: Imported %d entries from oldfiles."):format(#oldfiles))
+    vim.notify(("Telescope-Frecency: Imported %d entries from oldfiles."):format(#vim.v.oldfiles))
   end
 
   -- TODO: perhaps ignore buffer without file path here?
