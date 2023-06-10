@@ -170,7 +170,9 @@ function db.remove(entries, silent)
 end
 
 ---Remove file entries that no longer exists.
-function db.validate(force)
+function db.validate(opts)
+  opts = opts or {}
+
   -- print "running validate"
   local threshold = const.db_remove_safety_threshold
   local unlinked = db.sqlite.files:map(function(entry)
@@ -179,9 +181,9 @@ function db.validate(force)
   end)
 
   if #unlinked > 0 then
-    if force or not db.config.db_safe_mode or (#unlinked > threshold and util.confirm_deletion(#unlinked)) then
+    if opts.force or not db.config.db_safe_mode or (#unlinked > threshold and util.confirm_deletion(#unlinked)) then
       db.remove(unlinked)
-    else
+    elseif not opts.auto then
       util.abort_remove_unlinked_files()
     end
   end
