@@ -79,7 +79,17 @@ use {
 }
 ```
 
-_TODO: add installation instructions for other package managers_
+### [Lazy.nvim](https://github.com/folke/lazy.nvim)
+
+```lua
+{
+  "nvim-telescope/telescope-frecency.nvim",
+  config = function()
+    require"telescope".load_extension("frecency")
+  end,
+  dependencies = {"kkharji/sqlite.lua"}
+}
+```
 
 If no database is found when running Neovim with the plugin installed, a new one is created and entries from `shada` `v:oldfiles` are automatically imported.
 
