@@ -81,7 +81,19 @@ util.buf_is_loaded = function(filename)
 end
 
 util.include_unindexed = function(files, ws_path)
-  local scan_opts = { respect_gitignore = true, depth = 100, hidden = true }
+  local is_indexed = {}
+  for _, item in ipairs(files) do
+    is_indexed[item.path] = true
+  end
+
+  local scan_opts = {
+    respect_gitignore = true,
+    depth = 100,
+    hidden = true,
+    search_pattern = function(file)
+      return not is_indexed[file]
+    end,
+  }
 
   -- TODO: make sure scandir unindexed have opts.ignore_patterns applied
   -- TODO: make filters handle mulitple directories
