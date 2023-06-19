@@ -2,7 +2,7 @@
 
 A [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) extension that offers intelligent prioritization when selecting files from your editing history.
 
-Using an implementation of Mozilla's [Frecency algorithm](https://developer.mozilla.org/en-US/docs/Mozilla/Tech/Places/Frecency_algorithm) (used in [Firefox's address bar](https://support.mozilla.org/en-US/kb/address-bar-autocomplete-firefox)), files edited _frecently_ are given higher precedence in the list index.
+Using an implementation of Mozilla's [Frecency algorithm](https://web.archive.org/web/20210421120120/https://developer.mozilla.org/en-US/docs/Mozilla/Tech/Places/Frecency_algorithm) (used in [Firefox's address bar](https://support.mozilla.org/en-US/kb/address-bar-autocomplete-firefox)), files edited _frecently_ are given higher precedence in the list index.
 
 As the extension learns your editing habits over time, the sorting of the list is dynamically altered to prioritize the files you're likely to need.
 
@@ -59,7 +59,7 @@ If the active buffer (prior to the finder being launched) is attached to an LSP 
 ## Requirements
 
 - [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) (required)
-- [sqlite.lua](https://github.com/tami5/sqlite.lua) (required)
+- [sqlite.lua](https://github.com/kkharji/sqlite.lua) (required)
 - [nvim-web-devicons](https://github.com/kyazdani42/nvim-web-devicons) (optional)
 
 Timestamps and file records are stored in an [SQLite3](https://www.sqlite.org/index.html) database for persistence and speed.
@@ -75,11 +75,21 @@ use {
   config = function()
     require"telescope".load_extension("frecency")
   end,
-  requires = {"tami5/sqlite.lua"}
+  requires = {"kkharji/sqlite.lua"}
 }
 ```
 
-_TODO: add installation instructions for other package managers_
+### [Lazy.nvim](https://github.com/folke/lazy.nvim)
+
+```lua
+{
+  "nvim-telescope/telescope-frecency.nvim",
+  config = function()
+    require"telescope".load_extension("frecency")
+  end,
+  dependencies = {"kkharji/sqlite.lua"}
+}
+```
 
 If no database is found when running Neovim with the plugin installed, a new one is created and entries from `shada` `v:oldfiles` are automatically imported.
 
@@ -145,6 +155,15 @@ See [default configuration](https://github.com/nvim-telescope/telescope.nvim#tel
 
   Disable devicons (if available)
 
+- `show_filter_column` (default: `true`)
+
+  Show the path of the active filter before file paths. In default, it uses the tail of paths for `'LSP'` and `'CWD'` tags. You can configure this by setting a table for this option.
+
+   ```lua
+   -- show the tail for "LSP", "CWD" and "FOO"
+   show_filter_column = { "LSP", "CWD", "FOO" }
+   ```
+
 
 ### Example Configuration:
 
@@ -183,6 +202,13 @@ The following configuration control this behaviour:
 `auto_validate` - When this to false, stale entries will never be automatically removed.
 
 The command `FrecencyValidate` can be used to clean the database when `auto_validate` is disabled.
+
+```vim
+" clean DB
+:FrecencyValidate
+" clean DB without prompts to confirm
+:FrecencyValidate!
+```
 
 ### Highlight Groups
 
