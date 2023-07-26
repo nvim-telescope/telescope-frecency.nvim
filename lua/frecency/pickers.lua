@@ -1,4 +1,5 @@
 local EntryMaker = require "frecency.picker.entry_maker"
+local Finder = require "frecency.finder"
 local log = require "frecency.log"
 local actions = require "telescope.actions"
 local config_values = require("telescope.config").values
@@ -91,12 +92,16 @@ function Picker:start(opts)
     self.results = self:fetch_results(self.workspace)
   end
 
+  local finder = Finder.new({ fs = self.config.fs, entry_maker = self.entry_maker, initial_results = self.results })
+    :start { need_scandir = self.workspace and self.config.show_unindexed and true or false, workspace = self.workspace }
+
   local picker = pickers.new(opts, {
     prompt_title = "Frecency",
-    finder = finders.new_table {
+    --[[ finder = finders.new_table {
       results = self.results,
       entry_maker = self.entry_maker:create(self.workspace),
-    },
+    }, ]]
+    finder = finder,
     previewer = config_values.file_previewer(opts),
     sorter = sorters.get_substr_matcher(),
     on_input_filter_cb = function(prompt)
@@ -203,11 +208,11 @@ function Picker:fetch_results(workspace)
     file.score = self.recency:calculate(file.count, ages)
   end
 
-  if workspace and self.config.show_unindexed then
+  --[[ if workspace and self.config.show_unindexed then
     for name in self.config.fs:scan_dir(workspace) do
       table.insert(files, { path = vim.fs.joinpath(workspace, name), score = 0 })
     end
-  end
+  end ]]
 
   table.sort(files, function(a, b)
     return a.score > b.score
@@ -235,10 +240,15 @@ function Picker:on_input_filter_cb(prompt, cwd)
   log:debug("%s", { workspace = workspace, ["self.workspace"] = self.workspace })
   if self.workspace ~= workspace then
     self.workspace = workspace
-    opts.updated_finder = finders.new_table {
+    --[[ opts.updated_finder = finders.new_table {
       results = self:fetch_results(workspace),
       entry_maker = self.entry_maker:create(workspace),
-    }
+    } ]]
+    opts.updated_finder =
+      Finder.new({ fs = self.config.fs, entry_maker = self.entry_maker, initial_results = self.results }):start {
+        need_scandir = self.workspace and self.config.show_unindexed and true or false,
+        workspace = self.workspace,
+      }
   end
   return opts
 end
