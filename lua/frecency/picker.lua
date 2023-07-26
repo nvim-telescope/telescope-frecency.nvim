@@ -11,19 +11,8 @@ local pickers = require "telescope.pickers"
 local sorters = require "telescope.sorters"
 local ts_util = require "telescope.utils"
 local db = require "frecency.db"
+local log = require "frecency.log"
 
----TODO: Describe FrecencyPicker fields
-
----@class FrecencyPicker
----@field db FrecencyDB: where the files will be stored
----@field results table
----@field active_filter string
----@field active_filter_tag string
----@field previous_buffer string
----@field cwd string
----@field lsp_workspaces table
----@field picker table
----@field updated boolean: true if a new entry is added into DB
 local m = {
   results = {},
   active_filter = nil,
@@ -38,12 +27,6 @@ local m = {
 
 m.__index = m
 
----@class FrecencyConfig
----@field show_unindexed boolean: default true
----@field show_filter_column boolean|string[]: default true
----@field workspaces table: default {}
----@field disable_devicons boolean: default false
----@field default_workspace string: default nil
 m.config = {
   show_scores = true,
   show_unindexed = true,
@@ -84,6 +67,7 @@ end
 ---@param filter string
 ---@return boolean
 m.update = function(filter)
+  log:debug("filter: %s", filter or "NONE")
   local filter_updated = false
   local ws_dir = filter and m.config.workspaces[filter] or nil
 

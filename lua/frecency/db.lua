@@ -4,10 +4,7 @@ local algo = require "frecency.algo"
 local sqlite = require "sqlite"
 local p = require "plenary.path"
 local s = sqlite.lib
-
----@class FrecencySqlite: sqlite_db
----@field files sqlite_tbl
----@field timestamps sqlite_tbl
+local log = require "frecency.log"
 
 ---@class FrecencyDBConfig
 ---@field db_root string: default "${stdpath.data}"
