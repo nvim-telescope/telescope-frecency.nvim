@@ -34,4 +34,14 @@ jobs:
           PLENARY_PATH: plenary.nvim
           EXE: ${{ steps.nvim.outputs.executable }}
         run: |-
-          make test NVIM=$(perl -e '$_ = $ENV{EXE}; s,\\,/,g; print')
+          TEST_DIR=lua/frecency/tests/
+          MINIMAL_LUA=${TEST_DIR}minimal.lua
+          NVIM=$(perl -e '$_ = $ENV{EXE}; s,\\,/,g; print')
+          $NVIM --headless --clean -u $MINIMAL_LUA -c "PlenaryBustedDirectory $TEST_DIR {minimal_init = '$MINIMAL_LUA'}"
+      - name: Lint sources
+        env:
+          LSP_CONFIG_PATH: nvim-lspconfig
+          EXE: ${{ steps.nvim.outputs.executable }}
+        run: |-
+          NVIM=$(perl -e '$_ = $ENV{EXE}; s,\\,/,g; print')
+          bin/lint.sh
