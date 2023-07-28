@@ -1,6 +1,6 @@
 local Database = require "frecency.database"
 local FS = require "frecency.fs"
-local Picker = require "frecency.pickers"
+local Picker = require "frecency.picker"
 local Recency = require "frecency.recency"
 local log = require "frecency.log"
 
