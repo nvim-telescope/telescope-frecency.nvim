@@ -31,7 +31,7 @@ end
 ---@field filename string
 ---@field ordinal string
 ---@field name string
----@field score float
+---@field score number
 ---@field display fun(entry: FrecencyEntry): string, table
 
 ---@param workspace string?

@@ -37,7 +37,7 @@ local Path = require "plenary.path"
 ---@field filename string
 ---@field name string
 ---@field ordinal string
----@field score float
+---@field score number
 
 ---@class FrecencyPicker
 ---@field private config FrecencyPickerConfig
@@ -201,7 +201,7 @@ function Picker:fetch_results(workspace)
       return timestamp.file_id == file.id
     end, timestamps)
     ---@param timestamp FrecencyTimestamp
-    ---@type float[]
+    ---@type number[]
     local ages = vim.tbl_map(function(timestamp)
       return timestamp.age
     end, file_timestamps)

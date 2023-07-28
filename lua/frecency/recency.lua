@@ -23,8 +23,8 @@ Recency.new = function(config)
 end
 
 ---@param count integer
----@param ages float[]
----@return float
+---@param ages number[]
+---@return number
 function Recency:calculate(count, ages)
   local score = 0
   for _, age in ipairs(ages) do

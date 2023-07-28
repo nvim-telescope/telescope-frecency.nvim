@@ -20,7 +20,7 @@ local log = require "frecency.log"
 ---@field age integer calculated from timestamp
 ---@field file_id integer
 ---@field id integer
----@field timestamp float
+---@field timestamp number
 
 ---@class FrecencyDatabaseGetFilesOptions
 ---@field path string?
@@ -42,12 +42,6 @@ Database.new = function(config)
     buf_registered_flag_name = "telescope_frecency_registered",
     timestamps_age_query = lib.cast((lib.julianday() - lib.julianday "timestamp") * 24 * 60, "integer"),
   }, { __index = Database })
-  ---@param pattern string
-  local function glob_to_regex(pattern)
-    local escaped = pattern:gsub("[%-%.%+%[%]%(%)%$%^%%%?%*]", "%%%1")
-    local regex = escaped:gsub("%%%*", ".*"):gsub("%%%?", ".")
-    return "^" .. regex .. "$"
-  end
   self.sqlite = sqlite {
     uri = self.config.root .. "/file_frecency.sqlite3",
     files = { id = true, count = { "integer", default = 0, required = true }, path = "string" },

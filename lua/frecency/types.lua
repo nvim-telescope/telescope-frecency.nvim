@@ -11,12 +11,12 @@
 ---@field set table: key and value to updated.
 
 ---@class sqlite_query_select @Query fileds used when calling |sqlite:select| or |sqlite_tbl:get|
----@field where table: filter down values using key values.
----@field keys table: keys to include. (default all)
----@field join table: (TODO: support)
----@field order_by table: { asc = "key", dsc = {"key", "another_key"} }
----@field limit number: the number of result to limit by
----@field contains table: for sqlite glob ex. { title = "fix*" }
+---@field where table? filter down values using key values.
+---@field keys table? keys to include. (default all)
+---@field join table? (TODO: support)
+---@field order_by table? { asc = "key", dsc = {"key", "another_key"} }
+---@field limit number? the number of result to limit by
+---@field contains table? for sqlite glob ex. { title = "fix*" }
 
 ---@alias sqlite_query_delete table<string, string>
 
