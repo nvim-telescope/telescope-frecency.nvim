@@ -43,6 +43,8 @@ jobs:
           MINIMAL_LUA=${TEST_DIR}minimal.lua
           NVIM=$(perl -e '$_ = $ENV{EXE}; s,\\,/,g; print')
           $NVIM --headless --clean -u $MINIMAL_LUA -c "PlenaryBustedDirectory $TEST_DIR {minimal_init = '$MINIMAL_LUA'}"
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
       - name: Lint sources
         env:
           LSP_CONFIG_PATH: nvim-lspconfig
