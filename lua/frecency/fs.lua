@@ -30,7 +30,7 @@ end
 
 ---@param path string
 function FS:scan_dir(path)
-  log:debug("%s", { path = path })
+  log:debug { path = path }
   local gitignore = self:make_gitignore(path)
   return coroutine.wrap(function()
     for name, type in

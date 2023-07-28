@@ -67,7 +67,6 @@ end
 ---@param filter string
 ---@return boolean
 m.update = function(filter)
-  log:debug("filter: %s", filter or "NONE")
   local filter_updated = false
   local ws_dir = filter and m.config.workspaces[filter] or nil
 

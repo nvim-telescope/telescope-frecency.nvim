@@ -72,7 +72,7 @@ end
 ---@return FrecencyFile[]
 function Database:get_files(workspace)
   local query = workspace and { contains = { path = { workspace .. "*" } } } or {}
-  log:debug("%s", { query = query })
+  log:debug { query = query }
   return self.sqlite.files:get(query)
 end
 

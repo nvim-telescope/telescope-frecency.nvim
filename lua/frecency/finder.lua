@@ -30,7 +30,7 @@ function Finder:start(opts)
       entry_maker = entry_maker,
     }
   end
-  log:debug("%s", { finder = opts })
+  log:debug { finder = opts }
   return finders.new_dynamic { entry_maker = entry_maker, fn = self:create_fn { path = opts.workspace } }
 end
 
@@ -51,7 +51,7 @@ function Finder:create_fn(opts)
       return results
     end
     called = called + 1
-    log:debug("called: %d", called)
+    log:debug { called = called }
     local count = 0
     while true do
       local ok, name = pcall(it)
