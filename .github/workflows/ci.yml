@@ -18,6 +18,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
+      - name: Checkout nvim-lspconfig
+        uses: actions/checkout@v3
+        with:
+          repository: neovim/nvim-lspconfig
+          path: nvim-lspconfig
       - name: Checkout plenary.nvim
         uses: actions/checkout@v3
         with:
