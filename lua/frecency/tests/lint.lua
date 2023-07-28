@@ -1,3 +1,7 @@
+if not vim.env.LSP_CONFIG_PATH then
+  print "cannot find nvim-lspconfig"
+  vim.cmd.qa { bang = true }
+end
 vim.opt.runtimepath:append(vim.env.LSP_CONFIG_PATH)
 require("lspconfig").lua_ls.setup { settings = { Lua = { diagnostics = { globals = { "vim" } } } } }
 vim.api.nvim_create_autocmd("DiagnosticChanged", {
