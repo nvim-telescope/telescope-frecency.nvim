@@ -41,9 +41,9 @@ function Finder:create_fn(initial_results, path)
   local is_dead = false
   local results = vim.deepcopy(initial_results)
   local called = 0
-  ---@param prompt string?
+  ---@param _ string?
   ---@return table[]
-  return function(prompt)
+  return function(_)
     if is_dead then
       return results
     end

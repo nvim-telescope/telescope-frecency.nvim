@@ -236,9 +236,9 @@ function Picker:on_input_filter_cb(picker_opts)
 end
 
 ---@private
----@param prompt_bufnr integer
+---@param _ integer
 ---@return boolean
-function Picker:attach_mappings(prompt_bufnr)
+function Picker:attach_mappings(_)
   actions.select_default:replace_if(function()
     return vim.fn.complete_info().pum_visible == 1
   end, function()
