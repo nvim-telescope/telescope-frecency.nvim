@@ -1,5 +1,7 @@
 local Database = require "frecency.database"
+local EntryMaker = require "frecency.entry_maker"
 local FS = require "frecency.fs"
+local Finder = require "frecency.finder"
 local Picker = require "frecency.picker"
 local Recency = require "frecency.recency"
 local log = require "frecency.log"
@@ -7,10 +9,10 @@ local log = require "frecency.log"
 ---@class Frecency
 ---@field config FrecencyConfig
 ---@field picker FrecencyPicker
+---@field private buf_registered table<integer, boolean> flag to indicate the buffer is registered to the database.
 ---@field private database FrecencyDatabase
 ---@field private fs FrecencyFS
 ---@field private recency FrecencyRecency
----@field private buf_registered table<integer, boolean> flag to indicate the buffer is registered to the database.
 local Frecency = {}
 
 ---@class FrecencyConfig
@@ -29,37 +31,38 @@ local Frecency = {}
 ---@param opts FrecencyConfig?
 ---@return Frecency
 Frecency.new = function(opts)
-  local self = setmetatable({
-    config = vim.tbl_extend("force", {
-      auto_validate = true,
-      db_root = vim.fn.stdpath "data",
-      db_safe_mode = true,
-      default_workspace = nil,
-      disable_devicons = false,
-      filter_delimiter = ":",
-      ignore_patterns = { "*.git/*", "*/tmp/*", "term://*" },
-      show_filter_column = true,
-      show_scores = false,
-      show_unindexed = true,
-      workspaces = {},
-    }, opts or {}),
-    buf_registered = {},
-  }, { __index = Frecency })--[[@as Frecency]]
+  ---@type FrecencyConfig
+  local config = vim.tbl_extend("force", {
+    auto_validate = true,
+    db_root = vim.fn.stdpath "data",
+    db_safe_mode = true,
+    default_workspace = nil,
+    disable_devicons = false,
+    filter_delimiter = ":",
+    ignore_patterns = { "*.git/*", "*/tmp/*", "term://*" },
+    show_filter_column = true,
+    show_scores = false,
+    show_unindexed = true,
+    workspaces = {},
+  }, opts or {})
+  local self = setmetatable({ buf_registered = {} }, { __index = Frecency })--[[@as Frecency]]
   self.database = Database.new {
-    auto_validate = self.config.auto_validate,
-    root = self.config.db_root,
-    safe_mode = self.config.db_safe_mode,
+    auto_validate = config.auto_validate,
+    root = config.db_root,
+    safe_mode = config.db_safe_mode,
   }
-  self.fs = FS.new { ignore_patterns = self.config.ignore_patterns }
+  self.fs = FS.new { ignore_patterns = config.ignore_patterns }
+  local entry_maker = EntryMaker.new(self.fs, {
+    show_filter_column = config.show_filter_column,
+    show_scores = config.show_scores,
+  })
+  local finder = Finder.new(entry_maker, self.fs)
   self.recency = Recency.new()
-  self.picker = Picker.new(self.database, self.recency, {
-    default_workspace = self.config.default_workspace,
-    filter_delimiter = self.config.filter_delimiter,
-    fs = self.fs,
-    show_filter_column = self.config.show_filter_column,
-    show_scores = self.config.show_scores,
-    show_unindexed = self.config.show_unindexed,
-    workspaces = self.config.workspaces,
+  self.picker = Picker.new(self.database, finder, self.fs, self.recency, {
+    default_workspace = config.default_workspace,
+    filter_delimiter = config.filter_delimiter,
+    show_unindexed = config.show_unindexed,
+    workspaces = config.workspaces,
   })
   return self
 end

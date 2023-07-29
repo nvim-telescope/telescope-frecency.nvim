@@ -2,47 +2,43 @@ local finders = require "telescope.finders"
 local log = require "frecency.log"
 
 ---@class FrecencyFinder
----@field config FrecencyFinderConfig
+---@field private entry_maker FrecencyEntryMaker
+---@field private fs FrecencyFS
 local Finder = {}
 
----@class FrecencyFinderConfig
----@field fs FrecencyFS
----@field entry_maker FrecencyEntryMaker
----@field initial_results table[]
-
----@param config FrecencyFinderConfig
+---@param entry_maker FrecencyEntryMaker
+---@param fs FrecencyFS
 ---@return FrecencyFinder
-Finder.new = function(config)
-  return setmetatable({ config = config }, { __index = Finder })
+Finder.new = function(entry_maker, fs)
+  return setmetatable({ entry_maker = entry_maker, fs = fs }, { __index = Finder })
 end
 
 ---@class FrecencyFinderOptions
 ---@field need_scandir boolean
 ---@field workspace string?
 
+---@param initial_results table
 ---@param opts FrecencyFinderOptions
 ---@return table
-function Finder:start(opts)
-  local entry_maker = self.config.entry_maker:create(opts.workspace)
+function Finder:start(initial_results, opts)
+  local entry_maker = self.entry_maker:create(opts.workspace)
   if not opts.need_scandir then
     return finders.new_table {
-      results = self.config.initial_results,
+      results = initial_results,
       entry_maker = entry_maker,
     }
   end
   log:debug { finder = opts }
-  return finders.new_dynamic { entry_maker = entry_maker, fn = self:create_fn { path = opts.workspace } }
+  return finders.new_dynamic { entry_maker = entry_maker, fn = self:create_fn(initial_results, opts.workspace) }
 end
 
----@class FrecencyFinderCreateFnOptions
----@field path string
-
----@param opts FrecencyFinderCreateFnOptions
+---@param initial_results table
+---@param path string
 ---@return fun(prompt: string?): table[]
-function Finder:create_fn(opts)
-  local it = self.config.fs:scan_dir(opts.path)
+function Finder:create_fn(initial_results, path)
+  local it = self.fs:scan_dir(path)
   local is_dead = false
-  local results = vim.deepcopy(self.config.initial_results)
+  local results = vim.deepcopy(initial_results)
   local called = 0
   ---@param prompt string?
   ---@return table[]
@@ -59,7 +55,7 @@ function Finder:create_fn(opts)
         is_dead = true
         break
       end
-      table.insert(results, { path = vim.fs.joinpath(opts.path, name), score = 0 })
+      table.insert(results, { path = vim.fs.joinpath(path, name), score = 0 })
       count = count + 1
       if count >= 1000 then
         break

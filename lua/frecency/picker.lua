@@ -1,9 +1,6 @@
-local EntryMaker = require "frecency.picker.entry_maker"
-local Finder = require "frecency.finder"
 local log = require "frecency.log"
 local actions = require "telescope.actions"
 local config_values = require("telescope.config").values
-local finders = require "telescope.finders"
 local pickers = require "telescope.pickers"
 local sorters = require "telescope.sorters"
 local uv = vim.loop or vim.uv
@@ -14,9 +11,6 @@ local Path = require "plenary.path"
 ---@class FrecencyPickerConfig
 ---@field default_workspace string
 ---@field filter_delimiter string
----@field fs FrecencyFS
----@field show_filter_column boolean|string[]
----@field show_scores boolean
 ---@field show_unindexed boolean
 ---@field workspaces table<string, string>
 
@@ -43,9 +37,9 @@ local Path = require "plenary.path"
 ---@field private config FrecencyPickerConfig
 ---@field private database FrecencyDatabase
 ---@field private editing_bufnr integer
----@field private entry_maker FrecencyEntryMaker
+---@field private finder FrecencyFinder
+---@field private fs FrecencyFS
 ---@field private lsp_workspaces string[]
----@field private os_home string
 ---@field private recency FrecencyRecency
 ---@field private results table[]
 ---@field private workspace string?
@@ -53,24 +47,22 @@ local Path = require "plenary.path"
 local Picker = {}
 
 ---@param database FrecencyDatabase
+---@param finder FrecencyFinder
+---@param fs FrecencyFS
 ---@param recency FrecencyRecency
 ---@param config FrecencyPickerConfig
 ---@return FrecencyPicker
-Picker.new = function(database, recency, config)
+Picker.new = function(database, finder, fs, recency, config)
   local self = setmetatable({
     config = config,
     database = database,
     editing_bufnr = 0,
+    finder = finder,
+    fs = fs,
     lsp_workspaces = {},
-    os_home = uv.os_homedir(),
     recency = recency,
     results = {},
   }, { __index = Picker })
-  self.entry_maker = EntryMaker.new {
-    os_home = self.os_home,
-    show_filter_column = self.config.show_filter_column,
-    show_scores = self.config.show_scores,
-  }
   local d = self.config.filter_delimiter or ":"
   self.workspace_tag_regex = "^%s*(" .. d .. "(%S+)" .. d .. ")"
   return self
@@ -92,15 +84,13 @@ function Picker:start(opts)
     self.results = self:fetch_results(self.workspace)
   end
 
-  local finder = Finder.new({ fs = self.config.fs, entry_maker = self.entry_maker, initial_results = self.results })
-    :start { need_scandir = self.workspace and self.config.show_unindexed and true or false, workspace = self.workspace }
+  local finder = self.finder:start(self.results, {
+    need_scandir = self.workspace and self.config.show_unindexed and true or false,
+    workspace = self.workspace,
+  })
 
   local picker = pickers.new(opts, {
     prompt_title = "Frecency",
-    --[[ finder = finders.new_table {
-      results = self.results,
-      entry_maker = self.entry_maker:create(self.workspace),
-    }, ]]
     finder = finder,
     previewer = config_values.file_previewer(opts),
     sorter = sorters.get_substr_matcher(),
@@ -161,8 +151,8 @@ end
 function Picker:default_path_display(opts, path)
   local filename = Path:new(path):make_relative(opts.cwd)
   if not self.workspace then
-    if vim.startswith(filename, self.os_home) then
-      filename = "~/" .. Path:new(filename):make_relative(self.os_home)
+    if vim.startswith(filename, self.fs.os_homedir) then
+      filename = "~/" .. self.fs:relative_from_home(filename)
     elseif filename ~= path then
       filename = "./" .. filename
     end
@@ -234,11 +224,11 @@ function Picker:on_input_filter_cb(prompt, cwd)
   log:debug { workspace = workspace, ["self.workspace"] = self.workspace }
   if self.workspace ~= workspace then
     self.workspace = workspace
-    opts.updated_finder =
-      Finder.new({ fs = self.config.fs, entry_maker = self.entry_maker, initial_results = self.results }):start {
-        need_scandir = self.workspace and self.config.show_unindexed and true or false,
-        workspace = self.workspace,
-      }
+    opts.updated_finder = self.finder:start(self.results, {
+      initial_results = self.results,
+      need_scandir = self.workspace and self.config.show_unindexed and true or false,
+      workspace = self.workspace,
+    })
   end
   return opts
 end

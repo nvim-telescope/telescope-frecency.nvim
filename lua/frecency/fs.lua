@@ -1,8 +1,10 @@
 local Path = require "plenary.path" --[[@as PlenaryPath]]
 local scandir = require "plenary.scandir"
 local log = require "frecency.log"
+local uv = vim.uv or vim.loop
 
 ---@class FrecencyFS
+---@field os_homedir string
 ---@field private ignore_regexes string[]
 local FS = {}
 
@@ -12,7 +14,7 @@ local FS = {}
 ---@param config FrecencyFSConfig
 ---@return FrecencyFS
 FS.new = function(config)
-  local self = setmetatable({ config = config }, { __index = FS })
+  local self = setmetatable({ config = config, os_homedir = assert(uv.os_homedir()) }, { __index = FS })
   ---@param pattern string
   self.ignore_regexes = vim.tbl_map(function(pattern)
     local escaped = pattern:gsub("[%-%.%+%[%]%(%)%$%^%%%?%*]", "%%%1")
@@ -49,6 +51,12 @@ function FS:scan_dir(path)
       end
     end
   end)
+end
+
+---@param path string
+---@return string
+function FS:relative_from_home(path)
+  return Path:new(path):make_relative(self.os_homedir)
 end
 
 ---@private

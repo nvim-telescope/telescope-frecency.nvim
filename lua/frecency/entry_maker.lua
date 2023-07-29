@@ -5,24 +5,25 @@ local utils = require "telescope.utils" --[[@as TelescopeUtils]]
 
 ---@class FrecencyEntryMaker
 ---@field config FrecencyEntryMakerConfig
+---@field fs FrecencyFS
 ---@field loaded table<string,boolean>
 local EntryMaker = {}
 
 ---@class FrecencyEntryMakerConfig
----@field show_scores boolean
 ---@field show_filter_column boolean|string[]
----@field os_home string
+---@field show_scores boolean
 
+---@param fs FrecencyFS
 ---@param config FrecencyEntryMakerConfig
 ---@return FrecencyEntryMaker
-EntryMaker.new = function(config)
-  local self = setmetatable({ config = config }, { __index = EntryMaker })
+EntryMaker.new = function(fs, config)
+  local self = setmetatable({ config = config, fs = fs }, { __index = EntryMaker })
   local loaded_bufnrs = vim.tbl_filter(function(v)
     return vim.api.nvim_buf_is_loaded(v)
   end, vim.api.nvim_list_bufs())
   self.loaded = {}
   for _, bufnr in ipairs(loaded_bufnrs) do
-    self.loaded[vim.fn.bufname(bufnr)] = true
+    self.loaded[vim.api.nvim_buf_get_name(bufnr)] = true
   end
   return self
 end
@@ -94,7 +95,7 @@ function EntryMaker:items(entry, workspace, formatter)
   end
   if self.config.show_filter_column and workspace then
     local filtered = self:should_show_tail(workspace) and utils.path_tail(workspace) .. Path.path.sep
-      or Path:new(workspace):make_relative(self.config.os_home) .. Path.path.sep
+      or self.fs:relative_from_home(workspace) .. Path.path.sep
     table.insert(items, { filtered, "Directory" })
   end
   table.insert(items, { formatter(entry.name), self.loaded[entry.name] and "TelescopeBufferLoaded" or "" })
@@ -106,7 +107,7 @@ end
 ---@return integer
 function EntryMaker:calculate_filter_column_width(workspace)
   return self:should_show_tail(workspace) and #(utils.path_tail(workspace)) + 1
-    or #(Path:new(workspace):make_relative(self.config.os_home)) + 1
+    or #(self.fs:relative_from_home(workspace)) + 1
 end
 
 ---@private
@@ -127,7 +128,7 @@ function EntryMaker:filepath_formatter(opts, workspace)
   for k, v in pairs(opts) do
     path_opts[k] = v
   end
-  path_opts.cwd = workspace or self.config.os_home
+  path_opts.cwd = workspace or self.fs.os_homedir
 
   return function(filename)
     return utils.transform_path(path_opts, filename)
