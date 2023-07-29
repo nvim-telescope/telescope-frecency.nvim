@@ -1,5 +1,5 @@
 local sqlite = require "sqlite"
-local log = require "frecency.log"
+local log = require "plenary.log"
 
 ---@class FrecencyDatabaseConfig
 ---@field auto_validate boolean
@@ -72,7 +72,7 @@ end
 ---@return FrecencyFile[]
 function Database:get_files(workspace)
   local query = workspace and { contains = { path = { workspace .. "*" } } } or {}
-  log:debug { query = query }
+  log.debug { query = query }
   return self.sqlite.files:get(query)
 end
 

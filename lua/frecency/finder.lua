@@ -1,5 +1,5 @@
 local finders = require "telescope.finders"
-local log = require "frecency.log"
+local log = require "plenary.log"
 
 ---@class FrecencyFinder
 ---@field private config FrecencyFinderConfig
@@ -37,7 +37,7 @@ function Finder:start(filepath_formatter, initial_results, opts)
       entry_maker = entry_maker,
     }
   end
-  log:debug { finder = opts }
+  log.debug { finder = opts }
   return finders.new_dynamic { entry_maker = entry_maker, fn = self:create_fn(initial_results, opts.workspace) }
 end
 
@@ -52,7 +52,7 @@ function Finder:create_fn(initial_results, path)
   ---@return table[]
   return function(_)
     called = called + 1
-    log:debug { called = called }
+    log.debug { called = called }
     local count = 0
     for name in it do
       table.insert(results, { path = vim.fs.joinpath(path, name), score = 0 })

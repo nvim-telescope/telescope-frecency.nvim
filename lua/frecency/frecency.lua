@@ -4,7 +4,7 @@ local FS = require "frecency.fs"
 local Finder = require "frecency.finder"
 local Picker = require "frecency.picker"
 local Recency = require "frecency.recency"
-local log = require "frecency.log"
+local log = require "plenary.log"
 
 ---@class Frecency
 ---@field config FrecencyConfig
@@ -71,7 +71,7 @@ function Frecency:setup()
   -- TODO: Should we schedule this after loading shada?
   if not self.database:has_entry() then
     self.database:insert_files(vim.v.oldfiles)
-    log:info("Imported %d entries from oldfiles.", #vim.v.oldfiles)
+    log.info(("[Telescope-Frecency] Imported %d entries from oldfiles."):format(#vim.v.oldfiles))
   end
 
   local group = vim.api.nvim_create_augroup("TelescopeFrecency", {})

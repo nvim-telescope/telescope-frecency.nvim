@@ -1,6 +1,6 @@
 local Path = require "plenary.path" --[[@as PlenaryPath]]
 local scandir = require "plenary.scandir"
-local log = require "frecency.log"
+local log = require "plenary.log"
 local uv = vim.uv or vim.loop
 
 ---@class FrecencyFS
@@ -32,7 +32,7 @@ end
 
 ---@param path string
 function FS:scan_dir(path)
-  log:debug { path = path }
+  log.debug { path = path }
   local gitignore = self:make_gitignore(path)
   return coroutine.wrap(function()
     for name, type in
