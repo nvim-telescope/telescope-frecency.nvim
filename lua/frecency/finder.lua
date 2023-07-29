@@ -2,15 +2,23 @@ local finders = require "telescope.finders"
 local log = require "frecency.log"
 
 ---@class FrecencyFinder
+---@field private config FrecencyFinderConfig
 ---@field private entry_maker FrecencyEntryMaker
 ---@field private fs FrecencyFS
 local Finder = {}
 
+---@class FrecencyFinderConfig
+---@field chunk_size integer
+
 ---@param entry_maker FrecencyEntryMaker
 ---@param fs FrecencyFS
+---@param config FrecencyFinderConfig?
 ---@return FrecencyFinder
-Finder.new = function(entry_maker, fs)
-  return setmetatable({ entry_maker = entry_maker, fs = fs }, { __index = Finder })
+Finder.new = function(entry_maker, fs, config)
+  return setmetatable(
+    { config = vim.tbl_extend("force", { chunk_size = 1000 }, config or {}), entry_maker = entry_maker, fs = fs },
+    { __index = Finder }
+  )
 end
 
 ---@class FrecencyFinderOptions
@@ -58,7 +66,7 @@ function Finder:create_fn(initial_results, path)
       end
       table.insert(results, { path = vim.fs.joinpath(path, name), score = 0 })
       count = count + 1
-      if count >= 1000 then
+      if count >= self.config.chunk_size then
         break
       end
     end

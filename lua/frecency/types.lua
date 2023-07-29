@@ -43,8 +43,10 @@
 ---@field new fun(self: PlenaryPath|string, path: string?): PlenaryPath
 ---@field is_file fun(self: PlenaryPath): boolean
 ---@field filename string
+---@field joinpath fun(self: PlenaryPath, ...): PlenaryPath
 ---@field make_relative fun(self: PlenaryPath, cwd: string): string
 ---@field path { sep: string }
+---@field rm fun(self: PlenaryPath, opts: { recursive: boolean }?): nil
 
 ---@class PlenaryScanDirOptions
 ---@field hidden boolean if true hidden files will be added
