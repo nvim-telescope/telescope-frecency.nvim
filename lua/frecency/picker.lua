@@ -178,13 +178,16 @@ end
 
 ---@private
 ---@param workspace string?
+---@param datetime string? ISO8601 format string
 ---@return FrecencyFile[]
-function Picker:fetch_results(workspace)
+function Picker:fetch_results(workspace, datetime)
   log.debug { workspace = workspace or "NONE" }
   local files = self.database:get_files(workspace)
+  log.debug(files)
   -- NOTE: this might get slower with big db, it might be better to query with db.get_timestamp.
   -- TODO: test the above assumption
-  local timestamps = self.database:get_timestamps()
+  local timestamps = self.database:get_timestamps(datetime)
+  log.debug(timestamps)
   for _, file in ipairs(files) do
     ---@param timestamp FrecencyTimestamp
     local file_timestamps = vim.tbl_filter(function(timestamp)

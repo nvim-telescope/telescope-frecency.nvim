@@ -16,17 +16,17 @@ local log = require "plenary.log"
 local Frecency = {}
 
 ---@class FrecencyConfig
----@field auto_validate boolean
----@field db_root string
----@field db_safe_mode boolean
+---@field auto_validate boolean?
+---@field db_root string?
+---@field db_safe_mode boolean?
 ---@field default_workspace string?
----@field disable_devicons boolean
----@field filter_delimiter string
----@field ignore_patterns string[]
----@field show_filter_column boolean|string[]
----@field show_scores boolean
----@field show_unindexed boolean
----@field workspaces table<string, string>
+---@field disable_devicons boolean?
+---@field filter_delimiter string?
+---@field ignore_patterns string[]?
+---@field show_filter_column boolean|string[]|nil
+---@field show_scores boolean?
+---@field show_unindexed boolean?
+---@field workspaces table<string, string>?
 
 ---@param opts FrecencyConfig?
 ---@return Frecency
@@ -87,13 +87,14 @@ end
 
 ---@private
 ---@param bufnr integer
-function Frecency:register(bufnr)
+---@param datetime string? ISO8601 format string
+function Frecency:register(bufnr, datetime)
   local path = vim.api.nvim_buf_get_name(bufnr)
   if self.buf_registered[bufnr] or not self.fs:is_valid_path(path) then
     return
   end
   local id, inserted = self.database:upsert_files(path)
-  self.database:insert_timestamps(id)
+  self.database:insert_timestamps(id, datetime)
   self.database:trim_timestamps(id, self.recency.config.max_count)
   if inserted then
     self.picker:discard_results()

@@ -30,7 +30,6 @@ local log = require "plenary.log"
 ---@field config FrecencyDatabaseConfig
 ---@field private buf_registered_flag_name string
 ---@field private sqlite FrecencySqlite
----@field private timestamps_age_query string
 local Database = {}
 
 ---@param config FrecencyDatabaseConfig
@@ -40,7 +39,6 @@ Database.new = function(config)
   local self = setmetatable({
     config = config,
     buf_registered_flag_name = "telescope_frecency_registered",
-    timestamps_age_query = lib.cast((lib.julianday() - lib.julianday "timestamp") * 24 * 60, "integer"),
   }, { __index = Database })
   self.sqlite = sqlite {
     uri = self.config.root .. "/file_frecency.sqlite3",
@@ -76,9 +74,12 @@ function Database:get_files(workspace)
   return self.sqlite.files:get(query)
 end
 
+---@param datetime string? ISO8601 format string
 ---@return FrecencyTimestamp[]
-function Database:get_timestamps()
-  return self.sqlite.timestamps:get { keys = { age = self.timestamps_age_query, "id", "file_id" } }
+function Database:get_timestamps(datetime)
+  local lib = sqlite.lib
+  local age = lib.cast((lib.julianday(datetime) - lib.julianday "timestamp") * 24 * 60, "integer")
+  return self.sqlite.timestamps:get { keys = { age = age, "id", "file_id" } }
 end
 
 ---@param path string
@@ -94,9 +95,13 @@ function Database:upsert_files(path)
 end
 
 ---@param file_id integer
+---@param datetime string? ISO8601 format string
 ---@return integer
-function Database:insert_timestamps(file_id)
-  return self.sqlite.timestamps:insert { file_id = file_id }
+function Database:insert_timestamps(file_id, datetime)
+  return self.sqlite.timestamps:insert {
+    file_id = file_id,
+    timestamp = datetime and sqlite.lib.julianday(datetime) or nil,
+  }
 end
 
 ---@param file_id integer

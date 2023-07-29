@@ -41,6 +41,7 @@
 
 ---@class PlenaryPath
 ---@field new fun(self: PlenaryPath|string, path: string?): PlenaryPath
+---@field absolute fun(): string
 ---@field is_file fun(self: PlenaryPath): boolean
 ---@field filename string
 ---@field joinpath fun(self: PlenaryPath, ...): PlenaryPath
