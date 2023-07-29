@@ -46,6 +46,7 @@ jobs:
           PLENARY_PATH: plenary.nvim
           TELESCOPE_PATH: telescope.nvim
           SQLITE_PATH: sqlite.lua
+          DEBUG_PLENARY: 1
           EXE: ${{ steps.nvim.outputs.executable }}
         run: |-
           TEST_DIR=lua/frecency/tests/

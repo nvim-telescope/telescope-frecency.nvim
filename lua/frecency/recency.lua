@@ -1,5 +1,3 @@
-local log = require "plenary.log"
-
 ---@class FrecencyRecencyConfig
 ---@field max_count integer default: 10
 
@@ -38,7 +36,6 @@ function Recency:calculate(count, ages)
     end
     ::continue::
   end
-  log.debug { count, score, self.config.max_count }
   return count * score / self.config.max_count
 end
 

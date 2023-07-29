@@ -182,28 +182,35 @@ end
 ---@return FrecencyFile[]
 function Picker:fetch_results(workspace, datetime)
   log.debug { workspace = workspace or "NONE" }
+  local start_files = os.clock()
   local files = self.database:get_files(workspace)
-  log.debug(files)
-  -- NOTE: this might get slower with big db, it might be better to query with db.get_timestamp.
-  -- TODO: test the above assumption
+  log.debug(("it takes %f seconds in fetching files with workspace: %s"):format(os.clock() - start_files, workspace))
+  local start_timesatmps = os.clock()
   local timestamps = self.database:get_timestamps(datetime)
-  log.debug(timestamps)
-  for _, file in ipairs(files) do
-    ---@param timestamp FrecencyTimestamp
-    local file_timestamps = vim.tbl_filter(function(timestamp)
-      return timestamp.file_id == file.id
-    end, timestamps)
-    ---@param timestamp FrecencyTimestamp
-    ---@type number[]
-    local ages = vim.tbl_map(function(timestamp)
-      return timestamp.age
-    end, file_timestamps)
-    file.score = self.recency:calculate(file.count, ages)
+  log.debug(("it takes %f seconds in fetching all timestamps"):format(os.clock() - start_timesatmps))
+  local start_results = os.clock()
+  local elapsed_recency = 0
+  ---@type table<integer,number[]>
+  local age_map = {}
+  for _, timestamp in ipairs(timestamps) do
+    if not age_map[timestamp.file_id] then
+      age_map[timestamp.file_id] = {}
+    end
+    table.insert(age_map[timestamp.file_id], timestamp.age)
   end
+  for _, file in ipairs(files) do
+    local start_recency = os.clock()
+    file.score = self.recency:calculate(file.count, age_map[file.id])
+    elapsed_recency = elapsed_recency + (os.clock() - start_recency)
+  end
+  log.debug(("it takes %f seconds in calculating recency"):format(elapsed_recency))
+  log.debug(("it takes %f seconds in making results"):format(os.clock() - start_results))
 
+  local start_sort = os.clock()
   table.sort(files, function(a, b)
     return a.score > b.score
   end)
+  log.debug(("it takes %f seconds in sorting"):format(os.clock() - start_sort))
   return files
 end
 
