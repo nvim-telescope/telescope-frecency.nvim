@@ -45,25 +45,16 @@ end
 ---@param path string
 ---@return fun(prompt: string?): table[]
 function Finder:create_fn(initial_results, path)
-  local it = self.fs:scan_dir(path)
-  local is_dead = false
+  local it = vim.F.nil_wrap(self.fs:scan_dir(path))
   local results = vim.deepcopy(initial_results)
   local called = 0
   ---@param _ string?
   ---@return table[]
   return function(_)
-    if is_dead then
-      return results
-    end
     called = called + 1
     log:debug { called = called }
     local count = 0
-    while true do
-      local ok, name = pcall(it)
-      if not ok then
-        is_dead = true
-        break
-      end
+    for name in it do
       table.insert(results, { path = vim.fs.joinpath(path, name), score = 0 })
       count = count + 1
       if count >= self.config.chunk_size then
