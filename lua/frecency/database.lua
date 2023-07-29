@@ -44,7 +44,7 @@ Database.new = function(config)
   }, { __index = Database })
   self.sqlite = sqlite {
     uri = self.config.root .. "/file_frecency.sqlite3",
-    files = { id = true, count = { "integer", default = 0, required = true }, path = "string" },
+    files = { id = true, count = { "integer", default = 1, required = true }, path = "string" },
     timestamps = {
       id = true,
       file_id = { "integer", reference = "files.id", on_delete = "cascade" },
