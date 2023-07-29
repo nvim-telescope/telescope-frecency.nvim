@@ -35,16 +35,15 @@ end
 ---@field score number
 ---@field display fun(entry: FrecencyEntry): string, table
 
+---@param filepath_formatter FrecencyFilepathFormatter
 ---@param workspace string?
 ---@return fun(file: FrecencyFile): FrecencyEntry
-function EntryMaker:create(workspace)
+function EntryMaker:create(filepath_formatter, workspace)
   local displayer = entry_display.create {
     separator = "",
     hl_chars = { [Path.path.sep] = "TelescopePathSeparator" },
     items = self:displayer_items(workspace),
   }
-  -- TODO: define opts here
-  local formatter = self:filepath_formatter({}, workspace)
 
   return function(file)
     return {
@@ -55,7 +54,7 @@ function EntryMaker:create(workspace)
       ---@param entry FrecencyEntry
       ---@return table
       display = function(entry)
-        local items = self:items(entry, workspace, formatter)
+        local items = self:items(entry, workspace, filepath_formatter(workspace))
         return displayer(items)
       end,
     }
@@ -117,22 +116,6 @@ function EntryMaker:should_show_tail(workspace)
   local show_filter_column = self.config.show_filter_column
   local filters = type(show_filter_column) == "table" and show_filter_column or { "LSP", "CWD" }
   return vim.tbl_contains(filters, workspace)
-end
-
----@private
----@param opts TelescopeTransformPathOpts
----@param workspace string?
----@return fun(filename: string): string
-function EntryMaker:filepath_formatter(opts, workspace)
-  local path_opts = {}
-  for k, v in pairs(opts) do
-    path_opts[k] = v
-  end
-  path_opts.cwd = workspace or self.fs.os_homedir
-
-  return function(filename)
-    return utils.transform_path(path_opts, filename)
-  end
 end
 
 return EntryMaker

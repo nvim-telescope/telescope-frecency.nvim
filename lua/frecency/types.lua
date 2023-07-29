@@ -70,10 +70,7 @@
 ---@class TelescopeEntryDisplay
 ---@field create fun(opts: TelescopeEntryDisplayOptions): TelescopeEntryDisplayer
 
----@class TelescopeTransformPathOpts
----@field cwd string
-
 ---@class TelescopeUtils
 ---@field path_tail fun(path: string): string
----@field transform_path fun(opts: TelescopeTransformPathOpts, path: string): string
+---@field transform_path fun(opts: table, path: string): string
 ---@field buf_is_loaded fun(filename: string): boolean

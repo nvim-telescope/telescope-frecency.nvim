@@ -3,6 +3,7 @@ local actions = require "telescope.actions"
 local config_values = require("telescope.config").values
 local pickers = require "telescope.pickers"
 local sorters = require "telescope.sorters"
+local utils = require "telescope.utils" --[[@as TelescopeUtils]]
 local uv = vim.loop or vim.uv
 
 ---@type PlenaryPath
@@ -84,7 +85,8 @@ function Picker:start(opts)
     self.results = self:fetch_results(self.workspace)
   end
 
-  local finder = self.finder:start(self.results, {
+  local filepath_formatter = self:filepath_formatter(opts)
+  local finder = self.finder:start(filepath_formatter, self.results, {
     need_scandir = self.workspace and self.config.show_unindexed and true or false,
     workspace = self.workspace,
   })
@@ -94,9 +96,7 @@ function Picker:start(opts)
     finder = finder,
     previewer = config_values.file_previewer(opts),
     sorter = sorters.get_substr_matcher(),
-    on_input_filter_cb = function(prompt)
-      return self:on_input_filter_cb(prompt, opts.cwd)
-    end,
+    on_input_filter_cb = self:on_input_filter_cb(opts),
     attach_mappings = function(prompt_bufnr)
       return self:attach_mappings(prompt_bufnr)
     end,
@@ -214,23 +214,25 @@ function Picker:get_lsp_workspace()
 end
 
 ---@private
----@param prompt string
----@param cwd string
----@return { prompt: string, updated_finder: table? }
-function Picker:on_input_filter_cb(prompt, cwd)
-  local matched, tag = prompt:match(self.workspace_tag_regex)
-  local opts = { prompt = matched and prompt:sub(matched:len() + 1) or prompt }
-  local workspace = self:get_workspace(cwd, tag) or self.workspace or self.config.default_workspace
-  log:debug { workspace = workspace, ["self.workspace"] = self.workspace }
-  if self.workspace ~= workspace then
-    self.workspace = workspace
-    opts.updated_finder = self.finder:start(self.results, {
-      initial_results = self.results,
-      need_scandir = self.workspace and self.config.show_unindexed and true or false,
-      workspace = self.workspace,
-    })
+---@param picker_opts table
+---@return fun(prompt: string): table
+function Picker:on_input_filter_cb(picker_opts)
+  local filepath_formatter = self:filepath_formatter(picker_opts)
+  return function(prompt)
+    local matched, tag = prompt:match(self.workspace_tag_regex)
+    picker_opts.prompt = matched and prompt:sub(matched:len() + 1) or prompt
+    local workspace = self:get_workspace(picker_opts.cwd, tag) or self.workspace or self.config.default_workspace
+    log:debug { workspace = workspace, ["self.workspace"] = self.workspace }
+    if self.workspace ~= workspace then
+      self.workspace = workspace
+      picker_opts.updated_finder = self.finder:start(filepath_formatter, self.results, {
+        initial_results = self.results,
+        need_scandir = self.workspace and self.config.show_unindexed and true or false,
+        workspace = self.workspace,
+      })
+    end
+    return picker_opts
   end
-  return opts
 end
 
 ---@private
@@ -255,6 +257,26 @@ function Picker:set_prompt_options(bufnr)
   vim.bo[bufnr].completefunc = "v:lua.require'telescope'.extensions.frecency.complete"
   vim.keymap.set("i", "<Tab>", "pumvisible() ? '<C-n>' : '<C-x><C-u>'", { buffer = bufnr, expr = true })
   vim.keymap.set("i", "<S-Tab>", "pumvisible() ? '<C-p>' : ''", { buffer = bufnr, expr = true })
+end
+
+---@alias FrecencyFilepathFormatter fun(workspace: string?): fun(filename: string): string): string
+
+---@private
+---@param picker_opts table
+---@return FrecencyFilepathFormatter
+function Picker:filepath_formatter(picker_opts)
+  ---@param workspace string?
+  return function(workspace)
+    local opts = {}
+    for k, v in pairs(picker_opts) do
+      opts[k] = v
+    end
+    opts.cwd = workspace or self.fs.os_homedir
+
+    return function(filename)
+      return utils.transform_path(opts, filename)
+    end
+  end
 end
 
 return Picker

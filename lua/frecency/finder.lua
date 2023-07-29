@@ -17,11 +17,12 @@ end
 ---@field need_scandir boolean
 ---@field workspace string?
 
+---@param filepath_formatter FrecencyFilepathFormatter
 ---@param initial_results table
 ---@param opts FrecencyFinderOptions
 ---@return table
-function Finder:start(initial_results, opts)
-  local entry_maker = self.entry_maker:create(opts.workspace)
+function Finder:start(filepath_formatter, initial_results, opts)
+  local entry_maker = self.entry_maker:create(filepath_formatter, opts.workspace)
   if not opts.need_scandir then
     return finders.new_table {
       results = initial_results,
