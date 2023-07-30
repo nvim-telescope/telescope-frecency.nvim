@@ -2,9 +2,7 @@ local sqlite = require "sqlite"
 local log = require "plenary.log"
 
 ---@class FrecencyDatabaseConfig
----@field auto_validate boolean
 ---@field root string
----@field safe_mode boolean
 
 ---@class FrecencySqlite: sqlite_db
 ---@field files sqlite_tbl
@@ -29,17 +27,19 @@ local log = require "plenary.log"
 ---@class FrecencyDatabase
 ---@field config FrecencyDatabaseConfig
 ---@field private buf_registered_flag_name string
+---@field private fs FrecencyFS
 ---@field private sqlite FrecencySqlite
 local Database = {}
 
+---@param fs FrecencyFS
 ---@param config FrecencyDatabaseConfig
 ---@return FrecencyDatabase
-Database.new = function(config)
+Database.new = function(fs, config)
   local lib = sqlite.lib --[[@as sqlite_lib]]
-  local self = setmetatable({
-    config = config,
-    buf_registered_flag_name = "telescope_frecency_registered",
-  }, { __index = Database })
+  local self = setmetatable(
+    { config = config, buf_registered_flag_name = "telescope_frecency_registered", fs = fs },
+    { __index = Database }
+  )
   self.sqlite = sqlite {
     uri = self.config.root .. "/file_frecency.sqlite3",
     files = { id = true, count = { "integer", default = 1, required = true }, path = "string" },
@@ -112,6 +112,22 @@ function Database:trim_timestamps(file_id, max_count)
   if trim_at then
     self.sqlite.timestamps:remove { file_id = tostring(file_id), id = "<" .. tostring(trim_at.id) }
   end
+end
+
+---@return integer[]
+function Database:unlinked_entries()
+  ---@param file FrecencyFile
+  return self.sqlite.files:map(function(file)
+    if not self.fs:is_valid_path(file.path) then
+      return file.id
+    end
+  end)
+end
+
+---@param ids integer[]
+---@return nil
+function Database:remove_files(ids)
+  self.sqlite.files:remove { id = ids }
 end
 
 return Database

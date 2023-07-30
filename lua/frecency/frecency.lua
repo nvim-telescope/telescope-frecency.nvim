@@ -4,7 +4,6 @@ local FS = require "frecency.fs"
 local Finder = require "frecency.finder"
 local Picker = require "frecency.picker"
 local Recency = require "frecency.recency"
-local log = require "plenary.log"
 
 ---@class Frecency
 ---@field config FrecencyConfig
@@ -19,6 +18,7 @@ local Frecency = {}
 ---@field auto_validate boolean?
 ---@field db_root string?
 ---@field db_safe_mode boolean?
+---@field db_validate_threshold integer
 ---@field default_workspace string?
 ---@field disable_devicons boolean?
 ---@field filter_delimiter string?
@@ -36,6 +36,7 @@ Frecency.new = function(opts)
     auto_validate = true,
     db_root = vim.fn.stdpath "data",
     db_safe_mode = true,
+    db_validate_threshold = 10,
     default_workspace = nil,
     disable_devicons = false,
     filter_delimiter = ":",
@@ -46,12 +47,8 @@ Frecency.new = function(opts)
     workspaces = {},
   }, opts or {})
   local self = setmetatable({ buf_registered = {} }, { __index = Frecency })--[[@as Frecency]]
-  self.database = Database.new {
-    auto_validate = config.auto_validate,
-    root = config.db_root,
-    safe_mode = config.db_safe_mode,
-  }
   self.fs = FS.new { ignore_patterns = config.ignore_patterns }
+  self.database = Database.new(self.fs, { root = config.db_root })
   local entry_maker = EntryMaker.new(self.fs, {
     show_filter_column = config.show_filter_column,
     show_scores = config.show_scores,
@@ -71,7 +68,16 @@ function Frecency:setup()
   -- TODO: Should we schedule this after loading shada?
   if not self.database:has_entry() then
     self.database:insert_files(vim.v.oldfiles)
-    log.info(("[Telescope-Frecency] Imported %d entries from oldfiles."):format(#vim.v.oldfiles))
+    self:notify("Imported %d entries from oldfiles.", #vim.v.oldfiles)
+  end
+
+  ---@param cmd_info { bang: boolean }
+  vim.api.nvim_create_user_command("FrecencyValidate", function(cmd_info)
+    self:validate_database(cmd_info.bang)
+  end, { bang = true, desc = "Clean up DB for telescope-frecency" })
+
+  if self.config.auto_validate then
+    self:validate_database()
   end
 
   local group = vim.api.nvim_create_augroup("TelescopeFrecency", {})
@@ -100,6 +106,53 @@ function Frecency:register(bufnr, datetime)
     self.picker:discard_results()
   end
   self.buf_registered[bufnr] = true
+end
+
+---@param force boolean?
+---@return nil
+function Frecency:validate_database(force)
+  local unlinked = self.database:unlinked_entries()
+  if #unlinked == 0 or (not force and #unlinked < self.config.db_validate_threshold) then
+    return
+  end
+  local function remove_entries()
+    self.database:remove_files(unlinked)
+    self:notify("removed %d missing entries.", #unlinked)
+  end
+  if force and not self.config.db_safe_mode then
+    remove_entries()
+    return
+  end
+  vim.ui.select({ "y", "n" }, {
+    prompt = self:message("remove %d entries from SQLite3 database?", #unlinked),
+    ---@param item "y"|"n"
+    ---@return string
+    format_item = function(item)
+      return item == "y" and "Yes. Remove them." or "No. Do nothing."
+    end,
+  }, function(item)
+    if item == "y" then
+      remove_entries()
+    else
+      self:notify "validation aborted"
+    end
+  end)
+end
+
+---@private
+---@param fmt string
+---@param ... any?
+---@return string
+function Frecency:message(fmt, ...)
+  return ("[Telescope-Frecency] " .. fmt):format(unpack { ... })
+end
+
+---@private
+---@param fmt string
+---@param ... any?
+---@return nil
+function Frecency:notify(fmt, ...)
+  vim.notify(self:message(fmt, ...))
 end
 
 return Frecency

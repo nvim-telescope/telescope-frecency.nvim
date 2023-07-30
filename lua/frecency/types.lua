@@ -20,6 +20,9 @@
 
 ---@alias sqlite_query_delete table<string, string>
 
+---@generic T
+---@alias sqlite_map_func fun(self: sqlite_tbl, mapper: fun(entry: table): T?): T[]
+
 ---@class sqlite_tbl @Main sql table class
 ---@field db sqlite_db: sqlite.lua database object.
 ---@field name string: table name.
@@ -27,8 +30,9 @@
 ---@field count fun(self: sqlite_tbl): integer
 ---@field insert fun(self: sqlite_tbl, rows: table<string, any>|table<string, any>[]): integer
 ---@field update fun(self: sqlite_tbl, specs: sqlite_query_update): boolean
----@field get fun(self: sqlite_tbl, query: sqlite_query_select): table
+---@field get fun(self: sqlite_tbl, query: sqlite_query_select): table[]
 ---@field remove fun(self: sqlite_tbl, where: sqlite_query_delete): boolean
+---@field map sqlite_map_func
 
 ---@class sqlite_opts @Sqlite3 Options (TODO: add sqlite option fields and description)
 ---@class sqlite_blob @sqlite3 blob object
