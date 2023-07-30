@@ -61,6 +61,7 @@ function Finder:create_fn(initial_results, path)
         break
       end
     end
+    log.debug(("dynamic results: %d"):format(#results))
     return results
   end
 end

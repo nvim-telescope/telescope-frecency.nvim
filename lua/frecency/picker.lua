@@ -184,9 +184,11 @@ function Picker:fetch_results(workspace, datetime)
   log.debug { workspace = workspace or "NONE" }
   local start_files = os.clock()
   local files = self.database:get_files(workspace)
+  log.debug { files = #files }
   log.debug(("it takes %f seconds in fetching files with workspace: %s"):format(os.clock() - start_files, workspace))
   local start_timesatmps = os.clock()
   local timestamps = self.database:get_timestamps(datetime)
+  log.debug { timestamps = #timestamps }
   log.debug(("it takes %f seconds in fetching all timestamps"):format(os.clock() - start_timesatmps))
   local start_results = os.clock()
   local elapsed_recency = 0
