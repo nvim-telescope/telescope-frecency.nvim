@@ -79,9 +79,10 @@ function Picker:start(opts)
   }, opts or {}) --[[@as FrecencyPickerOptions]]
   self.editing_bufnr = vim.api.nvim_get_current_buf()
   self.lsp_workspaces = {}
-  self.workspace = self:get_workspace(opts.cwd, opts.workspace)
-  log.debug(opts)
-  if vim.tbl_isempty(self.results) then
+  local workspace = self:get_workspace(opts.cwd, opts.workspace)
+  log.debug { workspace = workspace, ["self.workspace"] = self.workspace }
+  if vim.tbl_isempty(self.results) or workspace ~= self.workspace then
+    self.workspace = workspace
     self.results = self:fetch_results(self.workspace)
   end
 
@@ -231,12 +232,16 @@ end
 function Picker:on_input_filter_cb(picker_opts)
   local filepath_formatter = self:filepath_formatter(picker_opts)
   return function(prompt)
-    local matched, tag = prompt:match(self.workspace_tag_regex)
-    picker_opts.prompt = matched and prompt:sub(matched:len() + 1) or prompt
-    local workspace = self:get_workspace(picker_opts.cwd, tag) or self.workspace or self.config.default_workspace
+    local workspace = self.workspace
+    if prompt ~= "" then
+      local matched, tag = prompt:match(self.workspace_tag_regex)
+      picker_opts.prompt = matched and prompt:sub(matched:len() + 1) or prompt
+      workspace = self:get_workspace(picker_opts.cwd, tag) or self.workspace or self.config.default_workspace
+    end
     log.debug { workspace = workspace, ["self.workspace"] = self.workspace }
     if self.workspace ~= workspace then
       self.workspace = workspace
+      self.results = self:fetch_results(workspace)
       picker_opts.updated_finder = self.finder:start(filepath_formatter, self.results, {
         initial_results = self.results,
         need_scandir = self.workspace and self.config.show_unindexed and true or false,
