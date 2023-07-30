@@ -18,7 +18,7 @@ local Frecency = {}
 ---@field auto_validate boolean?
 ---@field db_root string?
 ---@field db_safe_mode boolean?
----@field db_validate_threshold integer
+---@field db_validate_threshold? integer
 ---@field default_workspace string?
 ---@field disable_devicons boolean?
 ---@field filter_delimiter string?
@@ -46,7 +46,7 @@ Frecency.new = function(opts)
     show_unindexed = true,
     workspaces = {},
   }, opts or {})
-  local self = setmetatable({ buf_registered = {} }, { __index = Frecency })--[[@as Frecency]]
+  local self = setmetatable({ buf_registered = {}, config = config }, { __index = Frecency })--[[@as Frecency]]
   self.fs = FS.new { ignore_patterns = config.ignore_patterns }
   self.database = Database.new(self.fs, { root = config.db_root })
   local entry_maker = EntryMaker.new(self.fs, {
