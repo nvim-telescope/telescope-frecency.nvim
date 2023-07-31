@@ -66,6 +66,7 @@ Frecency.new = function(opts)
   return self
 end
 
+---@return nil
 function Frecency:setup()
   -- TODO: Should we schedule this after loading shada?
   if not self.database:has_entry() then
@@ -91,23 +92,6 @@ function Frecency:setup()
       self:register(args.buf)
     end,
   })
-end
-
----@private
----@param bufnr integer
----@param datetime string? ISO8601 format string
-function Frecency:register(bufnr, datetime)
-  local path = vim.api.nvim_buf_get_name(bufnr)
-  if self.buf_registered[bufnr] or not self.fs:is_valid_path(path) then
-    return
-  end
-  local id, inserted = self.database:upsert_files(path)
-  self.database:insert_timestamps(id, datetime)
-  self.database:trim_timestamps(id, self.recency.config.max_count)
-  if inserted then
-    self.picker:discard_results()
-  end
-  self.buf_registered[bufnr] = true
 end
 
 ---@param force boolean?
@@ -139,6 +123,23 @@ function Frecency:validate_database(force)
       self:notify "validation aborted"
     end
   end)
+end
+
+---@private
+---@param bufnr integer
+---@param datetime string? ISO8601 format string
+function Frecency:register(bufnr, datetime)
+  local path = vim.api.nvim_buf_get_name(bufnr)
+  if self.buf_registered[bufnr] or not self.fs:is_valid_path(path) then
+    return
+  end
+  local id, inserted = self.database:upsert_files(path)
+  self.database:insert_timestamps(id, datetime)
+  self.database:trim_timestamps(id, self.recency.config.max_count)
+  if inserted then
+    self.picker:discard_results()
+  end
+  self.buf_registered[bufnr] = true
 end
 
 ---@private
