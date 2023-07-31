@@ -16,4 +16,7 @@ return {
       return frecency.picker:complete(findstart, base)
     end
   end,
+  frecency = function()
+    return frecency
+  end,
 }
