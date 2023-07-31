@@ -18,7 +18,7 @@
 ---@field limit number? the number of result to limit by
 ---@field contains table? for sqlite glob ex. { title = "fix*" }
 
----@alias sqlite_query_delete table<string, string>
+---@alias sqlite_query_delete table<string, any>
 
 ---@generic T
 ---@alias sqlite_map_func fun(self: sqlite_tbl, mapper: fun(entry: table): T?): T[]
