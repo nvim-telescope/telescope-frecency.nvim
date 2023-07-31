@@ -5,6 +5,7 @@ local EntryMaker = require "frecency.entry_maker"
 local Finder = require "frecency.finder"
 local Picker = require "frecency.picker"
 local Recency = require "frecency.recency"
+local WebDevicons = require "frecency.web_devicons"
 local util = require "frecency.tests.util"
 
 ---@param files string[]
@@ -29,7 +30,8 @@ local function with_files(files, opts, callback)
   opts.root = dir
   local fs = FS.new(opts)
   local database = Database.new(fs, opts)
-  local entry_maker = EntryMaker.new(fs, opts)
+  local web_devicons = WebDevicons.new(true)
+  local entry_maker = EntryMaker.new(fs, web_devicons, opts)
   local finder = Finder.new(entry_maker, fs, opts)
   local picker = Picker.new(database, finder, fs, Recency.new(), opts)
   callback(picker, dir)

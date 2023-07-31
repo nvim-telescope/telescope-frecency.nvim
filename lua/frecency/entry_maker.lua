@@ -1,4 +1,3 @@
-local WebDevicons = require "frecency.web_devicons"
 local Path = require "plenary.path" --[[@as PlenaryPath]]
 local entry_display = require "telescope.pickers.entry_display" --[[@as TelescopeEntryDisplay]]
 local utils = require "telescope.utils" --[[@as TelescopeUtils]]
@@ -7,6 +6,7 @@ local utils = require "telescope.utils" --[[@as TelescopeUtils]]
 ---@field config FrecencyEntryMakerConfig
 ---@field fs FrecencyFS
 ---@field loaded table<string,boolean>
+---@field web_devicons WebDevicons
 local EntryMaker = {}
 
 ---@class FrecencyEntryMakerConfig
@@ -14,10 +14,11 @@ local EntryMaker = {}
 ---@field show_scores boolean
 
 ---@param fs FrecencyFS
+---@param web_devicons WebDevicons
 ---@param config FrecencyEntryMakerConfig
 ---@return FrecencyEntryMaker
-EntryMaker.new = function(fs, config)
-  local self = setmetatable({ config = config, fs = fs }, { __index = EntryMaker })
+EntryMaker.new = function(fs, web_devicons, config)
+  local self = setmetatable({ config = config, fs = fs, web_devicons = web_devicons }, { __index = EntryMaker })
   local loaded_bufnrs = vim.tbl_filter(function(v)
     return vim.api.nvim_buf_is_loaded(v)
   end, vim.api.nvim_list_bufs())
@@ -69,7 +70,7 @@ function EntryMaker:displayer_items(workspace)
   if self.config.show_scores then
     table.insert(items, { width = 8 })
   end
-  if WebDevicons.is_enabled() then
+  if self.web_devicons.is_enabled then
     table.insert(items, { width = 2 })
   end
   if self.config.show_filter_column and workspace then
@@ -89,8 +90,8 @@ function EntryMaker:items(entry, workspace, formatter)
   if self.config.show_scores then
     table.insert(items, { entry.score, "TelescopeFrecencyScores" })
   end
-  if WebDevicons.is_enabled() then
-    table.insert(items, { WebDevicons.get_icon(entry.name, entry.name:match "%a+$", { default = true }) })
+  if self.web_devicons.is_enabled then
+    table.insert(items, { self.web_devicons:get_icon(entry.name, entry.name:match "%a+$", { default = true }) })
   end
   if self.config.show_filter_column and workspace then
     local filtered = self:should_show_tail(workspace) and utils.path_tail(workspace) .. Path.path.sep

@@ -4,6 +4,7 @@ local FS = require "frecency.fs"
 local Finder = require "frecency.finder"
 local Picker = require "frecency.picker"
 local Recency = require "frecency.recency"
+local WebDevicons = require "frecency.web_devicons"
 
 ---@class Frecency
 ---@field config FrecencyConfig
@@ -49,7 +50,8 @@ Frecency.new = function(opts)
   local self = setmetatable({ buf_registered = {}, config = config }, { __index = Frecency })--[[@as Frecency]]
   self.fs = FS.new { ignore_patterns = config.ignore_patterns }
   self.database = Database.new(self.fs, { root = config.db_root })
-  local entry_maker = EntryMaker.new(self.fs, {
+  local web_devicons = WebDevicons.new(not config.disable_devicons)
+  local entry_maker = EntryMaker.new(self.fs, web_devicons, {
     show_filter_column = config.show_filter_column,
     show_scores = config.show_scores,
   })
