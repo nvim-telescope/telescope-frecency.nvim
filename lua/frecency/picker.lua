@@ -64,7 +64,7 @@ Picker.new = function(database, finder, fs, recency, config)
     recency = recency,
     results = {},
   }, { __index = Picker })
-  local d = self.config.filter_delimiter or ":"
+  local d = self.config.filter_delimiter
   self.workspace_tag_regex = "^%s*(" .. d .. "(%S+)" .. d .. ")"
   return self
 end
