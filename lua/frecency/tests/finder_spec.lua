@@ -149,5 +149,23 @@ describe("finder", function()
         end)
       end)
     end)
+
+    describe("with ignore_patterns", function()
+      with_files(
+        { "hoge/fuga1.txt", "hoge/fuga2.txt", "hoge1.txt", "hoge2.txt", "fuga3.txt" },
+        { ignore_patterns = { "*/hoge/*" } },
+        function(picker, dir)
+          local fn = picker.finder:create_fn({}, dir.filename)
+          it("returns files without patterns", function()
+            assert.are.same({
+              { path = dir:joinpath("file_frecency.sqlite3").filename, score = 0 },
+              { path = dir:joinpath("fuga3.txt").filename, score = 0 },
+              { path = dir:joinpath("hoge1.txt").filename, score = 0 },
+              { path = dir:joinpath("hoge2.txt").filename, score = 0 },
+            }, fn())
+          end)
+        end
+      )
+    end)
   end)
 end)
