@@ -5,16 +5,21 @@ local uv = vim.uv or vim.loop
 
 ---@class FrecencyFS
 ---@field os_homedir string
+---@field private config FrecencyFSConfig
 ---@field private ignore_regexes string[]
 local FS = {}
 
 ---@class FrecencyFSConfig
+---@field scan_depth integer?
 ---@field ignore_patterns string[]
 
 ---@param config FrecencyFSConfig
 ---@return FrecencyFS
 FS.new = function(config)
-  local self = setmetatable({ config = config, os_homedir = assert(uv.os_homedir()) }, { __index = FS })
+  local self = setmetatable(
+    { config = vim.tbl_extend("force", { scan_depth = 100 }, config), os_homedir = assert(uv.os_homedir()) },
+    { __index = FS }
+  )
   ---@param pattern string
   self.ignore_regexes = vim.tbl_map(function(pattern)
     local escaped = pattern:gsub("[%-%.%+%[%]%(%)%$%^%%%?%*]", "%%%1")
@@ -31,13 +36,14 @@ function FS:is_valid_path(path)
 end
 
 ---@param path string
+---@return function
 function FS:scan_dir(path)
   log.debug { path = path }
   local gitignore = self:make_gitignore(path)
   return coroutine.wrap(function()
     for name, type in
       vim.fs.dir(path, {
-        depth = 100,
+        depth = self.config.scan_depth,
         skip = function(dirname)
           if self:is_ignored(vim.fs.joinpath(path, dirname)) then
             return false

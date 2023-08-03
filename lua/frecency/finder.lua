@@ -42,6 +42,7 @@ function Finder:start(filepath_formatter, initial_results, opts)
   return finders.new_dynamic { entry_maker = entry_maker, fn = self:create_fn(initial_results, opts.workspace) }
 end
 
+---@private
 ---@param initial_results table
 ---@param path string
 ---@return fun(prompt: string?): table[]

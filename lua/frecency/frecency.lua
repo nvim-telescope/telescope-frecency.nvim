@@ -17,18 +17,18 @@ local WebDevicons = require "frecency.web_devicons"
 local Frecency = {}
 
 ---@class FrecencyConfig
----@field auto_validate boolean?
----@field db_root string?
----@field db_safe_mode boolean?
----@field db_validate_threshold? integer
----@field default_workspace string?
----@field disable_devicons boolean?
----@field filter_delimiter string?
----@field ignore_patterns string[]?
----@field show_filter_column boolean|string[]|nil
----@field show_scores boolean?
----@field show_unindexed boolean?
----@field workspaces table<string, string>?
+---@field auto_validate boolean? default: true
+---@field db_root string? default: vim.fn.stdpath "data"
+---@field db_safe_mode boolean? default: true
+---@field db_validate_threshold? integer default: 10
+---@field default_workspace string? default: nil
+---@field disable_devicons boolean? default: false
+---@field filter_delimiter string? default: ":"
+---@field ignore_patterns string[]? default: { "*.git/*", "*/tmp/*", "term://*" }
+---@field show_filter_column boolean|string[]|nil default: true
+---@field show_scores boolean? default: false
+---@field show_unindexed boolean? default: true
+---@field workspaces table<string, string>? default: {}
 
 ---@param opts FrecencyConfig?
 ---@return Frecency
@@ -110,6 +110,7 @@ function Frecency:complete(findstart, base)
   return self.picker:complete(findstart, base)
 end
 
+---@private
 ---@param force boolean?
 ---@return nil
 function Frecency:validate_database(force)

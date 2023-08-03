@@ -1,10 +1,10 @@
----@class FrecencyRecencyConfig
----@field max_count integer default: 10
-
 ---@class FrecencyRecency
 ---@field config FrecencyRecencyConfig
 ---@field private modifier table<integer, { age: integer, value: integer }>
 local Recency = {}
+
+---@class FrecencyRecencyConfig
+---@field max_count integer default: 10
 
 ---@param config FrecencyRecencyConfig?
 ---@return FrecencyRecency

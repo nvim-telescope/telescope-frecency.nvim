@@ -1,40 +1,11 @@
 local log = require "plenary.log"
+local Path = require "plenary.path" --[[@as PlenaryPath]]
 local actions = require "telescope.actions"
 local config_values = require("telescope.config").values
 local pickers = require "telescope.pickers"
 local sorters = require "telescope.sorters"
 local utils = require "telescope.utils" --[[@as TelescopeUtils]]
 local uv = vim.loop or vim.uv
-
----@type PlenaryPath
-local Path = require "plenary.path"
-
----@class FrecencyPickerConfig
----@field default_workspace_tag string?
----@field editing_bufnr integer
----@field filter_delimiter string
----@field initial_workspace_tag string?
----@field show_unindexed boolean
----@field workspaces table<string, string>
-
----@class FrecencyPickerOptions
----@field cwd string
----@field path_display
----| "hidden"
----| "tail"
----| "absolute"
----| "smart"
----| "shorten"
----| "truncate"
----| fun(opts: FrecencyPickerOptions, path: string): string
----@field workspace string?
-
----@class FrecencyPickerEntry
----@field display fun(entry: FrecencyPickerEntry): string
----@field filename string
----@field name string
----@field ordinal string
----@field score number
 
 ---@class FrecencyPicker
 ---@field private config FrecencyPickerConfig
@@ -47,6 +18,21 @@ local Path = require "plenary.path"
 ---@field private workspace string?
 ---@field private workspace_tag_regex string
 local Picker = {}
+
+---@class FrecencyPickerConfig
+---@field default_workspace_tag string?
+---@field editing_bufnr integer
+---@field filter_delimiter string
+---@field initial_workspace_tag string?
+---@field show_unindexed boolean
+---@field workspaces table<string, string>
+
+---@class FrecencyPickerEntry
+---@field display fun(entry: FrecencyPickerEntry): string
+---@field filename string
+---@field name string
+---@field ordinal string
+---@field score number
 
 ---@param database FrecencyDatabase
 ---@param finder FrecencyFinder
@@ -68,6 +54,18 @@ Picker.new = function(database, finder, fs, recency, config)
   self.workspace_tag_regex = "^%s*(" .. d .. "(%S+)" .. d .. ")"
   return self
 end
+
+---@class FrecencyPickerOptions
+---@field cwd string
+---@field path_display
+---| "hidden"
+---| "tail"
+---| "absolute"
+---| "smart"
+---| "shorten"
+---| "truncate"
+---| fun(opts: FrecencyPickerOptions, path: string): string
+---@field workspace string?
 
 ---@param opts FrecencyPickerOptions?
 function Picker:start(opts)
