@@ -1,5 +1,6 @@
 ---@diagnostic disable: invisible
 local Frecency = require "frecency.frecency"
+local Picker = require "frecency.picker"
 local util = require "frecency.tests.util"
 local Path = require "plenary.path"
 local log = require "plenary.log"
@@ -10,6 +11,13 @@ local log = require "plenary.log"
 local function with_files(files, callback)
   local dir, close = util.make_tree(files)
   local frecency = Frecency.new { db_root = dir.filename }
+  frecency.picker = Picker.new(
+    frecency.database,
+    frecency.finder,
+    frecency.fs,
+    frecency.recency,
+    { editing_bufnr = 0, filter_delimiter = ":", show_unindexed = false, workspaces = {} }
+  )
   callback(frecency, dir)
   close()
 end

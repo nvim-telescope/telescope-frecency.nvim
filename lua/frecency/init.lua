@@ -8,12 +8,12 @@ return {
   end,
   start = function(opts)
     if frecency then
-      frecency.picker:start(opts)
+      frecency:start(opts)
     end
   end,
   complete = function(findstart, base)
     if frecency then
-      return frecency.picker:complete(findstart, base)
+      return frecency:complete(findstart, base)
     end
   end,
   frecency = function()

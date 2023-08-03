@@ -8,10 +8,11 @@ local WebDevicons = require "frecency.web_devicons"
 
 ---@class Frecency
 ---@field config FrecencyConfig
----@field picker FrecencyPicker
 ---@field private buf_registered table<integer, boolean> flag to indicate the buffer is registered to the database.
 ---@field private database FrecencyDatabase
+---@field private finder FrecencyFinder
 ---@field private fs FrecencyFS
+---@field private picker FrecencyPicker
 ---@field private recency FrecencyRecency
 local Frecency = {}
 
@@ -55,14 +56,8 @@ Frecency.new = function(opts)
     show_filter_column = config.show_filter_column,
     show_scores = config.show_scores,
   })
-  local finder = Finder.new(entry_maker, self.fs)
+  self.finder = Finder.new(entry_maker, self.fs)
   self.recency = Recency.new()
-  self.picker = Picker.new(self.database, finder, self.fs, self.recency, {
-    default_workspace = config.default_workspace,
-    filter_delimiter = config.filter_delimiter,
-    show_unindexed = config.show_unindexed,
-    workspaces = config.workspaces,
-  })
   return self
 end
 
@@ -92,6 +87,27 @@ function Frecency:setup()
       self:register(args.buf)
     end,
   })
+end
+
+---@param opts FrecencyPickerOptions
+---@return nil
+function Frecency:start(opts)
+  self.picker = Picker.new(self.database, self.finder, self.fs, self.recency, {
+    default_workspace_tag = self.config.default_workspace,
+    editing_bufnr = vim.api.nvim_get_current_buf(),
+    filter_delimiter = self.config.filter_delimiter,
+    initial_workspace_tag = opts.workspace,
+    show_unindexed = self.config.show_unindexed,
+    workspaces = self.config.workspaces,
+  })
+  self.picker:start(opts)
+end
+
+---@param findstart 1|0
+---@param base string
+---@return integer|''|string[]
+function Frecency:complete(findstart, base)
+  return self.picker:complete(findstart, base)
 end
 
 ---@param force boolean?
@@ -136,7 +152,7 @@ function Frecency:register(bufnr, datetime)
   local id, inserted = self.database:upsert_files(path)
   self.database:insert_timestamps(id, datetime)
   self.database:trim_timestamps(id, self.recency.config.max_count)
-  if inserted then
+  if inserted and self.picker then
     self.picker:discard_results()
   end
   self.buf_registered[bufnr] = true

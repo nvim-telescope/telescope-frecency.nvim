@@ -14,19 +14,9 @@ local util = require "frecency.tests.util"
 local function with_files(files, opts, callback)
   opts = vim.tbl_extend("force", {
     ignore_patterns = {},
-    __files = {
-      "lua/hoge/fuga.lua",
-      "lua/hoge/hoho.lua",
-      "lua/hoge/fufu.lua",
-      "lua/hogehoge.lua",
-      "lua/fugafuga.lua",
-    },
-    __clear_db = true,
+    filter_delimiter = ":",
   }, opts or {})
   local dir, close = util.make_tree(files)
-  if opts.__clear_db then
-    dir:joinpath("file_frecency.sqlite3"):rm()
-  end
   opts.root = dir
   local fs = FS.new(opts)
   local database = Database.new(fs, opts)

@@ -10,8 +10,10 @@ local uv = vim.loop or vim.uv
 local Path = require "plenary.path"
 
 ---@class FrecencyPickerConfig
----@field default_workspace string
+---@field default_workspace_tag string?
+---@field editing_bufnr integer
 ---@field filter_delimiter string
+---@field initial_workspace_tag string?
 ---@field show_unindexed boolean
 ---@field workspaces table<string, string>
 
@@ -37,7 +39,6 @@ local Path = require "plenary.path"
 ---@class FrecencyPicker
 ---@field private config FrecencyPickerConfig
 ---@field private database FrecencyDatabase
----@field private editing_bufnr integer
 ---@field private finder FrecencyFinder
 ---@field private fs FrecencyFS
 ---@field private lsp_workspaces string[]
@@ -57,7 +58,6 @@ Picker.new = function(database, finder, fs, recency, config)
   local self = setmetatable({
     config = config,
     database = database,
-    editing_bufnr = 0,
     finder = finder,
     fs = fs,
     lsp_workspaces = {},
@@ -77,9 +77,8 @@ function Picker:start(opts)
       return self:default_path_display(picker_opts, path)
     end,
   }, opts or {}) --[[@as FrecencyPickerOptions]]
-  self.editing_bufnr = vim.api.nvim_get_current_buf()
   self.lsp_workspaces = {}
-  local workspace = self:get_workspace(opts.cwd, opts.workspace)
+  local workspace = self:get_workspace(opts.cwd, self.config.initial_workspace_tag)
   log.debug { workspace = workspace, ["self.workspace"] = self.workspace }
   if vim.tbl_isempty(self.results) or workspace ~= self.workspace then
     self.workspace = workspace
@@ -221,7 +220,7 @@ end
 ---@return string?
 function Picker:get_lsp_workspace()
   if vim.tbl_isempty(self.lsp_workspaces) then
-    self.lsp_workspaces = vim.api.nvim_buf_call(self.editing_bufnr, vim.lsp.buf.list_workspace_folders)
+    self.lsp_workspaces = vim.api.nvim_buf_call(self.config.editing_bufnr, vim.lsp.buf.list_workspace_folders)
   end
   return self.lsp_workspaces[1]
 end
@@ -232,23 +231,24 @@ end
 function Picker:on_input_filter_cb(picker_opts)
   local filepath_formatter = self:filepath_formatter(picker_opts)
   return function(prompt)
-    local workspace = self.workspace
-    if prompt ~= "" then
-      local matched, tag = prompt:match(self.workspace_tag_regex)
-      picker_opts.prompt = matched and prompt:sub(matched:len() + 1) or prompt
-      workspace = self:get_workspace(picker_opts.cwd, tag) or self.workspace or self.config.default_workspace
+    local workspace
+    local matched, tag = prompt:match(self.workspace_tag_regex)
+    local opts = { prompt = matched and prompt:sub(matched:len() + 1) or prompt }
+    if prompt == "" then
+      workspace = self:get_workspace(picker_opts.cwd, self.config.initial_workspace_tag)
+    else
+      workspace = self:get_workspace(picker_opts.cwd, tag or self.config.default_workspace_tag) or self.workspace
     end
-    log.debug { workspace = workspace, ["self.workspace"] = self.workspace }
     if self.workspace ~= workspace then
       self.workspace = workspace
       self.results = self:fetch_results(workspace)
-      picker_opts.updated_finder = self.finder:start(filepath_formatter, self.results, {
+      opts.updated_finder = self.finder:start(filepath_formatter, self.results, {
         initial_results = self.results,
         need_scandir = self.workspace and self.config.show_unindexed and true or false,
         workspace = self.workspace,
       })
     end
-    return picker_opts
+    return opts
   end
 end
 
