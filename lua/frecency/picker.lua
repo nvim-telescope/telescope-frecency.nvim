@@ -89,6 +89,7 @@ function Picker:start(opts)
   local finder = self.finder:start(filepath_formatter, self.results, {
     need_scandir = self.workspace and self.config.show_unindexed and true or false,
     workspace = self.workspace,
+    workspace_tag = self.config.initial_workspace_tag,
   })
 
   local picker = pickers.new(opts, {
@@ -246,6 +247,7 @@ function Picker:on_input_filter_cb(picker_opts)
         initial_results = self.results,
         need_scandir = self.workspace and self.config.show_unindexed and true or false,
         workspace = self.workspace,
+        workspace_tag = tag,
       })
     end
     return opts

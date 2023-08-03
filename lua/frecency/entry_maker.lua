@@ -38,12 +38,13 @@ end
 
 ---@param filepath_formatter FrecencyFilepathFormatter
 ---@param workspace string?
+---@param workspace_tag string?
 ---@return fun(file: FrecencyFile): FrecencyEntry
-function EntryMaker:create(filepath_formatter, workspace)
+function EntryMaker:create(filepath_formatter, workspace, workspace_tag)
   local displayer = entry_display.create {
     separator = "",
     hl_chars = { [Path.path.sep] = "TelescopePathSeparator" },
-    items = self:displayer_items(workspace),
+    items = self:displayer_items(workspace, workspace_tag),
   }
 
   return function(file)
@@ -55,7 +56,7 @@ function EntryMaker:create(filepath_formatter, workspace)
       ---@param entry FrecencyEntry
       ---@return table
       display = function(entry)
-        local items = self:items(entry, workspace, filepath_formatter(workspace))
+        local items = self:items(entry, workspace, workspace_tag, filepath_formatter(workspace))
         return displayer(items)
       end,
     }
@@ -64,8 +65,9 @@ end
 
 ---@private
 ---@param workspace string?
+---@param workspace_tag string?
 ---@return table[]
-function EntryMaker:displayer_items(workspace)
+function EntryMaker:displayer_items(workspace, workspace_tag)
   local items = {}
   if self.config.show_scores then
     table.insert(items, { width = 8 })
@@ -73,8 +75,8 @@ function EntryMaker:displayer_items(workspace)
   if self.web_devicons.is_enabled then
     table.insert(items, { width = 2 })
   end
-  if self.config.show_filter_column and workspace then
-    table.insert(items, { width = self:calculate_filter_column_width(workspace) })
+  if self.config.show_filter_column and workspace and workspace_tag then
+    table.insert(items, { width = self:calculate_filter_column_width(workspace, workspace_tag) })
   end
   table.insert(items, { remaining = true })
   return items
@@ -83,9 +85,10 @@ end
 ---@private
 ---@param entry FrecencyEntry
 ---@param workspace string?
+---@param workspace_tag string?
 ---@param formatter fun(filename: string): string
 ---@return table[]
-function EntryMaker:items(entry, workspace, formatter)
+function EntryMaker:items(entry, workspace, workspace_tag, formatter)
   local items = {}
   if self.config.show_scores then
     table.insert(items, { entry.score, "TelescopeFrecencyScores" })
@@ -93,8 +96,8 @@ function EntryMaker:items(entry, workspace, formatter)
   if self.web_devicons.is_enabled then
     table.insert(items, { self.web_devicons:get_icon(entry.name, entry.name:match "%a+$", { default = true }) })
   end
-  if self.config.show_filter_column and workspace then
-    local filtered = self:should_show_tail(workspace) and utils.path_tail(workspace) .. Path.path.sep
+  if self.config.show_filter_column and workspace and workspace_tag then
+    local filtered = self:should_show_tail(workspace_tag) and utils.path_tail(workspace) .. Path.path.sep
       or self.fs:relative_from_home(workspace) .. Path.path.sep
     table.insert(items, { filtered, "Directory" })
   end
@@ -104,19 +107,20 @@ end
 
 ---@private
 ---@param workspace string
+---@param workspace_tag string
 ---@return integer
-function EntryMaker:calculate_filter_column_width(workspace)
-  return self:should_show_tail(workspace) and #(utils.path_tail(workspace)) + 1
+function EntryMaker:calculate_filter_column_width(workspace, workspace_tag)
+  return self:should_show_tail(workspace_tag) and #(utils.path_tail(workspace)) + 1
     or #(self.fs:relative_from_home(workspace)) + 1
 end
 
 ---@private
----@param workspace string
+---@param workspace_tag string
 ---@return boolean
-function EntryMaker:should_show_tail(workspace)
+function EntryMaker:should_show_tail(workspace_tag)
   local show_filter_column = self.config.show_filter_column
   local filters = type(show_filter_column) == "table" and show_filter_column or { "LSP", "CWD" }
-  return vim.tbl_contains(filters, workspace)
+  return vim.tbl_contains(filters, workspace_tag)
 end
 
 return EntryMaker
