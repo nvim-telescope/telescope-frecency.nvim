@@ -176,7 +176,9 @@ m.maker = function(entry)
         if has_devicons and not m.config.disable_devicons then
           table.insert(i, { devicons.get_icon(e.name, string.match(e.name, "%a+$"), { default = true }) })
         end
-        table.insert(i, { filter_path, "Directory" })
+        if m.config.show_filter_column then
+            table.insert(i, { filter_path, "Directory" })
+        end
         table.insert(i, {
           formatter(e.name),
           util.buf_is_loaded(e.name) and "TelescopeBufferLoaded" or "",
