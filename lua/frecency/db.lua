@@ -153,9 +153,9 @@ function db.remove(entries, silent)
     local count = db.sqlite.files:count()
     db.sqlite.files:remove()
     if not vim.F.if_nil(silent, false) then
-      vim.notify(("Telescope-frecency: removed all entries. number of entries removed %d ."):format(count))
+      return ("Telescope-frecency: removed all entries. number of entries removed %d ."):format(count)
     end
-    return
+    return ""
   end
 
   entries = (entries[1] and entries[1].id) and entries or { entries }
@@ -165,8 +165,9 @@ function db.remove(entries, silent)
   end
 
   if not vim.F.if_nil(silent, false) then
-    vim.notify(("Telescope-frecency: removed %d missing entries."):format(#entries))
+    return ("Telescope-frecency: removed %d missing entries."):format(#entries)
   end
+  return ""
 end
 
 ---Remove file entries that no longer exists.
@@ -187,6 +188,43 @@ function db.validate(opts)
       util.abort_remove_unlinked_files()
     end
   end
+end
+
+function db.remove_non_existing_entries(opts)
+  opts = opts or {}
+  local w = vim.loop.new_work(
+  ---@param config_str string
+  ---@param opts_str string
+    function(config_str, opts_str)
+      --- running in separate thread
+      local opts = require 'frecency.luatexts'.load(opts_str)
+      local config = require 'frecency.luatexts'.load(config_str)
+      local frdb = require "frecency.db"
+      frdb.set_config(config)
+      local frutil = require "frecency.util"
+
+      local threshold = require "frecency.const".db_remove_safety_threshold
+      local unlinked = require "frecency.db".sqlite.files:map(function(entry)
+        local invalid = (not frutil.path_exists(entry.path) or frutil.path_is_ignored(entry.path, frdb.ignore_patterns))
+        return invalid and entry or nil
+      end)
+      if #unlinked > 0 then
+        if opts.force or not config.db_safe_mode or (#unlinked > threshold and frutil.confirm_deletion(#unlinked)) then
+          return frdb.remove(unlinked)
+        elseif not opts.auto then
+          return frutil.abort_remove_unlinked_files()
+        end
+      end
+      return require 'frecency.luatexts'.save({})
+    end,
+    ---@param msg string
+    function(msg)
+      if msg then
+        vim.notify(msg)
+      end
+    end
+  )
+  w:queue(require 'frecency.luatexts'.save(db.config), require 'frecency.luatexts'.save(opts))
 end
 
 return db
