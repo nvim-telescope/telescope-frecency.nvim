@@ -89,9 +89,10 @@ function Frecency:setup()
   })
 end
 
----@param opts FrecencyPickerOptions
+---@param opts FrecencyPickerOptions?
 ---@return nil
 function Frecency:start(opts)
+  opts = opts or {}
   self.picker = Picker.new(self.database, self.finder, self.fs, self.recency, {
     default_workspace_tag = self.config.default_workspace,
     editing_bufnr = vim.api.nvim_get_current_buf(),
