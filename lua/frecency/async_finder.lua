@@ -33,14 +33,13 @@ AsyncFinder.new = function(fs, path, entry_maker, initial_results)
     entry.index = i
     table.insert(self.entries, entry)
   end
-  local it = vim.F.nil_wrap(fs:scan_dir(path))
-  local index = #initial_results
-  local count = 0
   ---@type FrecencyTx, FrecencyRx
   local tx, rx = async.control.channel.mpsc()
   self.rx = rx
   async.run(function()
-    for name in it do
+    local index = #initial_results
+    local count = 0
+    for name in fs:scan_dir(path) do
       if self.closed then
         break
       end
