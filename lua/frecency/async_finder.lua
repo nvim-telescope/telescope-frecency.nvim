@@ -76,22 +76,16 @@ function AsyncFinder:find(_, process_result, process_complete)
       return
     end
   end
-  local count = 0
   local last_index = self.entries[#self.entries].index
   while true do
     if self.closed then
       break
     end
     local entry = self.rx.recv()
-    if entry then
-      if entry.index > last_index then
-        if process_result(entry) then
-          return
-        end
-        count = count + 1
-      end
-    else
+    if not entry then
       break
+    elseif entry.index > last_index and process_result(entry) then
+      return
     end
   end
   process_complete()
