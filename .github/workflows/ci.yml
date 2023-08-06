@@ -1,0 +1,60 @@
+name: CI
+on:
+  - push
+  - pull_request
+jobs:
+  test:
+    name: Run tests
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          # TODO: nix seems not to work with SIP
+          # - macos-latest
+          # TODO: PlenaryBustedDirectory seems not to run on Windows
+          # - windows-latest
+        version:
+          - v0.9.0
+          - nightly
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v3
+      - name: Checkout plenary.nvim
+        uses: actions/checkout@v3
+        with:
+          repository: nvim-lua/plenary.nvim
+          path: plenary.nvim
+      - name: Checkout telescope.nvim
+        uses: actions/checkout@v3
+        with:
+          repository: nvim-telescope/telescope.nvim
+          path: telescope.nvim
+      - name: Checkout sqlite.lua
+        uses: actions/checkout@v3
+        with:
+          repository: kkharji/sqlite.lua
+          path: sqlite.lua
+      - name: Install Neovim
+        uses: rhysd/action-setup-vim@v1
+        id: nvim
+        with:
+          neovim: true
+          version: ${{ matrix.version }}
+      - name: Run tests
+        env:
+          PLENARY_PATH: plenary.nvim
+          TELESCOPE_PATH: telescope.nvim
+          SQLITE_PATH: sqlite.lua
+          DEBUG_PLENARY: 1
+          EXE: ${{ steps.nvim.outputs.executable }}
+        run: |-
+          TEST_DIR=lua/frecency/tests/
+          MINIMAL_LUA=${TEST_DIR}minimal.lua
+          NVIM=$(perl -e '$_ = $ENV{EXE}; s,\\,/,g; print')
+          $NVIM --headless --clean -u $MINIMAL_LUA -c "PlenaryBustedDirectory $TEST_DIR {minimal_init = '$MINIMAL_LUA'}"
+      - name: Type Check Code Base
+        uses: mrcjkb/lua-typecheck-action@v0.2.0
+        with:
+          checkLevel: Hint
+          configpath: .luarc.json

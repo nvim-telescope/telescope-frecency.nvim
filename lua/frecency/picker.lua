@@ -1,338 +1,299 @@
-local has_devicons, devicons = pcall(require, "nvim-web-devicons")
-local p = require "plenary.path"
-local util = require "frecency.util"
-local os_home = vim.loop.os_homedir()
-local os_path_sep = p.path.sep
+local log = require "plenary.log"
+local Path = require "plenary.path" --[[@as PlenaryPath]]
 local actions = require "telescope.actions"
-local conf = require("telescope.config").values
-local entry_display = require "telescope.pickers.entry_display"
-local finders = require "telescope.finders"
+local config_values = require("telescope.config").values
 local pickers = require "telescope.pickers"
 local sorters = require "telescope.sorters"
-local ts_util = require "telescope.utils"
-local db = require "frecency.db"
-
----TODO: Describe FrecencyPicker fields
+local utils = require "telescope.utils" --[[@as TelescopeUtils]]
+local uv = vim.loop or vim.uv
 
 ---@class FrecencyPicker
----@field db FrecencyDB: where the files will be stored
----@field results table
----@field active_filter string
----@field active_filter_tag string
----@field previous_buffer string
+---@field private config FrecencyPickerConfig
+---@field private database FrecencyDatabase
+---@field private finder FrecencyFinder
+---@field private fs FrecencyFS
+---@field private lsp_workspaces string[]
+---@field private recency FrecencyRecency
+---@field private results table[]
+---@field private workspace string?
+---@field private workspace_tag_regex string
+local Picker = {}
+
+---@class FrecencyPickerConfig
+---@field default_workspace_tag string?
+---@field editing_bufnr integer
+---@field filter_delimiter string
+---@field initial_workspace_tag string?
+---@field show_unindexed boolean
+---@field workspaces table<string, string>
+
+---@class FrecencyPickerEntry
+---@field display fun(entry: FrecencyPickerEntry): string
+---@field filename string
+---@field name string
+---@field ordinal string
+---@field score number
+
+---@param database FrecencyDatabase
+---@param finder FrecencyFinder
+---@param fs FrecencyFS
+---@param recency FrecencyRecency
+---@param config FrecencyPickerConfig
+---@return FrecencyPicker
+Picker.new = function(database, finder, fs, recency, config)
+  local self = setmetatable({
+    config = config,
+    database = database,
+    finder = finder,
+    fs = fs,
+    lsp_workspaces = {},
+    recency = recency,
+    results = {},
+  }, { __index = Picker })
+  local d = self.config.filter_delimiter
+  self.workspace_tag_regex = "^%s*(" .. d .. "(%S+)" .. d .. ")"
+  return self
+end
+
+---@class FrecencyPickerOptions
 ---@field cwd string
----@field lsp_workspaces table
----@field picker table
----@field updated boolean: true if a new entry is added into DB
-local m = {
-  results = {},
-  active_filter = nil,
-  active_filter_tag = nil,
-  last_filter = nil,
-  previous_buffer = nil,
-  cwd = nil,
-  lsp_workspaces = {},
-  picker = {},
-  updated = false,
-}
+---@field path_display
+---| "hidden"
+---| "tail"
+---| "absolute"
+---| "smart"
+---| "shorten"
+---| "truncate"
+---| fun(opts: FrecencyPickerOptions, path: string): string
+---@field workspace string?
 
-m.__index = m
-
----@class FrecencyConfig
----@field show_unindexed boolean: default true
----@field show_filter_column boolean|string[]: default true
----@field workspaces table: default {}
----@field disable_devicons boolean: default false
----@field default_workspace string: default nil
-m.config = {
-  show_scores = true,
-  show_unindexed = true,
-  show_filter_column = true,
-  workspaces = {},
-  disable_devicons = false,
-  default_workspace = nil,
-}
-
----Setup frecency picker
-m.set_prompt_options = function(buffer)
-  vim.bo[buffer].filetype = "frecency"
-  vim.bo[buffer].completefunc = "v:lua.require'telescope'.extensions.frecency.complete"
-  vim.keymap.set("i", "<Tab>", "pumvisible() ? '<C-n>' : '<C-x><C-u>'", { buffer = buffer, expr = true })
-  vim.keymap.set("i", "<S-Tab>", "pumvisible() ? '<C-p>' : ''", { buffer = buffer, expr = true })
-end
-
----returns `true` if workspaces exit
----@param bufnr integer
----@param force boolean?
----@return boolean workspaces_exist
-m.fetch_lsp_workspaces = function(bufnr, force)
-  if not vim.tbl_isempty(m.lsp_workspaces) and not force then
-    return true
-  end
-
-  local lsp_workspaces = vim.api.nvim_buf_call(bufnr, vim.lsp.buf.list_workspace_folders)
-  if not vim.tbl_isempty(lsp_workspaces) then
-    m.lsp_workspaces = lsp_workspaces
-    return true
-  end
-
-  m.lsp_workspaces = {}
-  return false
-end
-
----Update Frecency Picker result
----@param filter string
----@return boolean
-m.update = function(filter)
-  local filter_updated = false
-  local ws_dir = filter and m.config.workspaces[filter] or nil
-
-  if filter == "LSP" and not vim.tbl_isempty(m.lsp_workspaces) then
-    ws_dir = m.lsp_workspaces[1]
-  elseif filter == "CWD" then
-    ws_dir = m.cwd
-  end
-
-  if ws_dir ~= m.active_filter then
-    filter_updated = true
-    m.active_filter, m.active_filter_tag = ws_dir, filter
-  end
-
-  m.results = (vim.tbl_isempty(m.results) or m.updated or filter_updated)
-      and db.get_files { ws_path = ws_dir, show_unindexed = m.config.show_unindexed }
-    or m.results
-
-  return filter_updated
-end
-
----@param opts table telescope picker table
----@return fun(filename: string): string
-m.filepath_formatter = function(opts)
-  local path_opts = {}
-  for k, v in pairs(opts) do
-    path_opts[k] = v
-  end
-
-  return function(filename)
-    path_opts.cwd = m.active_filter or m.cwd
-    return ts_util.transform_path(path_opts, filename)
-  end
-end
-
-m.should_show_tail = function()
-  local filters = type(m.config.show_filter_column) == "table" and m.config.show_filter_column or { "LSP", "CWD" }
-  return vim.tbl_contains(filters, m.active_filter_tag)
-end
-
----Create entry maker function.
----@param entry table
----@return function
-m.maker = function(entry)
-  local filter_column_width = (function()
-    if m.active_filter then
-      if m.should_show_tail() then
-        -- TODO: Only add +1 if m.show_filter_thing is true, +1 is for the trailing slash
-        return #(ts_util.path_tail(m.active_filter)) + 1
-      end
-      return #(p:new(m.active_filter):make_relative(os_home)) + 1
-    end
-    return 0
-  end)()
-
-  local displayer = entry_display.create {
-    separator = "",
-    hl_chars = { [os_path_sep] = "TelescopePathSeparator" },
-    items = (function()
-      local i = m.config.show_scores and { { width = 8 } } or {}
-      if has_devicons and not m.config.disable_devicons then
-        table.insert(i, { width = 2 })
-      end
-      if m.config.show_filter_column then
-        table.insert(i, { width = filter_column_width })
-      end
-      table.insert(i, { remaining = true })
-      return i
-    end)(),
-  }
-
-  local filter_path = (function()
-    if m.config.show_filter_column and m.active_filter then
-      return m.should_show_tail() and ts_util.path_tail(m.active_filter) .. os_path_sep
-        or p:new(m.active_filter):make_relative(os_home) .. os_path_sep
-    end
-    return ""
-  end)()
-
-  local formatter = m.filepath_formatter(m.opts)
-
-  return {
-    filename = entry.path,
-    ordinal = entry.path,
-    name = entry.path,
-    score = entry.score,
-    display = function(e)
-      return displayer((function()
-        local i = m.config.show_scores and { { entry.score, "TelescopeFrecencyScores" } } or {}
-        if has_devicons and not m.config.disable_devicons then
-          table.insert(i, { devicons.get_icon(e.name, string.match(e.name, "%a+$"), { default = true }) })
-        end
-        if m.config.show_filter_column then
-            table.insert(i, { filter_path, "Directory" })
-        end
-        table.insert(i, {
-          formatter(e.name),
-          util.buf_is_loaded(e.name) and "TelescopeBufferLoaded" or "",
-        })
-        return i
-      end)())
+---@param opts FrecencyPickerOptions?
+function Picker:start(opts)
+  opts = vim.tbl_extend("force", {
+    cwd = uv.cwd(),
+    path_display = function(picker_opts, path)
+      return self:default_path_display(picker_opts, path)
     end,
-  }
-end
-
----Find files
----@param opts table: telescope picker opts
-m.fd = function(opts)
-  opts = opts or {}
-
-  if not opts.path_display then
-    opts.path_display = function(path_opts, filename)
-      local original_filename = filename
-
-      filename = p:new(filename):make_relative(path_opts.cwd)
-      if not m.active_filter then
-        if vim.startswith(filename, os_home) then
-          filename = "~/" .. p:new(filename):make_relative(os_home)
-        elseif filename ~= original_filename then
-          filename = "./" .. filename
-        end
-      end
-
-      return filename
-    end
+  }, opts or {}) --[[@as FrecencyPickerOptions]]
+  self.lsp_workspaces = {}
+  local workspace = self:get_workspace(opts.cwd, self.config.initial_workspace_tag)
+  log.debug { workspace = workspace, ["self.workspace"] = self.workspace }
+  if vim.tbl_isempty(self.results) or workspace ~= self.workspace then
+    self.workspace = workspace
+    self.results = self:fetch_results(self.workspace)
   end
 
-  m.previous_buffer, m.cwd, m.opts = vim.fn.bufnr "%", vim.fn.expand(opts.cwd or vim.loop.cwd()), opts
-  -- TODO: should we update this every time it calls frecency on other buffers?
-  m.fetch_lsp_workspaces(m.previous_buffer)
-  m.update()
+  local filepath_formatter = self:filepath_formatter(opts)
+  local finder = self.finder:start(filepath_formatter, self.results, {
+    need_scandir = self.workspace and self.config.show_unindexed and true or false,
+    workspace = self.workspace,
+    workspace_tag = self.config.initial_workspace_tag,
+  })
 
-  local picker_opts = {
+  local picker = pickers.new(opts, {
     prompt_title = "Frecency",
-    finder = finders.new_table { results = m.results, entry_maker = m.maker },
-    previewer = conf.file_previewer(opts),
-    sorter = sorters.get_substr_matcher(opts),
-  }
-
-  picker_opts.on_input_filter_cb = function(query_text)
-    local o = {}
-    local delim = m.config.filter_delimiter or ":" -- check for :filter: in query text
-    local matched, new_filter = query_text:match("^%s*(" .. delim .. "(%S+)" .. delim .. ")")
-    new_filter = new_filter or opts.workspace or m.config.default_workspace
-
-    o.prompt = matched and query_text:sub(matched:len() + 1) or query_text
-    if m.update(new_filter) then
-      m.last_filter = new_filter
-      o.updated_finder = finders.new_table { results = m.results, entry_maker = m.maker }
-    end
-
-    return o
-  end
-
-  picker_opts.attach_mappings = function(prompt_bufnr)
-    actions.select_default:replace_if(function()
-      return vim.fn.complete_info().pum_visible == 1
-    end, function()
-      local keys = vim.fn.complete_info().selected == -1 and "<C-e><Bs><Right>" or "<C-y><Right>:"
-      local accept_completion = vim.api.nvim_replace_termcodes(keys, true, false, true)
-      vim.api.nvim_feedkeys(accept_completion, "n", true)
-    end)
-    return true
-  end
-
-  m.picker = pickers.new(opts, picker_opts)
-  m.picker:find()
-  m.set_prompt_options(m.picker.prompt_bufnr)
+    finder = finder,
+    previewer = config_values.file_previewer(opts),
+    sorter = sorters.get_substr_matcher(),
+    on_input_filter_cb = self:on_input_filter_cb(opts),
+    attach_mappings = function(prompt_bufnr)
+      return self:attach_mappings(prompt_bufnr)
+    end,
+  })
+  picker:find()
+  self:set_prompt_options(picker.prompt_bufnr)
 end
 
----TODO: this seems to be forgotten and just exported in old implementation.
----@return table
-m.workspace_tags = function()
-  -- Add user config workspaces.
-  -- TODO: validate that workspaces are existing directories
-  local tags = {}
-  for k, _ in pairs(m.config.workspaces) do
-    table.insert(tags, k)
-  end
-
-  -- Add CWD filter
-  --  NOTE: hmmm :cwd::lsp: is easier to write.
-  table.insert(tags, "CWD")
-
-  -- Add LSP workpace(s)
-  if m.fetch_lsp_workspaces(m.previous_buffer, true) then
-    table.insert(tags, "LSP")
-  end
-
-  -- TODO: sort tags - by collective frecency? (?????? is this still relevant)
-  return tags
+function Picker:discard_results()
+  self.results = {}
 end
 
-m.complete = function(findstart, base)
+--- See :h 'complete-functions'
+---@param findstart 1|0
+---@param base string
+---@return integer|string[]|''
+function Picker:complete(findstart, base)
   if findstart == 1 then
+    local delimiter = self.config.filter_delimiter
     local line = vim.api.nvim_get_current_line()
-    local start = line:find ":"
+    local start = line:find(delimiter)
     -- don't complete if there's already a completed `:tag:` in line
-    if not start or line:find(":", start + 1) then
+    if not start or line:find(delimiter, start + 1) then
       return -3
     end
     return start
-  else
-    if vim.fn.pumvisible() == 1 and #vim.v.completed_item > 0 then
-      return ""
+  elseif vim.fn.pumvisible() == 1 and #vim.v.completed_item > 0 then
+    return ""
+  end
+  ---@param v string
+  local matches = vim.tbl_filter(function(v)
+    return vim.startswith(v, base)
+  end, self:workspace_tags())
+  return #matches > 0 and matches or ""
+end
+
+---@private
+---@return string[]
+function Picker:workspace_tags()
+  local tags = vim.tbl_keys(self.config.workspaces)
+  table.insert(tags, "CWD")
+  if self:get_lsp_workspace() then
+    table.insert(tags, "LSP")
+  end
+  return tags
+end
+
+---@private
+---@param opts FrecencyPickerOptions
+---@param path string
+---@return string
+function Picker:default_path_display(opts, path)
+  local filename = Path:new(path):make_relative(opts.cwd)
+  if not self.workspace then
+    if vim.startswith(filename, self.fs.os_homedir) then
+      filename = "~/" .. self.fs:relative_from_home(filename)
+    elseif filename ~= path then
+      filename = "./" .. filename
     end
+  end
+  return filename
+end
 
-    local matches = vim.tbl_filter(function(v)
-      return vim.startswith(v, base)
-    end, m.workspace_tags())
-
-    return #matches > 0 and matches or ""
+---@private
+---@param cwd string
+---@param tag string?
+---@return string?
+function Picker:get_workspace(cwd, tag)
+  if not tag then
+    return nil
+  elseif self.config.workspaces[tag] then
+    return self.config.workspaces[tag]
+  elseif tag == "LSP" then
+    return self:get_lsp_workspace()
+  elseif tag == "CWD" then
+    return cwd
   end
 end
 
----Setup Frecency Picker
----@param db FrecencyDB
----@param config FrecencyConfig
-m.setup = function(config)
-  m.config = vim.tbl_extend("keep", config, m.config)
-  db.set_config(config)
-
-  --- Seed files table with oldfiles when it's empty.
-  if db.sqlite.files:count() == 0 then
-    -- TODO: this needs to be scheduled for after shada load??
-    for _, path in ipairs(vim.v.oldfiles) do
-      db.sqlite.files:insert { path = path, count = 0 } -- TODO: remove when sql.nvim#97 is closed
+---@private
+---@param workspace string?
+---@param datetime string? ISO8601 format string
+---@return FrecencyFile[]
+function Picker:fetch_results(workspace, datetime)
+  log.debug { workspace = workspace or "NONE" }
+  local start_files = os.clock()
+  local files = self.database:get_files(workspace)
+  log.debug { files = #files }
+  log.debug(("it takes %f seconds in fetching files with workspace: %s"):format(os.clock() - start_files, workspace))
+  local start_timesatmps = os.clock()
+  local timestamps = self.database:get_timestamps(datetime)
+  log.debug { timestamps = #timestamps }
+  log.debug(("it takes %f seconds in fetching all timestamps"):format(os.clock() - start_timesatmps))
+  local start_results = os.clock()
+  local elapsed_recency = 0
+  ---@type table<integer,number[]>
+  local age_map = {}
+  for _, timestamp in ipairs(timestamps) do
+    if not age_map[timestamp.file_id] then
+      age_map[timestamp.file_id] = {}
     end
-    vim.notify(("Telescope-Frecency: Imported %d entries from oldfiles."):format(#vim.v.oldfiles))
+    table.insert(age_map[timestamp.file_id], timestamp.age)
   end
+  for _, file in ipairs(files) do
+    local start_recency = os.clock()
+    file.score = self.recency:calculate(file.count, age_map[file.id])
+    elapsed_recency = elapsed_recency + (os.clock() - start_recency)
+  end
+  log.debug(("it takes %f seconds in calculating recency"):format(elapsed_recency))
+  log.debug(("it takes %f seconds in making results"):format(os.clock() - start_results))
 
-  -- TODO: perhaps ignore buffer without file path here?
-  local group = vim.api.nvim_create_augroup("TelescopeFrecency", {})
-  vim.api.nvim_create_autocmd({ "BufWinEnter", "BufWritePost" }, {
-    group = group,
-    callback = function(args)
-      local path = vim.api.nvim_buf_get_name(args.buf)
-      local has_added_entry = db.update(path)
-      m.updated = m.updated or has_added_entry
-    end,
-  })
+  local start_sort = os.clock()
+  table.sort(files, function(a, b)
+    return a.score > b.score
+  end)
+  log.debug(("it takes %f seconds in sorting"):format(os.clock() - start_sort))
+  return files
+end
 
-  vim.api.nvim_create_user_command("FrecencyValidate", function(cmd_info)
-    db.validate { force = cmd_info.bang }
-  end, { bang = true, desc = "Clean up DB for telescope-frecency" })
+---@private
+---@return string?
+function Picker:get_lsp_workspace()
+  if vim.tbl_isempty(self.lsp_workspaces) then
+    self.lsp_workspaces = vim.api.nvim_buf_call(self.config.editing_bufnr, vim.lsp.buf.list_workspace_folders)
+  end
+  return self.lsp_workspaces[1]
+end
 
-  if db.config.auto_validate then
-    db.validate { auto = true }
+---@private
+---@param picker_opts table
+---@return fun(prompt: string): table
+function Picker:on_input_filter_cb(picker_opts)
+  local filepath_formatter = self:filepath_formatter(picker_opts)
+  return function(prompt)
+    local workspace
+    local matched, tag = prompt:match(self.workspace_tag_regex)
+    local opts = { prompt = matched and prompt:sub(matched:len() + 1) or prompt }
+    if prompt == "" then
+      workspace = self:get_workspace(picker_opts.cwd, self.config.initial_workspace_tag)
+    else
+      workspace = self:get_workspace(picker_opts.cwd, tag or self.config.default_workspace_tag) or self.workspace
+    end
+    if self.workspace ~= workspace then
+      self.workspace = workspace
+      self.results = self:fetch_results(workspace)
+      opts.updated_finder = self.finder:start(filepath_formatter, self.results, {
+        initial_results = self.results,
+        need_scandir = self.workspace and self.config.show_unindexed and true or false,
+        workspace = self.workspace,
+        workspace_tag = tag,
+      })
+    end
+    return opts
   end
 end
 
-return m
+---@private
+---@param _ integer
+---@return boolean
+function Picker:attach_mappings(_)
+  actions.select_default:replace_if(function()
+    return vim.fn.complete_info().pum_visible == 1
+  end, function()
+    local keys = vim.fn.complete_info().selected == -1 and "<C-e><BS><Right>" or "<C-y><Right>:"
+    local accept_completion = vim.api.nvim_replace_termcodes(keys, true, false, true)
+    vim.api.nvim_feedkeys(accept_completion, "n", true)
+  end)
+  return true
+end
+
+---@private
+---@param bufnr integer
+---@return nil
+function Picker:set_prompt_options(bufnr)
+  vim.bo[bufnr].filetype = "frecency"
+  vim.bo[bufnr].completefunc = "v:lua.require'telescope'.extensions.frecency.complete"
+  vim.keymap.set("i", "<Tab>", "pumvisible() ? '<C-n>' : '<C-x><C-u>'", { buffer = bufnr, expr = true })
+  vim.keymap.set("i", "<S-Tab>", "pumvisible() ? '<C-p>' : ''", { buffer = bufnr, expr = true })
+end
+
+---@alias FrecencyFilepathFormatter fun(workspace: string?): fun(filename: string): string): string
+
+---@private
+---@param picker_opts table
+---@return FrecencyFilepathFormatter
+function Picker:filepath_formatter(picker_opts)
+  ---@param workspace string?
+  return function(workspace)
+    local opts = {}
+    for k, v in pairs(picker_opts) do
+      opts[k] = v
+    end
+    opts.cwd = workspace or self.fs.os_homedir
+
+    return function(filename)
+      return utils.transform_path(opts, filename)
+    end
+  end
+end
+
+return Picker

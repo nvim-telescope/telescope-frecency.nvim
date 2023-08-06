@@ -1,0 +1,14 @@
+{
+  "diagnostics": {
+    "globals": [
+      "describe",
+      "it",
+      "vim"
+    ]
+  },
+  "runtime.version": "LuaJIT",
+  "runtime.path": [
+    "lua/?.lua",
+    "lua/?/init.lua"
+  ]
+}
