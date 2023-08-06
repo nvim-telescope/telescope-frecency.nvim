@@ -19,8 +19,10 @@ AsyncFinder.new = function(fs, path, entry_maker, initial_results)
       return self:_find(...)
     end,
   })
+  local seen = {}
   for i, file in ipairs(initial_results) do
     local entry = entry_maker(file)
+    seen[entry.filename] = true
     entry.index = i
     table.insert(self.entries, entry)
   end
@@ -34,15 +36,19 @@ AsyncFinder.new = function(fs, path, entry_maker, initial_results)
       if self.closed then
         break
       end
-      index = index + 1
-      count = count + 1
-      local entry = entry_maker { id = 0, count = 0, path = vim.fs.joinpath(path, name), score = 0 }
-      if entry then
-        entry.index = index
-        table.insert(self.entries, entry)
-        tx.send(entry)
-        if count % 1000 == 0 then
-          a.util.sleep(0)
+      local fullpath = vim.fs.joinpath(path, name)
+      if not seen[fullpath] then
+        seen[fullpath] = true
+        index = index + 1
+        count = count + 1
+        local entry = entry_maker { id = 0, count = 0, path = vim.fs.joinpath(path, name), score = 0 }
+        if entry then
+          entry.index = index
+          table.insert(self.entries, entry)
+          tx.send(entry)
+          if count % 1000 == 0 then
+            a.util.sleep(0)
+          end
         end
       end
     end

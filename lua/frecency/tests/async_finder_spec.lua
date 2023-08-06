@@ -19,7 +19,10 @@ local function with_files(files, initial_results, callback)
   end
   local entry_maker = EntryMaker.new(fs, web_devicons, { show_filter_column = false, show_scores = false })
     :create(filepath_formatter, dir:absolute())
-  local async_finder = AsyncFinder.new(fs, dir:absolute(), entry_maker, initial_results)
+  local initials = vim.tbl_map(function(v)
+    return { path = (dir / v):absolute() }
+  end, initial_results)
+  local async_finder = AsyncFinder.new(fs, dir:absolute(), entry_maker, initials)
   callback(async_finder, dir)
   close()
 end
@@ -33,23 +36,22 @@ describe("async_finder", function()
     return
   end
 
-  describe("with no initial_results", function()
-    local files = { "hoge1.txt", "hoge2.txt" }
-    with_files(files, {}, function(async_finder, dir)
-      local count = { process_result = 0, process_complete = 0 }
-      local results
-      local function run()
-        results = {}
-        async_finder("", function(result)
-          count.process_result = count.process_result + 1
-          table.insert(results, result.filename)
-        end, function()
-          count.process_complete = count.process_complete + 1
-        end)
-      end
+  local function run(async_finder)
+    local count = { process_result = 0, process_complete = 0 }
+    local results = {}
+    async_finder("", function(result)
+      count.process_result = count.process_result + 1
+      table.insert(results, result.filename)
+    end, function()
+      count.process_complete = count.process_complete + 1
+    end)
+    return count, results
+  end
 
+  describe("with no initial_results", function()
+    with_files({ "hoge1.txt", "hoge2.txt" }, {}, function(async_finder, dir)
       describe("when run at the first time", function()
-        run()
+        local count, results = run(async_finder)
         it("called process_result() at 2 times", function()
           assert.are.same(2, count.process_result)
         end)
@@ -65,12 +67,12 @@ describe("async_finder", function()
       end)
 
       describe("when run again", function()
-        run()
-        it("called process_result() at 4 times", function()
-          assert.are.same(4, count.process_result)
+        local count, results = run(async_finder)
+        it("called process_result() at 2 times", function()
+          assert.are.same(2, count.process_result)
         end)
         it("called process_complete() at 1 time", function()
-          assert.are.same(2, count.process_complete)
+          assert.are.same(1, count.process_complete)
         end)
         it("returns the same results", function()
           assert.are.same({
@@ -78,6 +80,25 @@ describe("async_finder", function()
             dir:joinpath("hoge2.txt").filename,
           }, results)
         end)
+      end)
+    end)
+  end)
+
+  describe("with initial_results", function()
+    with_files({ "fuga1.txt", "hoge1.txt", "hoge2.txt" }, { "fuga1.txt" }, function(async_finder, dir)
+      local count, results = run(async_finder)
+      it("called process_result() at 3 times", function()
+        assert.are.same(3, count.process_result)
+      end)
+      it("called process_complete() at 1 time", function()
+        assert.are.same(1, count.process_complete)
+      end)
+      it("returns the same results without duplications", function()
+        assert.are.same({
+          dir:joinpath("fuga1.txt").filename,
+          dir:joinpath("hoge1.txt").filename,
+          dir:joinpath("hoge2.txt").filename,
+        }, results)
       end)
     end)
   end)
