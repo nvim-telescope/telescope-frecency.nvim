@@ -1,3 +1,4 @@
+local AsyncFinder = require "frecency.async_finder"
 local finders = require "telescope.finders"
 local log = require "plenary.log"
 
@@ -39,33 +40,7 @@ function Finder:start(filepath_formatter, initial_results, opts)
     }
   end
   log.debug { finder = opts }
-  return finders.new_dynamic { entry_maker = entry_maker, fn = self:create_fn(initial_results, opts.workspace) }
-end
-
----@private
----@param initial_results table
----@param path string
----@return fun(prompt: string?): table[]
-function Finder:create_fn(initial_results, path)
-  local it = vim.F.nil_wrap(self.fs:scan_dir(path))
-  local results = vim.deepcopy(initial_results)
-  local called = 0
-  ---@param _ string?
-  ---@return table[]
-  return function(_)
-    called = called + 1
-    log.debug { called = called }
-    local count = 0
-    for name in it do
-      table.insert(results, { path = vim.fs.joinpath(path, name), score = 0 })
-      count = count + 1
-      if count >= self.config.chunk_size then
-        break
-      end
-    end
-    log.debug(("dynamic results: %d"):format(#results))
-    return results
-  end
+  return AsyncFinder.new(self.fs, opts.workspace, entry_maker, initial_results)
 end
 
 return Finder
