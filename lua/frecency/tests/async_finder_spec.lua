@@ -7,7 +7,7 @@ local util = require "frecency.tests.util"
 
 ---@param files string[]
 ---@param initial_results string[]
----@param callback fun(async_finder: AsyncFinder, dir: PlenaryPath): nil
+---@param callback fun(async_finder: FrecencyAsyncFinder, dir: PlenaryPath): nil
 local function with_files(files, initial_results, callback)
   local dir, close = util.make_tree(files)
   local fs = FS.new { ignore_patterns = {} }

@@ -1,22 +1,29 @@
-local a = require "plenary.async"
+local async = require "plenary.async"
 
----@class AsyncFinder
+---@class FrecencyAsyncFinder
 ---@field closed boolean
 ---@field entries FrecencyEntry[]
----@field rx { recv: fun(): table }
----@operator call():nil
+---@field rx FrecencyRx
+---@overload fun(_: string, process_result: (fun(entry: FrecencyEntry): nil), process_complete: fun(): nil): nil
 local AsyncFinder = {}
+
+---@class FrecencyRx
+---@field recv fun(): FrecencyEntry?
+
+---@class FrecencyTx
+---@field send fun(entry: FrecencyEntry?): nil
 
 ---@param fs FrecencyFS
 ---@param path string
 ---@param entry_maker fun(file: FrecencyFile): FrecencyEntry
 ---@param initial_results FrecencyFile[]
----@return AsyncFinder
+---@return FrecencyAsyncFinder
 AsyncFinder.new = function(fs, path, entry_maker, initial_results)
   local self = setmetatable({ closed = false, entries = {} }, {
     __index = AsyncFinder,
+    ---@param self FrecencyAsyncFinder
     __call = function(self, ...)
-      return self:_find(...)
+      return self:find(...)
     end,
   })
   local seen = {}
@@ -29,9 +36,10 @@ AsyncFinder.new = function(fs, path, entry_maker, initial_results)
   local it = vim.F.nil_wrap(fs:scan_dir(path))
   local index = #initial_results
   local count = 0
-  local tx, rx = a.control.channel.mpsc()
+  ---@type FrecencyTx, FrecencyRx
+  local tx, rx = async.control.channel.mpsc()
   self.rx = rx
-  a.run(function()
+  async.run(function()
     for name in it do
       if self.closed then
         break
@@ -47,7 +55,8 @@ AsyncFinder.new = function(fs, path, entry_maker, initial_results)
           table.insert(self.entries, entry)
           tx.send(entry)
           if count % 1000 == 0 then
-            a.util.sleep(0)
+            -- NOTE: This is needed not to lock text input.
+            async.util.sleep(0)
           end
         end
       end
@@ -58,9 +67,11 @@ AsyncFinder.new = function(fs, path, entry_maker, initial_results)
   return self
 end
 
+---@param _ string
 ---@param process_result fun(entry: FrecencyEntry): nil
 ---@param process_complete fun(): nil
-function AsyncFinder:_find(_, process_result, process_complete)
+---@return nil
+function AsyncFinder:find(_, process_result, process_complete)
   for _, entry in ipairs(self.entries) do
     if process_result(entry) then
       return
