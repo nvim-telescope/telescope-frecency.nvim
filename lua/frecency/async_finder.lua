@@ -1,7 +1,6 @@
 local a = require "plenary.async"
-local log = require "plenary.log"
 
----@class AsyncFinder: TelescopeFinder
+---@class AsyncFinder
 ---@field closed boolean
 ---@field entries FrecencyEntry[]
 ---@field rx { recv: fun(): table }
@@ -37,8 +36,7 @@ AsyncFinder.new = function(fs, path, entry_maker, initial_results)
       end
       index = index + 1
       count = count + 1
-      ---@diagnostic disable-next-line: missing-fields
-      local entry = entry_maker { path = vim.fs.joinpath(path, name), score = 0 }
+      local entry = entry_maker { id = 0, count = 0, path = vim.fs.joinpath(path, name), score = 0 }
       if entry then
         entry.index = index
         table.insert(self.entries, entry)
@@ -54,10 +52,9 @@ AsyncFinder.new = function(fs, path, entry_maker, initial_results)
   return self
 end
 
----@param prompt string
 ---@param process_result fun(entry: FrecencyEntry): nil
 ---@param process_complete fun(): nil
-function AsyncFinder:_find(prompt, process_result, process_complete)
+function AsyncFinder:_find(_, process_result, process_complete)
   for _, entry in ipairs(self.entries) do
     if process_result(entry) then
       return

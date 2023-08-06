@@ -31,6 +31,7 @@ end
 
 ---@class FrecencyEntry
 ---@field filename string
+---@field index integer
 ---@field ordinal string
 ---@field name string
 ---@field score number
