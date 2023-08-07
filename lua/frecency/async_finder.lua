@@ -55,7 +55,7 @@ AsyncFinder.new = function(fs, path, entry_maker, initial_results)
           tx.send(entry)
           if count % 1000 == 0 then
             -- NOTE: This is needed not to lock text input.
-            async.util.sleep(0)
+            async.util.sleep(50)
           end
         end
       end
