@@ -1,3 +1,4 @@
+---@diagnostic disable: unused-local
 -- NOTE: types below are borrowed from sqlite.lua
 
 ---@class sqlite_db @Main sqlite.lua object.
@@ -64,6 +65,41 @@
 ---@field silent boolean              if true will not echo messages that are not accessible
 
 ---@alias scan_dir fun(path: string, opts: PlenaryScanDirOptions): string[]
+
+---@class PlenaryAsync
+---@field control PlenaryAsyncControl
+---@field util PlenaryAsyncUtil
+local PlenaryAsync = {}
+
+---@async
+---@param f fun(): nil
+---@return nil
+function PlenaryAsync.run(f) end
+
+---@class PlenaryAsyncControl
+---@field channel PlenaryAsyncControlChannel
+
+---@class PlenaryAsyncControlChannel
+---@field mpsc fun(): PlenaryAsyncControlChannelTx, PlenaryAsyncControlChannelRx
+
+---@class PlenaryAsyncControlChannelTx
+---@field send fun(entry: FrecencyEntry?): nil
+local PlenaryAsyncControlChannelTx = {}
+
+---@class PlenaryAsyncControlChannelRx
+local PlenaryAsyncControlChannelRx = {}
+
+---@async
+---@return FrecencyEntry?
+function PlenaryAsyncControlChannelRx.recv() end
+
+---@class PlenaryAsyncUtil
+local PlenaryAsyncUtil = {}
+
+---@async
+---@param ms integer
+---@return nil
+function PlenaryAsyncUtil.sleep(ms) end
 
 -- NOTE: types are for telescope.nvim
 
