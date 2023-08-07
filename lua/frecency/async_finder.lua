@@ -1,17 +1,11 @@
-local async = require "plenary.async"
+local async = require "plenary.async" --[[@as PlenaryAsync]]
 
 ---@class FrecencyAsyncFinder
 ---@field closed boolean
 ---@field entries FrecencyEntry[]
----@field rx FrecencyRx
+---@field rx PlenaryAsyncControlChannelRx
 ---@overload fun(_: string, process_result: (fun(entry: FrecencyEntry): nil), process_complete: fun(): nil): nil
 local AsyncFinder = {}
-
----@class FrecencyRx
----@field recv fun(): FrecencyEntry?
-
----@class FrecencyTx
----@field send fun(entry: FrecencyEntry?): nil
 
 ---@param fs FrecencyFS
 ---@param path string
@@ -33,7 +27,6 @@ AsyncFinder.new = function(fs, path, entry_maker, initial_results)
     entry.index = i
     table.insert(self.entries, entry)
   end
-  ---@type FrecencyTx, FrecencyRx
   local tx, rx = async.control.channel.mpsc()
   self.rx = rx
   async.run(function()
