@@ -60,6 +60,9 @@ end
 ---@param paths string[]
 ---@return integer
 function Database:insert_files(paths)
+  if #paths == 0 then
+    return 0
+  end
   ---@param path string
   return self.sqlite.files:insert(vim.tbl_map(function(path)
     return { path = path, count = 0 } -- TODO: remove when sql.nvim#97 is closed
