@@ -28,14 +28,6 @@ local function with_files(files, initial_results, callback)
 end
 
 describe("async_finder", function()
-  ---@diagnostic disable-next-line: param-type-mismatch
-  if vim.version.eq(vim.version(), "0.9.0") then
-    it("skips these tests for v0.9.0", function()
-      assert.are.same(true, true)
-    end)
-    return
-  end
-
   local function run(async_finder)
     local count = { process_result = 0, process_complete = 0 }
     local results = {}
