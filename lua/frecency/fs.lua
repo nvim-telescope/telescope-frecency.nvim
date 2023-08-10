@@ -29,6 +29,19 @@ FS.new = function(config)
   return self
 end
 
+---This is needed for Neovim v0.9.0.
+---@param ... string
+---@return string
+function FS:joinpath(...)
+  if vim.fs.joinpath then
+    return vim.fs.joinpath(...)
+  end
+  local function join_paths(...)
+    return (table.concat({ ... }, "/"):gsub("//+", "/"))
+  end
+  return join_paths(...)
+end
+
 ---@param path string
 ---@return boolean
 function FS:is_valid_path(path)
@@ -45,13 +58,13 @@ function FS:scan_dir(path)
       vim.fs.dir(path, {
         depth = self.config.scan_depth,
         skip = function(dirname)
-          if self:is_ignored(vim.fs.joinpath(path, dirname)) then
+          if self:is_ignored(self:joinpath(path, dirname)) then
             return false
           end
         end,
       })
     do
-      local fullpath = vim.fs.joinpath(path, name)
+      local fullpath = self:joinpath(path, name)
       if type == "file" and not self:is_ignored(fullpath) and gitignore({ path }, fullpath) then
         coroutine.yield(name)
       end
