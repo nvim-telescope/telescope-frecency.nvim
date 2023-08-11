@@ -202,7 +202,8 @@ function Picker:fetch_results(workspace, datetime)
   end
   for _, file in ipairs(files) do
     local start_recency = os.clock()
-    file.score = self.recency:calculate(file.count, age_map[file.id])
+    local ages = age_map[file.id] --[[@as number[]?]]
+    file.score = ages and self.recency:calculate(file.count, ages) or 0
     elapsed_recency = elapsed_recency + (os.clock() - start_recency)
   end
   log.debug(("it takes %f seconds in calculating recency"):format(elapsed_recency))
