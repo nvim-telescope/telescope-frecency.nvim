@@ -5,6 +5,7 @@ local uv = vim.uv or vim.loop
 
 ---@class FrecencyFS
 ---@field os_homedir string
+---@field joinpath fun(...: string): string
 ---@field private config FrecencyFSConfig
 ---@field private ignore_regexes string[]
 local FS = {}
@@ -26,20 +27,11 @@ FS.new = function(config)
     local regex = escaped:gsub("%%%*", ".*"):gsub("%%%?", ".")
     return "^" .. regex .. "$"
   end, self.config.ignore_patterns)
-  return self
-end
-
----This is needed for Neovim v0.9.0.
----@param ... string
----@return string
-function FS:joinpath(...)
-  if vim.fs.joinpath then
-    return vim.fs.joinpath(...)
-  end
-  local function join_paths(...)
+  ---This is needed for Neovim v0.9.0.
+  self.joinpath = vim.fs.joinpath or function(...)
     return (table.concat({ ... }, "/"):gsub("//+", "/"))
   end
-  return join_paths(...)
+  return self
 end
 
 ---@param path string
@@ -58,13 +50,13 @@ function FS:scan_dir(path)
       vim.fs.dir(path, {
         depth = self.config.scan_depth,
         skip = function(dirname)
-          if self:is_ignored(self:joinpath(path, dirname)) then
+          if self:is_ignored(self.joinpath(path, dirname)) then
             return false
           end
         end,
       })
     do
-      local fullpath = self:joinpath(path, name)
+      local fullpath = self.joinpath(path, name)
       if type == "file" and not self:is_ignored(fullpath) and gitignore({ path }, fullpath) then
         coroutine.yield(name)
       end

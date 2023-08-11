@@ -36,12 +36,12 @@ AsyncFinder.new = function(fs, path, entry_maker, initial_results)
       if self.closed then
         break
       end
-      local fullpath = fs:joinpath(path, name)
+      local fullpath = fs.joinpath(path, name)
       if not seen[fullpath] then
         seen[fullpath] = true
         index = index + 1
         count = count + 1
-        local entry = entry_maker { id = 0, count = 0, path = fs:joinpath(path, name), score = 0 }
+        local entry = entry_maker { id = 0, count = 0, path = fs.joinpath(path, name), score = 0 }
         if entry then
           entry.index = index
           table.insert(self.entries, entry)
