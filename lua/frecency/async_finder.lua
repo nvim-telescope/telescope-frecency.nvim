@@ -16,7 +16,7 @@ local AsyncFinder = {}
 ---@param initial_results FrecencyFile[]
 ---@return FrecencyAsyncFinder
 AsyncFinder.new = function(state, fs, path, entry_maker, initial_results)
-  local self = setmetatable({ closed = false, entries = {}, state = state }, {
+  local self = setmetatable({ closed = false, entries = {}, reflowed = false, state = state }, {
     __index = AsyncFinder,
     ---@param self FrecencyAsyncFinder
     __call = function(self, ...)
@@ -99,10 +99,25 @@ function AsyncFinder:reflow_results()
     return
   end
   local bufnr = picker.results_bufnr
-  if not bufnr then
+  local win = picker.results_win
+  if not bufnr or not win then
     return
   end
   picker:clear_extra_rows(bufnr)
+  if picker.sorting_strategy == "descending" then
+    local manager = picker.manager
+    if not manager then
+      return
+    end
+    local worst_line = picker:get_row(manager:num_results())
+    ---@type WinInfo
+    local wininfo = vim.fn.getwininfo(win)[1]
+    local bottom = vim.api.nvim_buf_line_count(bufnr)
+    if not self.reflowed or worst_line > wininfo.botline then
+      self.reflowed = true
+      vim.api.nvim_win_set_cursor(win, { bottom, 0 })
+    end
+  end
 end
 
 return AsyncFinder
