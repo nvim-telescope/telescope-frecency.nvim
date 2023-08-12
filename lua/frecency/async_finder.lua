@@ -3,17 +3,20 @@ local async = require "plenary.async" --[[@as PlenaryAsync]]
 ---@class FrecencyAsyncFinder
 ---@field closed boolean
 ---@field entries FrecencyEntry[]
+---@field reflowed boolean
 ---@field rx PlenaryAsyncControlChannelRx
+---@field state FrecencyState
 ---@overload fun(_: string, process_result: (fun(entry: FrecencyEntry): nil), process_complete: fun(): nil): nil
 local AsyncFinder = {}
 
 ---@param fs FrecencyFS
+---@param state FrecencyState
 ---@param path string
 ---@param entry_maker fun(file: FrecencyFile): FrecencyEntry
 ---@param initial_results FrecencyFile[]
 ---@return FrecencyAsyncFinder
-AsyncFinder.new = function(fs, path, entry_maker, initial_results)
-  local self = setmetatable({ closed = false, entries = {} }, {
+AsyncFinder.new = function(state, fs, path, entry_maker, initial_results)
+  local self = setmetatable({ closed = false, entries = {}, reflowed = false, state = state }, {
     __index = AsyncFinder,
     ---@param self FrecencyAsyncFinder
     __call = function(self, ...)
@@ -47,6 +50,7 @@ AsyncFinder.new = function(fs, path, entry_maker, initial_results)
           table.insert(self.entries, entry)
           tx.send(entry)
           if count % 1000 == 0 then
+            self:reflow_results()
             -- NOTE: This is needed not to lock text input.
             async.util.sleep(50)
           end
@@ -86,6 +90,34 @@ end
 
 function AsyncFinder:close()
   self.closed = true
+end
+
+---@return nil
+function AsyncFinder:reflow_results()
+  local picker = self.state:get()
+  if not picker then
+    return
+  end
+  local bufnr = picker.results_bufnr
+  local win = picker.results_win
+  if not bufnr or not win then
+    return
+  end
+  picker:clear_extra_rows(bufnr)
+  if picker.sorting_strategy == "descending" then
+    local manager = picker.manager
+    if not manager then
+      return
+    end
+    local worst_line = picker:get_row(manager:num_results())
+    ---@type WinInfo
+    local wininfo = vim.fn.getwininfo(win)[1]
+    local bottom = vim.api.nvim_buf_line_count(bufnr)
+    if not self.reflowed or worst_line > wininfo.botline then
+      self.reflowed = true
+      vim.api.nvim_win_set_cursor(win, { bottom, 0 })
+    end
+  end
 end
 
 return AsyncFinder

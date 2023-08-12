@@ -117,3 +117,20 @@ function PlenaryAsyncUtil.sleep(ms) end
 ---@field path_tail fun(path: string): string
 ---@field transform_path fun(opts: table, path: string): string
 ---@field buf_is_loaded fun(filename: string): boolean
+
+---@class TelescopePicker
+---@field clear_extra_rows fun(self: TelescopePicker, results_bufnr: integer): nil
+---@field get_row fun(self: TelescopePicker, index: integer): integer
+---@field manager TelescopeEntryManager|false
+---@field results_bufnr integer?
+---@field results_win integer?
+---@field sorting_strategy 'ascending'|'descending'
+
+---@class TelescopeEntryManager
+---@field num_results fun(): integer
+
+-- NOTE: types for default functions
+
+---@class WinInfo
+---@field topline integer
+---@field botline integer

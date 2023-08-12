@@ -1,3 +1,4 @@
+local State = require "frecency.state"
 local log = require "plenary.log"
 local Path = require "plenary.path" --[[@as PlenaryPath]]
 local actions = require "telescope.actions"
@@ -83,8 +84,10 @@ function Picker:start(opts)
     self.results = self:fetch_results(self.workspace)
   end
 
+  local state = State.new()
+
   local filepath_formatter = self:filepath_formatter(opts)
-  local finder = self.finder:start(filepath_formatter, self.results, {
+  local finder = self.finder:start(state, filepath_formatter, self.results, {
     need_scandir = self.workspace and self.config.show_unindexed and true or false,
     workspace = self.workspace,
     workspace_tag = self.config.initial_workspace_tag,
@@ -95,11 +98,12 @@ function Picker:start(opts)
     finder = finder,
     previewer = config_values.file_previewer(opts),
     sorter = sorters.get_substr_matcher(),
-    on_input_filter_cb = self:on_input_filter_cb(opts),
+    on_input_filter_cb = self:on_input_filter_cb(state, opts),
     attach_mappings = function(prompt_bufnr)
       return self:attach_mappings(prompt_bufnr)
     end,
   })
+  state:set(picker)
   picker:find()
   self:set_prompt_options(picker.prompt_bufnr)
 end
@@ -227,9 +231,10 @@ function Picker:get_lsp_workspace()
 end
 
 ---@private
+---@param state FrecencyState
 ---@param picker_opts table
 ---@return fun(prompt: string): table
-function Picker:on_input_filter_cb(picker_opts)
+function Picker:on_input_filter_cb(state, picker_opts)
   local filepath_formatter = self:filepath_formatter(picker_opts)
   return function(prompt)
     local workspace
@@ -243,7 +248,7 @@ function Picker:on_input_filter_cb(picker_opts)
     if self.workspace ~= workspace then
       self.workspace = workspace
       self.results = self:fetch_results(workspace)
-      opts.updated_finder = self.finder:start(filepath_formatter, self.results, {
+      opts.updated_finder = self.finder:start(state, filepath_formatter, self.results, {
         initial_results = self.results,
         need_scandir = self.workspace and self.config.show_unindexed and true or false,
         workspace = self.workspace,
