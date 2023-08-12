@@ -117,3 +117,7 @@ function PlenaryAsyncUtil.sleep(ms) end
 ---@field path_tail fun(path: string): string
 ---@field transform_path fun(opts: table, path: string): string
 ---@field buf_is_loaded fun(filename: string): boolean
+
+---@class TelescopePicker
+---@field clear_extra_rows fun(self: TelescopePicker, results_bufnr: integer): nil
+---@field results_bufnr integer?

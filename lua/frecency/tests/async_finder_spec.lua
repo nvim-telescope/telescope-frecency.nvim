@@ -1,5 +1,6 @@
 ---@diagnostic disable: invisible
 local AsyncFinder = require "frecency.async_finder"
+local State = require "frecency.state"
 local FS = require "frecency.fs"
 local EntryMaker = require "frecency.entry_maker"
 local WebDevicons = require "frecency.web_devicons"
@@ -22,7 +23,7 @@ local function with_files(files, initial_results, callback)
   local initials = vim.tbl_map(function(v)
     return { path = (dir / v):absolute() }
   end, initial_results)
-  local async_finder = AsyncFinder.new(fs, dir:absolute(), entry_maker, initials)
+  local async_finder = AsyncFinder.new(State.new(), fs, dir:absolute(), entry_maker, initials)
   callback(async_finder, dir)
   close()
 end

@@ -27,11 +27,12 @@ end
 ---@field workspace string?
 ---@field workspace_tag string?
 
+---@param state FrecencyState
 ---@param filepath_formatter FrecencyFilepathFormatter
 ---@param initial_results table
 ---@param opts FrecencyFinderOptions
 ---@return table
-function Finder:start(filepath_formatter, initial_results, opts)
+function Finder:start(state, filepath_formatter, initial_results, opts)
   local entry_maker = self.entry_maker:create(filepath_formatter, opts.workspace, opts.workspace_tag)
   if not opts.need_scandir then
     return finders.new_table {
@@ -40,7 +41,7 @@ function Finder:start(filepath_formatter, initial_results, opts)
     }
   end
   log.debug { finder = opts }
-  return AsyncFinder.new(self.fs, opts.workspace, entry_maker, initial_results)
+  return AsyncFinder.new(state, self.fs, opts.workspace, entry_maker, initial_results)
 end
 
 return Finder
