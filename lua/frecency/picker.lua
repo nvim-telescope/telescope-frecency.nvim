@@ -76,13 +76,9 @@ function Picker:start(opts)
       return self:default_path_display(picker_opts, path)
     end,
   }, opts or {}) --[[@as FrecencyPickerOptions]]
-  self.lsp_workspaces = {}
-  local workspace = self:get_workspace(opts.cwd, self.config.initial_workspace_tag)
-  log.debug { workspace = workspace, ["self.workspace"] = self.workspace }
-  if vim.tbl_isempty(self.results) or workspace ~= self.workspace then
-    self.workspace = workspace
-    self.results = self:fetch_results(self.workspace)
-  end
+  self.workspace = self:get_workspace(opts.cwd, self.config.initial_workspace_tag)
+  log.debug { workspace = self.workspace }
+  self.results = self:fetch_results(self.workspace)
 
   local state = State.new()
 
@@ -109,7 +105,7 @@ function Picker:start(opts)
 end
 
 function Picker:discard_results()
-  self.results = {}
+  -- TODO: implement here when it needs to cache.
 end
 
 --- See :h 'complete-functions'
