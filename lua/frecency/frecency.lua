@@ -104,7 +104,7 @@ function Frecency:start(opts)
     show_unindexed = self.config.show_unindexed,
     workspaces = self.config.workspaces,
   })
-  self.picker:start(opts)
+  self.picker:start(vim.tbl_extend("force", self.config, opts))
   log.debug(("Frecency:start picker:start takes %f seconds"):format(os.clock() - start))
 end
 
