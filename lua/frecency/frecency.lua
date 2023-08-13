@@ -5,6 +5,7 @@ local Finder = require "frecency.finder"
 local Picker = require "frecency.picker"
 local Recency = require "frecency.recency"
 local WebDevicons = require "frecency.web_devicons"
+local log = require "plenary.log"
 
 ---@class Frecency
 ---@field config FrecencyConfig
@@ -92,6 +93,8 @@ end
 ---@param opts FrecencyPickerOptions?
 ---@return nil
 function Frecency:start(opts)
+  local start = os.clock()
+  log.debug "Frecency:start"
   opts = opts or {}
   self.picker = Picker.new(self.database, self.finder, self.fs, self.recency, {
     default_workspace_tag = self.config.default_workspace,
@@ -102,6 +105,7 @@ function Frecency:start(opts)
     workspaces = self.config.workspaces,
   })
   self.picker:start(opts)
+  log.debug(("Frecency:start picker:start takes %f seconds"):format(os.clock() - start))
 end
 
 ---@param findstart 1|0
