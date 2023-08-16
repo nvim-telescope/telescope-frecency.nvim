@@ -117,6 +117,10 @@ function AsyncFinder:reflow_results()
       self.reflowed = true
       vim.api.nvim_win_set_cursor(win, { bottom, 0 })
     end
+    if not picker:get_selection() then
+      local prompt = picker:_get_prompt()
+      picker:_do_selection(prompt)
+    end
   end
 end
 
