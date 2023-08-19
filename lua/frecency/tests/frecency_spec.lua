@@ -100,8 +100,8 @@ describe("frecency", function()
             it("has valid records in DB", function()
               local results = frecency.picker:fetch_results(nil, "2023-07-29T02:00:00+09:00")
               assert.are.same({
-                { count = 1, path = filepath(dir, "hoge1.txt"), score = 10 },
                 { count = 1, path = filepath(dir, "hoge2.txt"), score = 10 },
+                { count = 1, path = filepath(dir, "hoge1.txt"), score = 10 },
               }, results)
             end)
           end)
@@ -134,8 +134,8 @@ describe("frecency", function()
             it("does not increase the score", function()
               local results = frecency.picker:fetch_results(nil, "2023-07-29T03:00:00+09:00")
               assert.are.same({
-                { count = 1, path = filepath(dir, "hoge1.txt"), score = 10 },
                 { count = 1, path = filepath(dir, "hoge2.txt"), score = 10 },
+                { count = 1, path = filepath(dir, "hoge1.txt"), score = 10 },
               }, results)
             end)
           end)
@@ -216,8 +216,8 @@ describe("frecency", function()
             it("removes no entries", function()
               local results = frecency.picker:fetch_results(nil, "2023-07-29T02:00:00+09:00")
               assert.are.same({
-                { count = 1, path = filepath(dir, "hoge1.txt"), score = 10 },
                 { count = 1, path = filepath(dir, "hoge2.txt"), score = 10 },
+                { count = 1, path = filepath(dir, "hoge1.txt"), score = 10 },
               }, results)
             end)
           end)

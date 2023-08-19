@@ -197,7 +197,7 @@ function Picker:fetch_results(workspace, datetime)
   local start_sort = os.clock()
   table.sort(files, function(a, b)
     ---@diagnostic disable-next-line: undefined-field
-    return a.score > b.score
+    return a.score > b.score or (a.score == b.score and a.path > b.path)
   end)
   log.debug(("it takes %f seconds in sorting"):format(os.clock() - start_sort))
   return files
