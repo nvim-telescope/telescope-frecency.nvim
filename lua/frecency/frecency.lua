@@ -1,4 +1,5 @@
-local Database = require "frecency.database.sqlite"
+local Sqlite = require "frecency.database.sqlite"
+local Native = require "frecency.database.native"
 local EntryMaker = require "frecency.entry_maker"
 local FS = require "frecency.fs"
 local Finder = require "frecency.finder"
@@ -6,6 +7,7 @@ local Picker = require "frecency.picker"
 local Recency = require "frecency.recency"
 local WebDevicons = require "frecency.web_devicons"
 local log = require "plenary.log"
+local async = require "plenary.async" --[[@as PlenaryAsync]]
 
 ---@class Frecency
 ---@field config FrecencyConfig
@@ -29,6 +31,7 @@ local Frecency = {}
 ---@field show_filter_column boolean|string[]|nil default: true
 ---@field show_scores boolean? default: false
 ---@field show_unindexed boolean? default: true
+---@field use_sqlite boolean? default: true
 ---@field workspaces table<string, string>? default: {}
 
 ---@param opts FrecencyConfig?
@@ -47,10 +50,12 @@ Frecency.new = function(opts)
     show_filter_column = true,
     show_scores = false,
     show_unindexed = true,
+    use_sqlite = true,
     workspaces = {},
   }, opts or {})
   local self = setmetatable({ buf_registered = {}, config = config }, { __index = Frecency })--[[@as Frecency]]
   self.fs = FS.new { ignore_patterns = config.ignore_patterns }
+  local Database = self.config.use_sqlite and Sqlite or Native
   self.database = Database.new(self.fs, { root = config.db_root })
   local web_devicons = WebDevicons.new(not config.disable_devicons)
   local entry_maker = EntryMaker.new(self.fs, web_devicons, {
@@ -147,7 +152,6 @@ function Frecency:validate_database(force)
   end)
 end
 
----@private
 ---@param bufnr integer
 ---@param datetime string? ISO8601 format string
 function Frecency:register(bufnr, datetime)
@@ -157,6 +161,7 @@ function Frecency:register(bufnr, datetime)
   end
   self.database:update(path, self.recency.config.max_count, datetime)
   self.buf_registered[bufnr] = true
+  log.debug(("saved: %s"):format(path))
 end
 
 ---@private

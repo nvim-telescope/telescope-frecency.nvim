@@ -71,17 +71,13 @@
 ---@field control PlenaryAsyncControl
 ---@field util PlenaryAsyncUtil
 ---@field uv PlenaryAsyncUv
+---@field void fun(f: fun(): nil): fun(): nil
 local PlenaryAsync = {}
 
 ---@async
 ---@param f fun(): nil
 ---@return nil
 function PlenaryAsync.run(f) end
-
----@async
----@param f fun(): nil
----@return nil
-function PlenaryAsync.void(f) end
 
 ---@class PlenaryAsyncControl
 ---@field channel PlenaryAsyncControlChannel
@@ -108,20 +104,23 @@ local PlenaryAsyncUv = {}
 
 ---@async
 ---@param path string
----@return { mtime: integer, size: integer, type: "file"|"directory" }?
+---@return string? err
+---@return { mtime: integer, size: integer, type: "file"|"directory" }
 function PlenaryAsyncUv.fs_stat(path) end
 
 ---@async
 ---@param path string
 ---@param flags string|integer
 ---@param mode integer
----@return integer? fd
+---@return string? err
+---@return integer fd
 function PlenaryAsyncUv.fs_open(path, flags, mode) end
 
 ---@async
 ---@param fd integer
 ---@param size integer
 ---@param offset integer?
+---@return string? err
 ---@return string data
 function PlenaryAsyncUv.fs_read(fd, size, offset) end
 
@@ -129,7 +128,8 @@ function PlenaryAsyncUv.fs_read(fd, size, offset) end
 ---@param fd integer
 ---@param data string
 ---@param offset integer?
----@return integer? bytes
+---@return string? err
+---@return integer bytes
 function PlenaryAsyncUv.fs_write(fd, data, offset) end
 
 ---@async
