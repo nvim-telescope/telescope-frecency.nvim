@@ -1,4 +1,4 @@
-local Database = require "frecency.database"
+local Database = require "frecency.database.sqlite"
 local EntryMaker = require "frecency.entry_maker"
 local FS = require "frecency.fs"
 local Finder = require "frecency.finder"
@@ -155,12 +155,7 @@ function Frecency:register(bufnr, datetime)
   if self.buf_registered[bufnr] or not self.fs:is_valid_path(path) then
     return
   end
-  local id, inserted = self.database:upsert_files(path)
-  self.database:insert_timestamps(id, datetime)
-  self.database:trim_timestamps(id, self.recency.config.max_count)
-  if inserted and self.picker then
-    self.picker:discard_results()
-  end
+  self.database:update(path, self.recency.config.max_count, datetime)
   self.buf_registered[bufnr] = true
 end
 

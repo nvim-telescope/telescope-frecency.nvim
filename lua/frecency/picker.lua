@@ -182,28 +182,13 @@ end
 ---@return FrecencyFile[]
 function Picker:fetch_results(workspace, datetime)
   log.debug { workspace = workspace or "NONE" }
-  local start_files = os.clock()
-  local files = self.database:get_files(workspace)
-  log.debug { files = #files }
-  log.debug(("it takes %f seconds in fetching files with workspace: %s"):format(os.clock() - start_files, workspace))
-  local start_timesatmps = os.clock()
-  local timestamps = self.database:get_timestamps(datetime)
-  log.debug { timestamps = #timestamps }
-  log.debug(("it takes %f seconds in fetching all timestamps"):format(os.clock() - start_timesatmps))
+  local files = self.database:get_entries(workspace, datetime)
   local start_results = os.clock()
   local elapsed_recency = 0
-  ---@type table<integer,number[]>
-  local age_map = {}
-  for _, timestamp in ipairs(timestamps) do
-    if not age_map[timestamp.file_id] then
-      age_map[timestamp.file_id] = {}
-    end
-    table.insert(age_map[timestamp.file_id], timestamp.age)
-  end
   for _, file in ipairs(files) do
     local start_recency = os.clock()
-    local ages = age_map[file.id] --[[@as number[]?]]
-    file.score = ages and self.recency:calculate(file.count, ages) or 0
+    file.score = file.ages and self.recency:calculate(file.count, file.ages) or 0
+    file.ages = nil
     elapsed_recency = elapsed_recency + (os.clock() - start_recency)
   end
   log.debug(("it takes %f seconds in calculating recency"):format(elapsed_recency))
@@ -211,6 +196,7 @@ function Picker:fetch_results(workspace, datetime)
 
   local start_sort = os.clock()
   table.sort(files, function(a, b)
+    ---@diagnostic disable-next-line: undefined-field
     return a.score > b.score
   end)
   log.debug(("it takes %f seconds in sorting"):format(os.clock() - start_sort))

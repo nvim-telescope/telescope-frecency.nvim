@@ -96,8 +96,8 @@ describe("frecency", function()
         it("has valid records in DB", function()
           local results = frecency.picker:fetch_results(nil, "2023-07-29T02:00:00+09:00")
           assert.are.same({
-            { count = 1, id = 1, path = filepath(dir, "hoge1.txt"), score = 10 },
-            { count = 1, id = 2, path = filepath(dir, "hoge2.txt"), score = 10 },
+            { count = 1, path = filepath(dir, "hoge1.txt"), score = 10 },
+            { count = 1, path = filepath(dir, "hoge2.txt"), score = 10 },
           }, results)
         end)
       end)
@@ -113,8 +113,8 @@ describe("frecency", function()
         it("increases the score", function()
           local results = frecency.picker:fetch_results(nil, "2023-07-29T03:00:00+09:00")
           assert.are.same({
-            { count = 2, id = 1, path = filepath(dir, "hoge1.txt"), score = 40 },
-            { count = 1, id = 2, path = filepath(dir, "hoge2.txt"), score = 10 },
+            { count = 2, path = filepath(dir, "hoge1.txt"), score = 40 },
+            { count = 1, path = filepath(dir, "hoge2.txt"), score = 10 },
           }, results)
         end)
       end)
@@ -130,8 +130,8 @@ describe("frecency", function()
         it("does not increase the score", function()
           local results = frecency.picker:fetch_results(nil, "2023-07-29T03:00:00+09:00")
           assert.are.same({
-            { count = 1, id = 1, path = filepath(dir, "hoge1.txt"), score = 10 },
-            { count = 1, id = 2, path = filepath(dir, "hoge2.txt"), score = 10 },
+            { count = 1, path = filepath(dir, "hoge1.txt"), score = 10 },
+            { count = 1, path = filepath(dir, "hoge2.txt"), score = 10 },
           }, results)
         end)
       end)
@@ -159,8 +159,8 @@ describe("frecency", function()
         it("calculates score from the recent 10 times", function()
           local results = frecency.picker:fetch_results(nil, "2023-07-29T00:12:00+09:00")
           assert.are.same({
-            { count = 12, id = 2, path = filepath(dir, "hoge2.txt"), score = 12 * (10 * 100) / 10 },
-            { count = 2, id = 1, path = filepath(dir, "hoge1.txt"), score = 2 * (2 * 100) / 10 },
+            { count = 12, path = filepath(dir, "hoge2.txt"), score = 12 * (10 * 100) / 10 },
+            { count = 2, path = filepath(dir, "hoge1.txt"), score = 2 * (2 * 100) / 10 },
           }, results)
         end)
       end)
@@ -179,7 +179,7 @@ describe("frecency", function()
           local expected = {}
           for i = 1, file_count do
             local file = ("hoge%08d.txt"):format(i)
-            table.insert(expected, { count = 1, id = i, path = filepath(dir, file), score = 10 })
+            table.insert(expected, { count = 1, path = filepath(dir, file), score = 10 })
             register(file, "2023-07-29T00:00:00+09:00")
           end
           local start = os.clock()
@@ -212,8 +212,8 @@ describe("frecency", function()
         it("removes no entries", function()
           local results = frecency.picker:fetch_results(nil, "2023-07-29T02:00:00+09:00")
           assert.are.same({
-            { count = 1, id = 1, path = filepath(dir, "hoge1.txt"), score = 10 },
-            { count = 1, id = 2, path = filepath(dir, "hoge2.txt"), score = 10 },
+            { count = 1, path = filepath(dir, "hoge1.txt"), score = 10 },
+            { count = 1, path = filepath(dir, "hoge2.txt"), score = 10 },
           }, results)
         end)
       end)
@@ -239,11 +239,11 @@ describe("frecency", function()
               return a.path < b.path
             end)
             assert.are.same({
-              { count = 1, id = 1, path = filepath(dir, "hoge1.txt"), score = 10 },
-              { count = 1, id = 2, path = filepath(dir, "hoge2.txt"), score = 10 },
-              { count = 1, id = 3, path = filepath(dir, "hoge3.txt"), score = 10 },
-              { count = 1, id = 4, path = filepath(dir, "hoge4.txt"), score = 10 },
-              { count = 1, id = 5, path = filepath(dir, "hoge5.txt"), score = 10 },
+              { count = 1, path = filepath(dir, "hoge1.txt"), score = 10 },
+              { count = 1, path = filepath(dir, "hoge2.txt"), score = 10 },
+              { count = 1, path = filepath(dir, "hoge3.txt"), score = 10 },
+              { count = 1, path = filepath(dir, "hoge4.txt"), score = 10 },
+              { count = 1, path = filepath(dir, "hoge5.txt"), score = 10 },
             }, results)
           end)
         end)
@@ -277,8 +277,8 @@ describe("frecency", function()
                 return a.path < b.path
               end)
               assert.are.same({
-                { count = 1, id = 4, path = filepath(dir, "hoge4.txt"), score = 10 },
-                { count = 1, id = 5, path = filepath(dir, "hoge5.txt"), score = 10 },
+                { count = 1, path = filepath(dir, "hoge4.txt"), score = 10 },
+                { count = 1, path = filepath(dir, "hoge5.txt"), score = 10 },
               }, results)
             end)
           end)
@@ -311,11 +311,11 @@ describe("frecency", function()
                 return a.path < b.path
               end)
               assert.are.same({
-                { count = 1, id = 1, path = filepath(dir, "hoge1.txt"), score = 10 },
-                { count = 1, id = 2, path = filepath(dir, "hoge2.txt"), score = 10 },
-                { count = 1, id = 3, path = filepath(dir, "hoge3.txt"), score = 10 },
-                { count = 1, id = 4, path = filepath(dir, "hoge4.txt"), score = 10 },
-                { count = 1, id = 5, path = filepath(dir, "hoge5.txt"), score = 10 },
+                { count = 1, path = filepath(dir, "hoge1.txt"), score = 10 },
+                { count = 1, path = filepath(dir, "hoge2.txt"), score = 10 },
+                { count = 1, path = filepath(dir, "hoge3.txt"), score = 10 },
+                { count = 1, path = filepath(dir, "hoge4.txt"), score = 10 },
+                { count = 1, path = filepath(dir, "hoge5.txt"), score = 10 },
               }, results)
             end)
           end)
@@ -342,7 +342,7 @@ describe("frecency", function()
           it("needs confirmation for removing entries", function()
             local results = frecency.picker:fetch_results(nil, "2023-07-29T02:00:00+09:00")
             assert.are.same({
-              { count = 1, id = 2, path = filepath(dir, "hoge2.txt"), score = 10 },
+              { count = 1, path = filepath(dir, "hoge2.txt"), score = 10 },
             }, results)
           end)
         end)
@@ -367,7 +367,7 @@ describe("frecency", function()
           it("needs no confirmation for removing entries", function()
             local results = frecency.picker:fetch_results(nil, "2023-07-29T02:00:00+09:00")
             assert.are.same({
-              { count = 1, id = 2, path = filepath(dir, "hoge2.txt"), score = 10 },
+              { count = 1, path = filepath(dir, "hoge2.txt"), score = 10 },
             }, results)
           end)
         end)

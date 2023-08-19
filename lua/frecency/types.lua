@@ -1,4 +1,5 @@
----@diagnostic disable: unused-local
+---@diagnostic disable: unused-local, missing-return
+
 -- NOTE: types below are borrowed from sqlite.lua
 
 ---@class sqlite_db @Main sqlite.lua object.
@@ -69,12 +70,18 @@
 ---@class PlenaryAsync
 ---@field control PlenaryAsyncControl
 ---@field util PlenaryAsyncUtil
+---@field uv PlenaryAsyncUv
 local PlenaryAsync = {}
 
 ---@async
 ---@param f fun(): nil
 ---@return nil
 function PlenaryAsync.run(f) end
+
+---@async
+---@param f fun(): nil
+---@return nil
+function PlenaryAsync.void(f) end
 
 ---@class PlenaryAsyncControl
 ---@field channel PlenaryAsyncControlChannel
@@ -95,6 +102,40 @@ function PlenaryAsyncControlChannelRx.recv() end
 
 ---@class PlenaryAsyncUtil
 local PlenaryAsyncUtil = {}
+
+---@class PlenaryAsyncUv
+local PlenaryAsyncUv = {}
+
+---@async
+---@param path string
+---@return { mtime: integer, size: integer, type: "file"|"directory" }?
+function PlenaryAsyncUv.fs_stat(path) end
+
+---@async
+---@param path string
+---@param flags string|integer
+---@param mode integer
+---@return integer? fd
+function PlenaryAsyncUv.fs_open(path, flags, mode) end
+
+---@async
+---@param fd integer
+---@param size integer
+---@param offset integer?
+---@return string data
+function PlenaryAsyncUv.fs_read(fd, size, offset) end
+
+---@async
+---@param fd integer
+---@param data string
+---@param offset integer?
+---@return integer? bytes
+function PlenaryAsyncUv.fs_write(fd, data, offset) end
+
+---@async
+---@param fd integer
+---@return string? err
+function PlenaryAsyncUv.fs_close(fd) end
 
 ---@async
 ---@param ms integer
