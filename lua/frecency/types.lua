@@ -52,6 +52,7 @@
 ---@field filename string
 ---@field joinpath fun(self: PlenaryPath, ...): PlenaryPath
 ---@field make_relative fun(self: PlenaryPath, cwd: string): string
+---@field parent PlenaryPath
 ---@field path { sep: string }
 ---@field rm fun(self: PlenaryPath, opts: { recursive: boolean }?): nil
 
@@ -131,6 +132,12 @@ function PlenaryAsyncUv.fs_read(fd, size, offset) end
 ---@return string? err
 ---@return integer bytes
 function PlenaryAsyncUv.fs_write(fd, data, offset) end
+
+---@async
+---@param path string
+---@return string? err
+---@return boolean? success
+function PlenaryAsyncUv.fs_unlink(path) end
 
 ---@async
 ---@param fd integer

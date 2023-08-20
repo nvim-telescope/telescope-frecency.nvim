@@ -1,6 +1,6 @@
 local AsyncFinder = require "frecency.async_finder"
 local finders = require "telescope.finders"
-local log = require "plenary.log"
+local log = require "frecency.log"
 
 ---@class FrecencyFinder
 ---@field private config FrecencyFinderConfig

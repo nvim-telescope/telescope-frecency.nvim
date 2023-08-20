@@ -6,8 +6,7 @@ local Finder = require "frecency.finder"
 local Picker = require "frecency.picker"
 local Recency = require "frecency.recency"
 local WebDevicons = require "frecency.web_devicons"
-local log = require "plenary.log"
-local async = require "plenary.async" --[[@as PlenaryAsync]]
+local log = require "frecency.log"
 
 ---@class Frecency
 ---@field config FrecencyConfig
@@ -161,7 +160,6 @@ function Frecency:register(bufnr, datetime)
   end
   self.database:update(path, self.recency.config.max_count, datetime)
   self.buf_registered[bufnr] = true
-  log.debug(("saved: %s"):format(path))
 end
 
 ---@private

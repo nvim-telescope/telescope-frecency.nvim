@@ -1,8 +1,11 @@
+local FileLock = require "frecency.file_lock"
+local log = require "frecency.log"
 local async = require "plenary.async" --[[@as PlenaryAsync]]
 
 ---@class FrecencyDatabaseNative: FrecencyDatabase
 ---@field version "v1"
 ---@field filename string
+---@field file_lock FrecencyFileLock
 ---@field private table FrecencyDatabaseNativeTable
 local Native = {}
 
@@ -19,11 +22,14 @@ local Native = {}
 ---@return FrecencyDatabase
 Native.new = function(fs, config)
   local version = "v1"
-  local self = setmetatable(
-    { config = config, fs = fs, table = { version = version, records = {} }, version = version },
-    { __index = Native }
-  )
+  local self = setmetatable({
+    config = config,
+    fs = fs,
+    table = { version = version, records = {} },
+    version = version,
+  }, { __index = Native })
   self.filename = self.config.root .. "/file_frecency.bin"
+  self.file_lock = FileLock.new(self.filename)
   async.void(function()
     self:load()
   end)()
@@ -38,13 +44,13 @@ end
 ---@param paths string[]
 ---@return nil
 function Native:insert_files(paths)
+  if #paths == 0 then
+    return
+  end
+  for _, path in ipairs(paths) do
+    self.table.records[path] = { count = 1, timestamps = { 0 } }
+  end
   async.void(function()
-    if #paths == 0 then
-      return
-    end
-    for _, path in ipairs(paths) do
-      self.table.records[path] = { count = 1, timestamps = { 0 } }
-    end
     self:save()
   end)()
 end
@@ -86,7 +92,6 @@ function Native:update(path, count, datetime)
     record.timestamps = new_table
   end
   self.table.records[path] = record
-  -- TODO: This should be executed asynchronously with transaction.
   async.void(function()
     self:save()
   end)()
@@ -122,36 +127,47 @@ function Native:now(datetime)
 end
 
 ---@async
----@return FrecencyDatabaseNativeTable?
+---@return nil
 function Native:load()
-  local _, st = async.uv.fs_stat(self.filename)
-  local err, fd = async.uv.fs_open(self.filename, "r", tonumber("644", 8))
-  assert(not err)
-  local data
-  err, data = async.uv.fs_read(fd, st.size)
-  assert(not err)
-  assert(not async.uv.fs_close(fd))
-  local make_table = loadstring(data)
-  if not make_table then
-    return
-  end
-  local tbl = make_table() --[[@as FrecencyDatabaseNativeTable]]
-  if tbl.version == self.version then
+  log.debug "load() start"
+  local err, data = self.file_lock:with(function()
+    local err, st = async.uv.fs_stat(self.filename)
+    if err then
+      return nil
+    end
+    local fd
+    err, fd = async.uv.fs_open(self.filename, "r", tonumber("644", 8))
+    assert(not err)
+    local data
+    err, data = async.uv.fs_read(fd, st.size)
+    assert(not err)
+    assert(not async.uv.fs_close(fd))
+    return data
+  end)
+  assert(not err, err)
+  local tbl = loadstring(data or "")() --[[@as FrecencyDatabaseNativeTable?]]
+  if tbl and tbl.version == self.version then
     self.table = tbl
   end
+  log.debug "load() finish"
 end
 
 ---@async
 ---@private
 ---@return nil
 function Native:save()
-  -- TODO: lock the DB
-  local f = assert(load("return " .. vim.inspect(self.table)))
-  local data = string.dump(f)
-  local err, fd = async.uv.fs_open(self.filename, "w", tonumber("644", 8))
-  assert(not err)
-  assert(not async.uv.fs_write(fd, data))
-  assert(not async.uv.fs_close(fd))
+  log.debug "save() start"
+  local err = self.file_lock:with(function()
+    local f = assert(load("return " .. vim.inspect(self.table)))
+    local data = string.dump(f)
+    local err, fd = async.uv.fs_open(self.filename, "w", tonumber("644", 8))
+    assert(not err)
+    assert(not async.uv.fs_write(fd, data))
+    assert(not async.uv.fs_close(fd))
+    return nil
+  end)
+  assert(not err, err)
+  log.debug "save() finish"
 end
 
 return Native

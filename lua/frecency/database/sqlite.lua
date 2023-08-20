@@ -1,5 +1,5 @@
 local sqlite = require "sqlite"
-local log = require "plenary.log"
+local log = require "frecency.log"
 
 ---@class FrecencySqlite: sqlite_db
 ---@field files sqlite_tbl

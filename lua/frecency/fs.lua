@@ -1,6 +1,6 @@
 local Path = require "plenary.path" --[[@as PlenaryPath]]
 local scandir = require "plenary.scandir"
-local log = require "plenary.log"
+local log = require "frecency.log"
 local uv = vim.uv or vim.loop
 
 ---@class FrecencyFS

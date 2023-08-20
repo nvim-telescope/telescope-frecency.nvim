@@ -9,6 +9,7 @@
 ---@class FrecencyDatabase
 ---@field config FrecencyDatabaseConfig
 ---@field has_entry fun(): boolean
+---@field new fun(fs: FrecencyFS, config: FrecencyDatabaseConfig): FrecencyDatabase
 ---@field protected fs FrecencyFS
 local Database = {}
 
