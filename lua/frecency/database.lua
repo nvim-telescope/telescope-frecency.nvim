@@ -29,7 +29,14 @@ function Database:remove_files(files) end
 ---@return nil
 function Database:update(path, count, datetime) end
 
+---@async
+---@class FrecencyDatabaseEntry
+---@field ages number[]
+---@field count integer
+---@field path string
+---@field score number
+
 ---@param workspace string?
 ---@param datetime string?
----@return { path: string, count: integer, ages: number[] }[]
+---@return FrecencyDatabaseEntry[]
 function Database:get_entries(workspace, datetime) end

@@ -94,7 +94,7 @@ end
 
 ---@param workspace string?
 ---@param datetime string?
----@return { path: string, ages: number[] }[]
+---@return FrecencyDatabaseEntry[]
 function Native:get_entries(workspace, datetime)
   -- TODO: check mtime of DB and reload it
   -- self:load()

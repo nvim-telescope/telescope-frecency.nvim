@@ -61,7 +61,7 @@ end
 
 ---@param workspace string?
 ---@param datetime string?
----@return { path: string, count: integer, ages: number[] }[]
+---@return FrecencyDatabaseEntry[]
 function Sqlite:get_entries(workspace, datetime)
   local query = workspace and { contains = { path = { workspace .. "/*" } } } or {}
   log.debug { query = query }
