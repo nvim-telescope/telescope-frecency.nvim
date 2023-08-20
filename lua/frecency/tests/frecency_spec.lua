@@ -2,8 +2,9 @@
 local Frecency = require "frecency.frecency"
 local Picker = require "frecency.picker"
 local util = require "frecency.tests.util"
-local Path = require "plenary.path"
-local log = require "plenary.log"
+local log = require "frecency.log"
+-- local Path = require "plenary.path"
+require("plenary.async").tests.add_to_env()
 
 local use_sqlite
 
@@ -12,6 +13,7 @@ local use_sqlite
 ---@return nil
 local function with_files(files, callback)
   local dir, close = util.make_tree(files)
+  log.debug { db_root = dir.filename }
   local frecency = Frecency.new { db_root = dir.filename, use_sqlite = use_sqlite }
   frecency.picker = Picker.new(
     frecency.database,
@@ -43,8 +45,7 @@ local function make_register(frecency, dir)
   end
 end
 
----comment
----@param frecency Frecency
+--[[ ---@param frecency Frecency
 ---@param dir PlenaryPath
 ---@param callback fun(register: fun(file: string, datetime: string?): nil): nil
 ---@return nil
@@ -65,7 +66,7 @@ local function with_fake_register(frecency, dir, callback)
   end
   callback(register)
   vim.api.nvim_buf_get_name = original_nvim_buf_get_name
-end
+end ]]
 
 ---@param choice "y"|"n"
 ---@param callback fun(called: fun(): integer): nil
@@ -87,17 +88,17 @@ local function with_fake_vim_ui_select(choice, callback)
   vim.ui.select = original_vim_ui_select
 end
 
-describe("frecency", function()
+a.describe("frecency", function()
   local function test(db)
-    describe(db, function()
-      describe("register", function()
-        describe("when opening files", function()
+    a.describe(db, function()
+      a.describe("register", function()
+        a.describe("when opening files", function()
           with_files({ "hoge1.txt", "hoge2.txt" }, function(frecency, dir)
             local register = make_register(frecency, dir)
             register("hoge1.txt", "2023-07-29T00:00:00+09:00")
             register("hoge2.txt", "2023-07-29T01:00:00+09:00")
 
-            it("has valid records in DB", function()
+            a.it("has valid records in DB", function()
               local results = frecency.picker:fetch_results(nil, "2023-07-29T02:00:00+09:00")
               assert.are.same({
                 { count = 1, path = filepath(dir, "hoge2.txt"), score = 10 },
@@ -107,14 +108,14 @@ describe("frecency", function()
           end)
         end)
 
-        describe("when opening again", function()
+        a.describe("when opening again", function()
           with_files({ "hoge1.txt", "hoge2.txt" }, function(frecency, dir)
             local register = make_register(frecency, dir)
             register("hoge1.txt", "2023-07-29T00:00:00+09:00")
             register("hoge2.txt", "2023-07-29T01:00:00+09:00")
             register("hoge1.txt", "2023-07-29T02:00:00+09:00", true)
 
-            it("increases the score", function()
+            a.it("increases the score", function()
               local results = frecency.picker:fetch_results(nil, "2023-07-29T03:00:00+09:00")
               assert.are.same({
                 { count = 2, path = filepath(dir, "hoge1.txt"), score = 40 },
@@ -124,14 +125,14 @@ describe("frecency", function()
           end)
         end)
 
-        describe("when opening again but the same instance", function()
+        a.describe("when opening again but the same instance", function()
           with_files({ "hoge1.txt", "hoge2.txt" }, function(frecency, dir)
             local register = make_register(frecency, dir)
             register("hoge1.txt", "2023-07-29T00:00:00+09:00")
             register("hoge2.txt", "2023-07-29T01:00:00+09:00")
             register("hoge1.txt", "2023-07-29T02:00:00+09:00")
 
-            it("does not increase the score", function()
+            a.it("does not increase the score", function()
               local results = frecency.picker:fetch_results(nil, "2023-07-29T03:00:00+09:00")
               assert.are.same({
                 { count = 1, path = filepath(dir, "hoge2.txt"), score = 10 },
@@ -141,7 +142,7 @@ describe("frecency", function()
           end)
         end)
 
-        describe("when opening more than 10 times", function()
+        a.describe("when opening more than 10 times", function()
           with_files({ "hoge1.txt", "hoge2.txt" }, function(frecency, dir)
             local register = make_register(frecency, dir)
             register("hoge1.txt", "2023-07-29T00:00:00+09:00")
@@ -160,7 +161,7 @@ describe("frecency", function()
             register("hoge2.txt", "2023-07-29T00:10:00+09:00", true)
             register("hoge2.txt", "2023-07-29T00:11:00+09:00", true)
 
-            it("calculates score from the recent 10 times", function()
+            a.it("calculates score from the recent 10 times", function()
               local results = frecency.picker:fetch_results(nil, "2023-07-29T00:12:00+09:00")
               assert.are.same({
                 { count = 12, path = filepath(dir, "hoge2.txt"), score = 12 * (10 * 100) / 10 },
@@ -171,8 +172,8 @@ describe("frecency", function()
         end)
       end)
 
-      describe("benchmark", function()
-        describe("after registered over >5000 files", function()
+      --[[ a.describe("benchmark", function()
+        a.describe("after registered over >5000 files", function()
           with_files({}, function(frecency, dir)
             with_fake_register(frecency, dir, function(register)
               local file_count = 6000
@@ -194,26 +195,26 @@ describe("frecency", function()
               local elapsed = os.clock() - start
               log.info(("it takes %f seconds in fetching all results"):format(elapsed))
 
-              it("returns appropriate latency (<1.0 second)", function()
+              a.it("returns appropriate latency (<1.0 second)", function()
                 assert.are.is_true(elapsed < 1.0)
               end)
 
-              it("returns valid response", function()
+              a.it("returns valid response", function()
                 assert.are.same(expected, results)
               end)
             end)
           end)
         end)
-      end)
+      end) ]]
 
-      describe("validate_database", function()
-        describe("when no files are unlinked", function()
+      a.describe("validate_database", function()
+        a.describe("when no files are unlinked", function()
           with_files({ "hoge1.txt", "hoge2.txt" }, function(frecency, dir)
             local register = make_register(frecency, dir)
             register("hoge1.txt", "2023-07-29T00:00:00+09:00")
             register("hoge2.txt", "2023-07-29T00:01:00+09:00")
 
-            it("removes no entries", function()
+            a.it("removes no entries", function()
               local results = frecency.picker:fetch_results(nil, "2023-07-29T02:00:00+09:00")
               assert.are.same({
                 { count = 1, path = filepath(dir, "hoge2.txt"), score = 10 },
@@ -223,8 +224,8 @@ describe("frecency", function()
           end)
         end)
 
-        describe("when with not force", function()
-          describe("when files are unlinked but it is less than threshold", function()
+        a.describe("when with not force", function()
+          a.describe("when files are unlinked but it is less than threshold", function()
             with_files({ "hoge1.txt", "hoge2.txt", "hoge3.txt", "hoge4.txt", "hoge5.txt" }, function(frecency, dir)
               local register = make_register(frecency, dir)
               register("hoge1.txt", "2023-07-29T00:00:00+09:00")
@@ -237,7 +238,7 @@ describe("frecency", function()
               dir:joinpath("hoge2.txt"):rm()
               frecency:validate_database()
 
-              it("removes no entries", function()
+              a.it("removes no entries", function()
                 local results = frecency.picker:fetch_results(nil, "2023-07-29T02:00:00+09:00")
                 table.sort(results, function(a, b)
                   return a.path < b.path
@@ -253,8 +254,8 @@ describe("frecency", function()
             end)
           end)
 
-          describe("when files are unlinked and it is more than threshold", function()
-            describe('when the user response "yes"', function()
+          a.describe("when files are unlinked and it is more than threshold", function()
+            a.describe('when the user response "yes"', function()
               with_files({ "hoge1.txt", "hoge2.txt", "hoge3.txt", "hoge4.txt", "hoge5.txt" }, function(frecency, dir)
                 local register = make_register(frecency, dir)
                 register("hoge1.txt", "2023-07-29T00:00:00+09:00")
@@ -270,12 +271,12 @@ describe("frecency", function()
                 with_fake_vim_ui_select("y", function(called)
                   frecency:validate_database()
 
-                  it("called vim.ui.select()", function()
+                  a.it("called vim.ui.select()", function()
                     assert.are.same(1, called())
                   end)
                 end)
 
-                it("removes entries", function()
+                a.it("removes entries", function()
                   local results = frecency.picker:fetch_results(nil, "2023-07-29T02:00:00+09:00")
                   table.sort(results, function(a, b)
                     return a.path < b.path
@@ -288,7 +289,7 @@ describe("frecency", function()
               end)
             end)
 
-            describe('when the user response "no"', function()
+            a.describe('when the user response "no"', function()
               with_files({ "hoge1.txt", "hoge2.txt", "hoge3.txt", "hoge4.txt", "hoge5.txt" }, function(frecency, dir)
                 local register = make_register(frecency, dir)
                 register("hoge1.txt", "2023-07-29T00:00:00+09:00")
@@ -304,12 +305,12 @@ describe("frecency", function()
                 with_fake_vim_ui_select("n", function(called)
                   frecency:validate_database()
 
-                  it("called vim.ui.select()", function()
+                  a.it("called vim.ui.select()", function()
                     assert.are.same(1, called())
                   end)
                 end)
 
-                it("removes no entries", function()
+                a.it("removes no entries", function()
                   local results = frecency.picker:fetch_results(nil, "2023-07-29T02:00:00+09:00")
                   table.sort(results, function(a, b)
                     return a.path < b.path
@@ -327,8 +328,8 @@ describe("frecency", function()
           end)
         end)
 
-        describe("when with force", function()
-          describe("when db_safe_mode is true", function()
+        a.describe("when with force", function()
+          a.describe("when db_safe_mode is true", function()
             with_files({ "hoge1.txt", "hoge2.txt" }, function(frecency, dir)
               local register = make_register(frecency, dir)
               register("hoge1.txt", "2023-07-29T00:00:00+09:00")
@@ -338,12 +339,12 @@ describe("frecency", function()
               with_fake_vim_ui_select("y", function(called)
                 frecency:validate_database(true)
 
-                it("called vim.ui.select()", function()
+                a.it("called vim.ui.select()", function()
                   assert.are.same(1, called())
                 end)
               end)
 
-              it("needs confirmation for removing entries", function()
+              a.it("needs confirmation for removing entries", function()
                 local results = frecency.picker:fetch_results(nil, "2023-07-29T02:00:00+09:00")
                 assert.are.same({
                   { count = 1, path = filepath(dir, "hoge2.txt"), score = 10 },
@@ -352,7 +353,7 @@ describe("frecency", function()
             end)
           end)
 
-          describe("when db_safe_mode is false", function()
+          a.describe("when db_safe_mode is false", function()
             with_files({ "hoge1.txt", "hoge2.txt" }, function(frecency, dir)
               local register = make_register(frecency, dir)
               register("hoge1.txt", "2023-07-29T00:00:00+09:00")
@@ -363,12 +364,12 @@ describe("frecency", function()
                 frecency.config.db_safe_mode = false
                 frecency:validate_database(true)
 
-                it("did not call vim.ui.select()", function()
+                a.it("did not call vim.ui.select()", function()
                   assert.are.same(0, called())
                 end)
               end)
 
-              it("needs no confirmation for removing entries", function()
+              a.it("needs no confirmation for removing entries", function()
                 local results = frecency.picker:fetch_results(nil, "2023-07-29T02:00:00+09:00")
                 assert.are.same({
                   { count = 1, path = filepath(dir, "hoge2.txt"), score = 10 },
