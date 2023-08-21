@@ -35,8 +35,8 @@ function FileLock:get()
     end
     async.util.sleep(self.config.interval)
     if count == self.config.retry then
-      log.debug "file_lock get() failed: retry count reached"
-      return ("failed to get lock in %d times"):format(count)
+      log.debug(("file_lock get() failed: retry count reached: %d"):format(count))
+      return "failed to get lock"
     end
     log.debug(("file_lock get() retry: %d"):format(count))
   end
