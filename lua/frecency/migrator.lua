@@ -18,7 +18,7 @@ end
 
 ---@return nil
 function Migrator:to_v1()
-  local native = Native.new(self.fs, { root = self.root }) --[[@as FrecencyDatabaseNative]]
+  local native = Native.new(self.fs, { root = self.root })
   native.table = self:from_sqlite()
   wait(function()
     native:save()
@@ -28,7 +28,7 @@ end
 ---@private
 ---@return FrecencyDatabaseNativeTable
 function Migrator:from_sqlite()
-  local sqlite = Sqlite.new(self.fs, { root = self.root }) --[[@as FrecencyDatabaseSqlite]]
+  local sqlite = Sqlite.new(self.fs, { root = self.root })
   ---@type FrecencyDatabaseNativeTable
   local tbl = { version = "v1", records = {} }
   local files = sqlite.sqlite.files:get {} --[[@as FrecencyFile[] ]]

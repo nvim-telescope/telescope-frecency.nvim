@@ -20,7 +20,7 @@ local Native = {}
 
 ---@param fs FrecencyFS
 ---@param config FrecencyDatabaseConfig
----@return FrecencyDatabase
+---@return FrecencyDatabaseNative
 Native.new = function(fs, config)
   local version = "v1"
   local self = setmetatable({

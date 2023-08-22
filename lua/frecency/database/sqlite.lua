@@ -23,7 +23,7 @@ local Sqlite = {}
 
 ---@param fs FrecencyFS
 ---@param config FrecencyDatabaseConfig
----@return FrecencyDatabase
+---@return FrecencyDatabaseSqlite
 Sqlite.new = function(fs, config)
   local lib = sqlite.lib --[[@as sqlite_lib]]
   local self = setmetatable(
