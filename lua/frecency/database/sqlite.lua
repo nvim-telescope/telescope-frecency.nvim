@@ -17,8 +17,8 @@ local log = require "plenary.log"
 ---@field id integer
 ---@field timestamp number
 
----@class FecencyDatabaseSqlite: FrecencyDatabase
----@field private sqlite FrecencySqlite
+---@class FrecencyDatabaseSqlite: FrecencyDatabase
+---@field sqlite FrecencySqlite
 local Sqlite = {}
 
 ---@param fs FrecencyFS

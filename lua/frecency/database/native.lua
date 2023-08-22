@@ -7,7 +7,7 @@ local async = require "plenary.async" --[[@as PlenaryAsync]]
 ---@field version "v1"
 ---@field filename string
 ---@field file_lock FrecencyFileLock
----@field private table FrecencyDatabaseNativeTable
+---@field table FrecencyDatabaseNativeTable
 local Native = {}
 
 ---@class FrecencyDatabaseNativeTable
@@ -154,7 +154,6 @@ function Native:load()
 end
 
 ---@async
----@private
 ---@return nil
 function Native:save()
   log.debug "save() start"

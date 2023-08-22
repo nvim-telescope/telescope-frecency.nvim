@@ -3,6 +3,7 @@ local Native = require "frecency.database.native"
 local EntryMaker = require "frecency.entry_maker"
 local FS = require "frecency.fs"
 local Finder = require "frecency.finder"
+local Migrator = require "frecency.migrator"
 local Picker = require "frecency.picker"
 local Recency = require "frecency.recency"
 local WebDevicons = require "frecency.web_devicons"
@@ -14,6 +15,7 @@ local log = require "plenary.log"
 ---@field private database FrecencyDatabase
 ---@field private finder FrecencyFinder
 ---@field private fs FrecencyFS
+---@field private migrator FrecencyMigrator
 ---@field private picker FrecencyPicker
 ---@field private recency FrecencyRecency
 local Frecency = {}
@@ -63,6 +65,7 @@ Frecency.new = function(opts)
   })
   self.finder = Finder.new(entry_maker, self.fs)
   self.recency = Recency.new()
+  self.migrator = Migrator.new(self.fs, self.recency, self.config.db_root)
   return self
 end
 
