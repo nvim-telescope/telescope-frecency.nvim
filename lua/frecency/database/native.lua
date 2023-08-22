@@ -77,16 +77,16 @@ function Native:remove_files(paths)
 end
 
 ---@param path string
----@param count integer
+---@param max_count integer
 ---@param datetime string?
-function Native:update(path, count, datetime)
+function Native:update(path, max_count, datetime)
   local record = self.table.records[path] or { count = 0, timestamps = {} }
   record.count = record.count + 1
   local now = self:now(datetime)
   table.insert(record.timestamps, now)
-  if #record.timestamps > count then
+  if #record.timestamps > max_count then
     local new_table = {}
-    for i = #record.timestamps - count + 1, #record.timestamps do
+    for i = #record.timestamps - max_count + 1, #record.timestamps do
       table.insert(new_table, record.timestamps[i])
     end
     record.timestamps = new_table

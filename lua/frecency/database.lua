@@ -25,10 +25,10 @@ function Database:unlinked_entries() end
 function Database:remove_files(files) end
 
 ---@param path string
----@param count integer
+---@param max_count integer
 ---@param datetime string?
 ---@return nil
-function Database:update(path, count, datetime) end
+function Database:update(path, max_count, datetime) end
 
 ---@async
 ---@class FrecencyDatabaseEntry
