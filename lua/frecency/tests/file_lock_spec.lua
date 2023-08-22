@@ -5,7 +5,7 @@ require("plenary.async").tests.add_to_env()
 
 local function with_dir(f)
   local dir, close = util.make_tree {}
-  filename = (dir / "file_lock_test").filename
+  local filename = (dir / "file_lock_test").filename
   f(filename)
   close()
 end

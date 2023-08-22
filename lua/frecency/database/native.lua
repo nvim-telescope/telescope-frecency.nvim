@@ -130,7 +130,7 @@ end
 ---@async
 ---@return nil
 function Native:load()
-  log.debug "load() start"
+  local start = os.clock()
   local err, data = self.file_lock:with(function()
     local err, st = async.uv.fs_stat(self.filename)
     if err then
@@ -150,13 +150,13 @@ function Native:load()
   if tbl and tbl.version == self.version then
     self.table = tbl
   end
-  log.debug "load() finish"
+  log.debug(("load() takes %f seconds"):format(os.clock() - start))
 end
 
 ---@async
 ---@return nil
 function Native:save()
-  log.debug "save() start"
+  local start = os.clock()
   local err = self.file_lock:with(function()
     local f = assert(load("return " .. vim.inspect(self.table)))
     local data = string.dump(f)
@@ -167,7 +167,7 @@ function Native:save()
     return nil
   end)
   assert(not err, err)
-  log.debug "save() finish"
+  log.debug(("save() takes %f seconds"):format(os.clock() - start))
 end
 
 return Native

@@ -24,7 +24,6 @@ end
 ---@async
 ---@return string? err
 function FileLock:get()
-  log.debug "file_lock get() start"
   local count = 0
   local err, fd
   while true do
@@ -45,23 +44,21 @@ function FileLock:get()
     log.debug("file_lock get() failed: " .. err)
     return err
   end
-  log.debug "file_lock get() finish"
 end
 
 ---@async
 ---@return string? err
 function FileLock:release()
-  log.debug "file_lock release() start"
   local err = async.uv.fs_stat(self.filename)
   if err then
-    log.debug "file_lock release() not found"
+    log.debug("file_lock release() not found: " .. err)
     return "lock not found"
   end
   err = async.uv.fs_unlink(self.filename)
-  if not err then
+  if err then
+    log.debug("file_lock release() unlink failed: " .. err)
     return err
   end
-  log.debug "file_lock release() finish"
 end
 
 ---@async
