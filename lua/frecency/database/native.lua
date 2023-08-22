@@ -1,4 +1,5 @@
 local FileLock = require "frecency.file_lock"
+local wait = require "frecency.wait"
 local log = require "plenary.log"
 local async = require "plenary.async" --[[@as PlenaryAsync]]
 
@@ -30,9 +31,9 @@ Native.new = function(fs, config)
   }, { __index = Native })
   self.filename = self.config.root .. "/file_frecency.bin"
   self.file_lock = FileLock.new(self.filename)
-  async.void(function()
+  wait(function()
     self:load()
-  end)()
+  end)
   return self
 end
 
@@ -50,9 +51,9 @@ function Native:insert_files(paths)
   for _, path in ipairs(paths) do
     self.table.records[path] = { count = 1, timestamps = { 0 } }
   end
-  async.void(function()
+  wait(function()
     self:save()
-  end)()
+  end)
 end
 
 ---@return string[]
@@ -71,9 +72,9 @@ function Native:remove_files(paths)
   for _, file in ipairs(paths) do
     self.table.records[file] = nil
   end
-  async.void(function()
+  wait(function()
     self:save()
-  end)()
+  end)
 end
 
 ---@param path string
@@ -92,9 +93,9 @@ function Native:update(path, max_count, datetime)
     record.timestamps = new_table
   end
   self.table.records[path] = record
-  async.void(function()
+  wait(function()
     self:save()
-  end)()
+  end)
 end
 
 ---@param workspace string?
