@@ -1,5 +1,5 @@
 local State = require "frecency.state"
-local log = require "frecency.log"
+local log = require "plenary.log"
 local Path = require "plenary.path" --[[@as PlenaryPath]]
 local actions = require "telescope.actions"
 local config_values = require("telescope.config").values

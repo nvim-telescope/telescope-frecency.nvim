@@ -2,7 +2,7 @@
 local Frecency = require "frecency.frecency"
 local Picker = require "frecency.picker"
 local util = require "frecency.tests.util"
-local log = require "frecency.log"
+local log = require "plenary.log"
 -- local Path = require "plenary.path"
 require("plenary.async").tests.add_to_env()
 

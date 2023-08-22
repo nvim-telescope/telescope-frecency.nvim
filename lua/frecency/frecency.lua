@@ -6,7 +6,7 @@ local Finder = require "frecency.finder"
 local Picker = require "frecency.picker"
 local Recency = require "frecency.recency"
 local WebDevicons = require "frecency.web_devicons"
-local log = require "frecency.log"
+local log = require "plenary.log"
 
 ---@class Frecency
 ---@field config FrecencyConfig

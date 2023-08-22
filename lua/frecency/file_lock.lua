@@ -1,5 +1,5 @@
 local async = require "plenary.async" --[[@as PlenaryAsync]]
-local log = require "frecency.log"
+local log = require "plenary.log"
 
 ---@class FrecencyFileLock
 ---@field base string

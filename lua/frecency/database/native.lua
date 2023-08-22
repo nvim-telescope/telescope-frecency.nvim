@@ -1,5 +1,5 @@
 local FileLock = require "frecency.file_lock"
-local log = require "frecency.log"
+local log = require "plenary.log"
 local async = require "plenary.async" --[[@as PlenaryAsync]]
 
 ---@class FrecencyDatabaseNative: FrecencyDatabase
