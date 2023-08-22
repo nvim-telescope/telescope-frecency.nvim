@@ -39,7 +39,7 @@ end
 
 ---@return boolean
 function Native:has_entry()
-  return #self.table.records > 0
+  return vim.tbl_isempty(self.table.records)
 end
 
 ---@param paths string[]
