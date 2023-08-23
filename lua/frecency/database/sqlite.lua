@@ -1,7 +1,7 @@
-local sqlite = require "sqlite"
+local sqlite = require "frecency.sqlite"
 local log = require "plenary.log"
 
----@class FrecencySqlite: sqlite_db
+---@class FrecencySqliteDB: sqlite_db
 ---@field files sqlite_tbl
 ---@field timestamps sqlite_tbl
 
@@ -18,14 +18,14 @@ local log = require "plenary.log"
 ---@field timestamp number
 
 ---@class FrecencyDatabaseSqlite: FrecencyDatabase
----@field sqlite FrecencySqlite
+---@field sqlite FrecencySqliteDB
 local Sqlite = {}
 
 ---@param fs FrecencyFS
 ---@param config FrecencyDatabaseConfig
 ---@return FrecencyDatabaseSqlite
 Sqlite.new = function(fs, config)
-  local lib = sqlite.lib --[[@as sqlite_lib]]
+  local lib = sqlite.lib
   local self = setmetatable(
     { config = config, buf_registered_flag_name = "telescope_frecency_registered", fs = fs },
     { __index = Sqlite }
