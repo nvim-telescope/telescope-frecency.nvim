@@ -182,7 +182,9 @@ end
 ---@return FrecencyFile[]
 function Picker:fetch_results(workspace, datetime)
   log.debug { workspace = workspace or "NONE" }
+  local start_fetch = os.clock()
   local files = self.database:get_entries(workspace, datetime)
+  log.debug(("it takes %f seconds in fetching entries"):format(os.clock() - start_fetch))
   local start_results = os.clock()
   local elapsed_recency = 0
   for _, file in ipairs(files) do
