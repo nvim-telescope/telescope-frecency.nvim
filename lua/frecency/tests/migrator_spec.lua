@@ -4,7 +4,7 @@ local Recency = require "frecency.recency"
 local Sqlite = require "frecency.database.sqlite"
 local Native = require "frecency.database.native"
 local util = require "frecency.tests.util"
-local log = require "plenary.log"
+local wait = require "frecency.wait"
 
 ---@param callback fun(migrator: FrecencyMigrator, sqlite: FrecencyDatabase): nil
 ---@return nil
@@ -19,7 +19,7 @@ local function with(callback)
 end
 
 ---@param source table<string,{ count: integer, timestamps: string[] }>
-local function make_table(source)
+local function v1_table(source)
   local records = {}
   for path, record in pairs(source) do
     local timestamps = {}
@@ -28,7 +28,6 @@ local function make_table(source)
     end
     records[path] = { count = record.count, timestamps = timestamps }
   end
-  log.debug { make_table = records }
   return { version = "v1", records = records }
 end
 
@@ -44,7 +43,7 @@ describe("migrator", function()
 
         it("has converted into a valid table", function()
           assert.are.same(
-            make_table {
+            v1_table {
               ["hoge1.txt"] = { count = 1, timestamps = { "2023-08-21T00:00:00+0000" } },
               ["hoge2.txt"] = { count = 1, timestamps = { "2023-08-21T00:00:00+0000" } },
             },
@@ -75,7 +74,7 @@ describe("migrator", function()
 
         it("has converted into a valid table", function()
           assert.are.same(
-            make_table {
+            v1_table {
               ["hoge1.txt"] = { count = 4, timestamps = { "2023-08-21T00:03:00+0000", "2023-08-21T00:04:00+0000" } },
               ["hoge2.txt"] = { count = 3, timestamps = { "2023-08-21T00:06:00+0000", "2023-08-21T00:07:00+0000" } },
               ["hoge3.txt"] = { count = 2, timestamps = { "2023-08-21T00:08:00+0000", "2023-08-21T00:09:00+0000" } },
@@ -84,6 +83,45 @@ describe("migrator", function()
             native.table
           )
         end)
+      end)
+    end)
+  end)
+
+  describe("to_sqlite", function()
+    with(function(migrator, sqlite)
+      local native = Native.new(migrator.fs, { root = migrator.root })
+      native.table = v1_table {
+        ["hoge1.txt"] = { count = 4, timestamps = { "2023-08-21T00:03:00+0000", "2023-08-21T00:04:00+0000" } },
+        ["hoge2.txt"] = { count = 3, timestamps = { "2023-08-21T00:06:00+0000", "2023-08-21T00:07:00+0000" } },
+        ["hoge3.txt"] = { count = 2, timestamps = { "2023-08-21T00:08:00+0000", "2023-08-21T00:09:00+0000" } },
+        ["hoge4.txt"] = { count = 1, timestamps = { "2023-08-21T00:10:00+0000" } },
+      }
+      wait(function()
+        native:save()
+      end)
+      migrator:to_sqlite()
+      sqlite.sqlite.db:open()
+      local records = sqlite.sqlite.db:eval [[
+        select
+          f.path,
+          f.count,
+          datetime(strftime('%s', t.timestamp), 'unixepoch') datetime
+        from timestamps t
+        join files f
+          on f.id = t.file_id
+        order by path, datetime
+      ]]
+
+      it("has converted into a valid DB", function()
+        assert.are.same({
+          { path = "hoge1.txt", count = 4, datetime = "2023-08-21 00:03:00" },
+          { path = "hoge1.txt", count = 4, datetime = "2023-08-21 00:04:00" },
+          { path = "hoge2.txt", count = 3, datetime = "2023-08-21 00:06:00" },
+          { path = "hoge2.txt", count = 3, datetime = "2023-08-21 00:07:00" },
+          { path = "hoge3.txt", count = 2, datetime = "2023-08-21 00:08:00" },
+          { path = "hoge3.txt", count = 2, datetime = "2023-08-21 00:09:00" },
+          { path = "hoge4.txt", count = 1, datetime = "2023-08-21 00:10:00" },
+        }, records)
       end)
     end)
   end)

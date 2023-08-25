@@ -19,15 +19,27 @@ end
 ---@return nil
 function Migrator:to_v1()
   local native = Native.new(self.fs, { root = self.root })
-  native.table = self:from_sqlite()
+  native.table = self:v1_table_from_sqlite()
   wait(function()
     native:save()
   end)
 end
 
+---@return nil
+function Migrator:to_sqlite()
+  local sqlite = Sqlite.new(self.fs, { root = self.root })
+  local native = Native.new(self.fs, { root = self.root })
+  for path, record in pairs(native.table.records) do
+    local file_id = sqlite.sqlite.files:insert { path = path, count = record.count }
+    sqlite.sqlite.timestamps:insert(vim.tbl_map(function(timestamp)
+      return { file_id = file_id, timestamp = ('julianday(datetime(%d, "unixepoch"))'):format(timestamp) }
+    end, record.timestamps))
+  end
+end
+
 ---@private
 ---@return FrecencyDatabaseNativeTable
-function Migrator:from_sqlite()
+function Migrator:v1_table_from_sqlite()
   local sqlite = Sqlite.new(self.fs, { root = self.root })
   ---@type FrecencyDatabaseNativeTable
   local tbl = { version = "v1", records = {} }
