@@ -122,6 +122,8 @@ function PlenaryAsyncUtil.sleep(ms) end
 ---@field clear_extra_rows fun(self: TelescopePicker, results_bufnr: integer): nil
 ---@field get_row fun(self: TelescopePicker, index: integer): integer
 ---@field manager TelescopeEntryManager|false
+---@field prompt_bufnr integer
+---@field prompt_prefix string
 ---@field results_bufnr integer?
 ---@field results_win integer?
 ---@field sorting_strategy 'ascending'|'descending'
