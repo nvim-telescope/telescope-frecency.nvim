@@ -64,7 +64,7 @@ end
 
 ---@return nil
 function Frecency:setup()
-  vim.api.nvim_set_hl(0, "TelescopeBufferLoaded", { link = "Todo", default = true })
+  vim.api.nvim_set_hl(0, "TelescopeBufferLoaded", { link = "String", default = true })
   vim.api.nvim_set_hl(0, "TelescopePathSeparator", { link = "Directory", default = true })
   vim.api.nvim_set_hl(0, "TelescopeFrecencyScores", { link = "Number", default = true })
   vim.api.nvim_set_hl(0, "TelescopeQueryFilter", { link = "WildMenu", default = true })
