@@ -14,6 +14,7 @@ local uv = vim.loop or vim.uv
 ---@field private finder FrecencyFinder
 ---@field private fs FrecencyFS
 ---@field private lsp_workspaces string[]
+---@field private namespace integer
 ---@field private recency FrecencyRecency
 ---@field private results table[]
 ---@field private workspace string?
@@ -48,11 +49,12 @@ Picker.new = function(database, finder, fs, recency, config)
     finder = finder,
     fs = fs,
     lsp_workspaces = {},
+    namespace = vim.api.nvim_create_namespace "frecency",
     recency = recency,
     results = {},
   }, { __index = Picker })
   local d = self.config.filter_delimiter
-  self.workspace_tag_regex = "^%s*(" .. d .. "(%S+)" .. d .. ")"
+  self.workspace_tag_regex = "^%s*" .. d .. "(%S+)" .. d
   return self
 end
 
@@ -221,12 +223,29 @@ function Picker:on_input_filter_cb(state, picker_opts)
   local filepath_formatter = self:filepath_formatter(picker_opts)
   return function(prompt)
     local workspace
-    local matched, tag = prompt:match(self.workspace_tag_regex)
-    local opts = { prompt = matched and prompt:sub(matched:len() + 1) or prompt }
+    local start, finish, tag = prompt:find(self.workspace_tag_regex)
+    local opts = { prompt = start and prompt:sub(finish + 1) or prompt }
     if prompt == "" then
       workspace = self:get_workspace(picker_opts.cwd, self.config.initial_workspace_tag)
     else
       workspace = self:get_workspace(picker_opts.cwd, tag) or self.workspace
+    end
+    local picker = state:get()
+    if picker then
+      local buf = picker.prompt_bufnr
+      vim.api.nvim_buf_clear_namespace(buf, self.namespace, 0, -1)
+      if start then
+        local prefix = picker.prompt_prefix
+        local start_col = #prefix + start - 1
+        local end_col = #prefix + finish
+        vim.api.nvim_buf_set_extmark(
+          buf,
+          self.namespace,
+          0,
+          start_col,
+          { end_row = 0, end_col = end_col, hl_group = "TelescopeQueryFilter" }
+        )
+      end
     end
     if self.workspace ~= workspace then
       self.workspace = workspace
@@ -260,7 +279,6 @@ end
 ---@param bufnr integer
 ---@return nil
 function Picker:set_prompt_options(bufnr)
-  vim.bo[bufnr].filetype = "frecency"
   vim.bo[bufnr].completefunc = "v:lua.require'telescope'.extensions.frecency.complete"
   vim.keymap.set("i", "<Tab>", "pumvisible() ? '<C-n>' : '<C-x><C-u>'", { buffer = bufnr, expr = true })
   vim.keymap.set("i", "<S-Tab>", "pumvisible() ? '<C-p>' : ''", { buffer = bufnr, expr = true })

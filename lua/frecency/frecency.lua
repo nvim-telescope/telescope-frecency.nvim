@@ -71,6 +71,11 @@ end
 
 ---@return nil
 function Frecency:setup()
+  vim.api.nvim_set_hl(0, "TelescopeBufferLoaded", { link = "Todo", default = true })
+  vim.api.nvim_set_hl(0, "TelescopePathSeparator", { link = "Directory", default = true })
+  vim.api.nvim_set_hl(0, "TelescopeFrecencyScores", { link = "Number", default = true })
+  vim.api.nvim_set_hl(0, "TelescopeQueryFilter", { link = "WildMenu", default = true })
+
   -- TODO: Should we schedule this after loading shada?
   if not self.database:has_entry() then
     self.database:insert_files(vim.v.oldfiles)

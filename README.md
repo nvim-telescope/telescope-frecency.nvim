@@ -151,7 +151,7 @@ See [default configuration](https://github.com/nvim-telescope/telescope.nvim#tel
 
     Determines if non-indexed files are included in workspace filter results.
 
-- `devicons_disabled` (default: `false`)
+- `disable_devicons` (default: `false`)
 
   Disable devicons (if available)
 
