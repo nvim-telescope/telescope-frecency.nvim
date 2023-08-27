@@ -168,7 +168,7 @@ See [default configuration](https://github.com/nvim-telescope/telescope.nvim#tel
 
 - `use_sqlite` (default: `true`) ***experimental feature***
 
-  Use [sqlite.lua] `true` or native code `false`. See [*Remove dependency for sqlite.lua*](#remove-dependency-for-sqlite.lua) for the detail.
+  Use [sqlite.lua] `true` or native code `false`. See [*Remove dependency for sqlite.lua*](#user-content-remove-dependency-for-sqlitelua) for the detail.
 
 ### Example Configuration:
 
