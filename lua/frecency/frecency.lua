@@ -101,6 +101,10 @@ function Frecency:setup()
     self:validate_database()
   end
 
+  vim.api.nvim_create_user_command("FrecencyMigrateDB", function()
+    self:migrate_database()
+  end, { desc = "Migrate DB telescope-frecency to native code" })
+
   local group = vim.api.nvim_create_augroup("TelescopeFrecency", {})
   vim.api.nvim_create_autocmd({ "BufWinEnter", "BufWritePost" }, {
     desc = "Update database for telescope-frecency",
@@ -180,6 +184,36 @@ function Frecency:register(bufnr, datetime)
   self.buf_registered[bufnr] = true
 end
 
+---@param to_sqlite boolean?
+---@return nil
+function Frecency:migrate_database(to_sqlite)
+  local prompt = to_sqlite and "migrate the DB into SQLite from native code?"
+    or "migrate the DB into native code from SQLite?"
+  vim.ui.select({ "y", "n" }, {
+    prompt = prompt,
+    ---@param item "y"|"n"
+    ---@return string
+    format_item = function(item)
+      return item == "y" and "Yes, Migrate it." or "No. Do nothing."
+    end,
+  }, function(item)
+    if item == "n" then
+      self:notify "migration aborted"
+      return
+    elseif to_sqlite then
+      if sqlite_module.can_use then
+        self.migrator:to_sqlite()
+      else
+        self:error "sqlite.lua is unavailable"
+        return
+      end
+    else
+      self.migrator:to_v1()
+    end
+    self:notify "migration finished successfully"
+  end)
+end
+
 ---@private
 ---@param fmt string
 ---@param ... any?
@@ -202,6 +236,14 @@ end
 ---@return nil
 function Frecency:warn(fmt, ...)
   vim.notify(self:message(fmt, ...), vim.log.levels.WARN)
+end
+
+---@private
+---@param fmt string
+---@param ... any?
+---@return nil
+function Frecency:error(fmt, ...)
+  vim.notify(self:message(fmt, ...), vim.log.levels.ERROR)
 end
 
 return Frecency
