@@ -7,6 +7,7 @@ local Migrator = require "frecency.migrator"
 local Picker = require "frecency.picker"
 local Recency = require "frecency.recency"
 local WebDevicons = require "frecency.web_devicons"
+local sqlite_module = require "frecency.sqlite"
 local log = require "plenary.log"
 
 ---@class Frecency
@@ -56,7 +57,16 @@ Frecency.new = function(opts)
   }, opts or {})
   local self = setmetatable({ buf_registered = {}, config = config }, { __index = Frecency })--[[@as Frecency]]
   self.fs = FS.new { ignore_patterns = config.ignore_patterns }
-  local Database = self.config.use_sqlite and Sqlite or Native
+
+  local Database
+  if not self.config.use_sqlite then
+    Database = Native
+  elseif not sqlite_module.can_use then
+    self:warn "use_sqlite = true, but sqlite module can not be found. It fallbacks to native code."
+    Database = Native
+  else
+    Database = Sqlite
+  end
   self.database = Database.new(self.fs, { root = config.db_root })
   local web_devicons = WebDevicons.new(not config.disable_devicons)
   local entry_maker = EntryMaker.new(self.fs, web_devicons, {
@@ -184,6 +194,14 @@ end
 ---@return nil
 function Frecency:notify(fmt, ...)
   vim.notify(self:message(fmt, ...))
+end
+
+---@private
+---@param fmt string
+---@param ... any?
+---@return nil
+function Frecency:warn(fmt, ...)
+  vim.notify(self:message(fmt, ...), vim.log.levels.WARN)
 end
 
 return Frecency
