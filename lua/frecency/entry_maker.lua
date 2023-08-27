@@ -24,7 +24,10 @@ EntryMaker.new = function(fs, web_devicons, config)
   end, vim.api.nvim_list_bufs())
   self.loaded = {}
   for _, bufnr in ipairs(loaded_bufnrs) do
-    self.loaded[vim.api.nvim_buf_get_name(bufnr)] = true
+    local bufname = vim.api.nvim_buf_get_name(bufnr)
+    if bufname then
+      self.loaded[bufname] = true
+    end
   end
   return self
 end

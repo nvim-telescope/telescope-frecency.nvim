@@ -1,10 +1,13 @@
-local Database = require "frecency.database"
+local Sqlite = require "frecency.database.sqlite"
+local Native = require "frecency.database.native"
 local EntryMaker = require "frecency.entry_maker"
 local FS = require "frecency.fs"
 local Finder = require "frecency.finder"
+local Migrator = require "frecency.migrator"
 local Picker = require "frecency.picker"
 local Recency = require "frecency.recency"
 local WebDevicons = require "frecency.web_devicons"
+local sqlite_module = require "frecency.sqlite"
 local log = require "plenary.log"
 
 ---@class Frecency
@@ -13,6 +16,7 @@ local log = require "plenary.log"
 ---@field private database FrecencyDatabase
 ---@field private finder FrecencyFinder
 ---@field private fs FrecencyFS
+---@field private migrator FrecencyMigrator
 ---@field private picker FrecencyPicker
 ---@field private recency FrecencyRecency
 local Frecency = {}
@@ -29,6 +33,7 @@ local Frecency = {}
 ---@field show_filter_column boolean|string[]|nil default: true
 ---@field show_scores boolean? default: false
 ---@field show_unindexed boolean? default: true
+---@field use_sqlite boolean? default: true
 ---@field workspaces table<string, string>? default: {}
 
 ---@param opts FrecencyConfig?
@@ -47,10 +52,21 @@ Frecency.new = function(opts)
     show_filter_column = true,
     show_scores = false,
     show_unindexed = true,
+    use_sqlite = true,
     workspaces = {},
   }, opts or {})
   local self = setmetatable({ buf_registered = {}, config = config }, { __index = Frecency })--[[@as Frecency]]
   self.fs = FS.new { ignore_patterns = config.ignore_patterns }
+
+  local Database
+  if not self.config.use_sqlite then
+    Database = Native
+  elseif not sqlite_module.can_use then
+    self:warn "use_sqlite = true, but sqlite module can not be found. It fallbacks to native code."
+    Database = Native
+  else
+    Database = Sqlite
+  end
   self.database = Database.new(self.fs, { root = config.db_root })
   local web_devicons = WebDevicons.new(not config.disable_devicons)
   local entry_maker = EntryMaker.new(self.fs, web_devicons, {
@@ -59,6 +75,7 @@ Frecency.new = function(opts)
   })
   self.finder = Finder.new(entry_maker, self.fs)
   self.recency = Recency.new()
+  self.migrator = Migrator.new(self.fs, self.recency, self.config.db_root)
   return self
 end
 
@@ -83,6 +100,10 @@ function Frecency:setup()
   if self.config.auto_validate then
     self:validate_database()
   end
+
+  vim.api.nvim_create_user_command("FrecencyMigrateDB", function()
+    self:migrate_database()
+  end, { desc = "Migrate DB telescope-frecency to native code" })
 
   local group = vim.api.nvim_create_augroup("TelescopeFrecency", {})
   vim.api.nvim_create_autocmd({ "BufWinEnter", "BufWritePost" }, {
@@ -152,7 +173,6 @@ function Frecency:validate_database(force)
   end)
 end
 
----@private
 ---@param bufnr integer
 ---@param datetime string? ISO8601 format string
 function Frecency:register(bufnr, datetime)
@@ -160,13 +180,38 @@ function Frecency:register(bufnr, datetime)
   if self.buf_registered[bufnr] or not self.fs:is_valid_path(path) then
     return
   end
-  local id, inserted = self.database:upsert_files(path)
-  self.database:insert_timestamps(id, datetime)
-  self.database:trim_timestamps(id, self.recency.config.max_count)
-  if inserted and self.picker then
-    self.picker:discard_results()
-  end
+  self.database:update(path, self.recency.config.max_count, datetime)
   self.buf_registered[bufnr] = true
+end
+
+---@param to_sqlite boolean?
+---@return nil
+function Frecency:migrate_database(to_sqlite)
+  local prompt = to_sqlite and "migrate the DB into SQLite from native code?"
+    or "migrate the DB into native code from SQLite?"
+  vim.ui.select({ "y", "n" }, {
+    prompt = prompt,
+    ---@param item "y"|"n"
+    ---@return string
+    format_item = function(item)
+      return item == "y" and "Yes, Migrate it." or "No. Do nothing."
+    end,
+  }, function(item)
+    if item == "n" then
+      self:notify "migration aborted"
+      return
+    elseif to_sqlite then
+      if sqlite_module.can_use then
+        self.migrator:to_sqlite()
+      else
+        self:error "sqlite.lua is unavailable"
+        return
+      end
+    else
+      self.migrator:to_v1()
+    end
+    self:notify "migration finished successfully"
+  end)
 end
 
 ---@private
@@ -183,6 +228,22 @@ end
 ---@return nil
 function Frecency:notify(fmt, ...)
   vim.notify(self:message(fmt, ...))
+end
+
+---@private
+---@param fmt string
+---@param ... any?
+---@return nil
+function Frecency:warn(fmt, ...)
+  vim.notify(self:message(fmt, ...), vim.log.levels.WARN)
+end
+
+---@private
+---@param fmt string
+---@param ... any?
+---@return nil
+function Frecency:error(fmt, ...)
+  vim.notify(self:message(fmt, ...), vim.log.levels.ERROR)
 end
 
 return Frecency

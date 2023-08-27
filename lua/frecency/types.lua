@@ -1,4 +1,5 @@
----@diagnostic disable: unused-local
+---@diagnostic disable: unused-local, missing-return
+
 -- NOTE: types below are borrowed from sqlite.lua
 
 ---@class sqlite_db @Main sqlite.lua object.
@@ -51,6 +52,7 @@
 ---@field filename string
 ---@field joinpath fun(self: PlenaryPath, ...): PlenaryPath
 ---@field make_relative fun(self: PlenaryPath, cwd: string): string
+---@field parent PlenaryPath
 ---@field path { sep: string }
 ---@field rm fun(self: PlenaryPath, opts: { recursive: boolean }?): nil
 
@@ -69,6 +71,8 @@
 ---@class PlenaryAsync
 ---@field control PlenaryAsyncControl
 ---@field util PlenaryAsyncUtil
+---@field uv PlenaryAsyncUv
+---@field void fun(f: fun(): nil): fun(): nil
 local PlenaryAsync = {}
 
 ---@async
@@ -95,6 +99,50 @@ function PlenaryAsyncControlChannelRx.recv() end
 
 ---@class PlenaryAsyncUtil
 local PlenaryAsyncUtil = {}
+
+---@class PlenaryAsyncUv
+local PlenaryAsyncUv = {}
+
+---@async
+---@param path string
+---@return string? err
+---@return { mtime: integer, size: integer, type: "file"|"directory" }
+function PlenaryAsyncUv.fs_stat(path) end
+
+---@async
+---@param path string
+---@param flags string|integer
+---@param mode integer
+---@return string? err
+---@return integer fd
+function PlenaryAsyncUv.fs_open(path, flags, mode) end
+
+---@async
+---@param fd integer
+---@param size integer
+---@param offset integer?
+---@return string? err
+---@return string data
+function PlenaryAsyncUv.fs_read(fd, size, offset) end
+
+---@async
+---@param fd integer
+---@param data string
+---@param offset integer?
+---@return string? err
+---@return integer bytes
+function PlenaryAsyncUv.fs_write(fd, data, offset) end
+
+---@async
+---@param path string
+---@return string? err
+---@return boolean? success
+function PlenaryAsyncUv.fs_unlink(path) end
+
+---@async
+---@param fd integer
+---@return string? err
+function PlenaryAsyncUv.fs_close(fd) end
 
 ---@async
 ---@param ms integer
