@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-field
 local Migrator = require "frecency.migrator"
 local FS = require "frecency.fs"
 local Recency = require "frecency.recency"
