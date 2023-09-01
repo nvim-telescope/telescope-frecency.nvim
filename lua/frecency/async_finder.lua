@@ -33,6 +33,8 @@ AsyncFinder.new = function(state, fs, path, entry_maker, initial_results)
   local tx, rx = async.control.channel.mpsc()
   self.rx = rx
   async.run(function()
+    -- NOTE: return the main thread
+    async.util.sleep(0)
     local index = #initial_results
     local count = 0
     for name in fs:scan_dir(path) do
