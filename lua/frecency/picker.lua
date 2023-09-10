@@ -17,6 +17,7 @@ local uv = vim.loop or vim.uv
 ---@field private lsp_workspaces string[]
 ---@field private namespace integer
 ---@field private recency FrecencyRecency
+---@field private state FrecencyState
 ---@field private workspace string?
 ---@field private workspace_tag_regex string
 local Picker = {}
@@ -69,15 +70,14 @@ end
 ---| fun(opts: FrecencyPickerOptions, path: string): string
 ---@field workspace string?
 
----@param state FrecencyState
 ---@param opts table
 ---@param workspace string?
 ---@param workspace_tag string?
-function Picker:finder(state, opts, workspace, workspace_tag)
+function Picker:finder(opts, workspace, workspace_tag)
   local filepath_formatter = self:filepath_formatter(opts)
   local entry_maker = self.entry_maker:create(filepath_formatter, workspace, workspace_tag)
   local need_scandir = not not (workspace and self.config.show_unindexed)
-  return Finder.new(self.database, entry_maker, self.fs, need_scandir, workspace, self.recency, state)
+  return Finder.new(self.database, entry_maker, self.fs, need_scandir, workspace, self.recency, self.state)
 end
 
 ---@param opts FrecencyPickerOptions?
@@ -91,20 +91,21 @@ function Picker:start(opts)
   self.workspace = self:get_workspace(opts.cwd, self.config.initial_workspace_tag)
   log.debug { workspace = self.workspace }
 
-  local state = State.new()
-  local finder = self:finder(state, opts, self.workspace, self.config.initial_workspace_tag)
+  self.state = State.new()
+  local finder = self:finder(opts, self.workspace, self.config.initial_workspace_tag)
   local picker = pickers.new(opts, {
     prompt_title = "Frecency",
     finder = finder,
     previewer = config_values.file_previewer(opts),
     sorter = sorters.get_substr_matcher(),
-    on_input_filter_cb = self:on_input_filter_cb(state, opts),
+    on_input_filter_cb = self:on_input_filter_cb(opts),
     attach_mappings = function(prompt_bufnr)
       return self:attach_mappings(prompt_bufnr)
     end,
   })
-  state:set(picker)
+  self.state:set(picker)
   picker:find()
+  finder:start()
   self:set_prompt_options(picker.prompt_bufnr)
 end
 
@@ -186,10 +187,9 @@ function Picker:get_lsp_workspace()
 end
 
 ---@private
----@param state FrecencyState
 ---@param picker_opts table
 ---@return fun(prompt: string): table
-function Picker:on_input_filter_cb(state, picker_opts)
+function Picker:on_input_filter_cb(picker_opts)
   return function(prompt)
     local workspace
     local start, finish, tag = prompt:find(self.workspace_tag_regex)
@@ -199,7 +199,7 @@ function Picker:on_input_filter_cb(state, picker_opts)
     else
       workspace = self:get_workspace(picker_opts.cwd, tag) or self.workspace
     end
-    local picker = state:get()
+    local picker = self.state:get()
     if picker then
       local buf = picker.prompt_bufnr
       vim.api.nvim_buf_clear_namespace(buf, self.namespace, 0, -1)
@@ -218,7 +218,7 @@ function Picker:on_input_filter_cb(state, picker_opts)
     end
     if self.workspace ~= workspace then
       self.workspace = workspace
-      opts.updated_finder = self:finder(state, picker_opts, self.workspace, tag or self.config.initial_workspace_tag)
+      opts.updated_finder = self:finder(picker_opts, self.workspace, tag or self.config.initial_workspace_tag):start()
     end
     return opts
   end
