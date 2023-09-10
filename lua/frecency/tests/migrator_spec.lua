@@ -30,7 +30,7 @@ end
 local function time_piece(iso8601)
   local stdout, code =
     Job:new({ "perl", "-MTime::Piece", "-e", "print Time::Piece->strptime('" .. iso8601 .. "', '%FT%T%z')->epoch" })
-      :sync()
+      :sync(30000)
   return code == 0 and tonumber(stdout[1]) or nil
 end
 
