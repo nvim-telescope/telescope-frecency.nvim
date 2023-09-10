@@ -23,8 +23,7 @@ jobs:
       - name: Checkout plenary.nvim
         uses: actions/checkout@v3
         with:
-          #repository: nvim-lua/plenary.nvim
-          repository: delphinus/plenary.nvim
+          repository: nvim-lua/plenary.nvim
           path: plenary.nvim
       - name: Checkout telescope.nvim
         uses: actions/checkout@v3
