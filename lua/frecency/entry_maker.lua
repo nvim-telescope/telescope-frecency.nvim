@@ -40,10 +40,12 @@ end
 ---@field score number
 ---@field display fun(entry: FrecencyEntry): string, table
 
+---@alias FrecencyEntryMakerInstance fun(file: FrecencyFile): FrecencyEntry
+
 ---@param filepath_formatter FrecencyFilepathFormatter
 ---@param workspace string?
 ---@param workspace_tag string?
----@return fun(file: FrecencyFile): FrecencyEntry
+---@return FrecencyEntryMakerInstance
 function EntryMaker:create(filepath_formatter, workspace, workspace_tag)
   local displayer = entry_display.create {
     separator = "",

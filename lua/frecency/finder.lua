@@ -16,7 +16,7 @@ local Finder = {}
 ---@field sleep_interval integer default: 50
 
 ---@param database FrecencyDatabase
----@param entry_maker fun(file: FrecencyFile): FrecencyEntry
+---@param entry_maker FrecencyEntryMakerInstance
 ---@param fs FrecencyFS
 ---@param need_scandir boolean
 ---@param path string?
@@ -109,7 +109,6 @@ function Finder:find(_, process_result, process_complete)
   process_complete()
 end
 
----@async
 ---@param workspace string?
 ---@param datetime string?
 ---@return FrecencyFile[]
