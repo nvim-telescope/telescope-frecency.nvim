@@ -43,7 +43,7 @@ Finder.new = function(database, entry_maker, fs, need_scandir, path, recency, st
   local tx, rx = async.control.channel.mpsc()
   self.rx = rx
   async.run(function()
-    -- NOTE: return to the main loop
+    -- NOTE: return to the main loop to show the main window
     async.util.sleep(0)
     local seen = {}
     for i, file in ipairs(self:get_results(path, datetime)) do
@@ -53,6 +53,8 @@ Finder.new = function(database, entry_maker, fs, need_scandir, path, recency, st
       table.insert(self.entries, entry)
       tx.send(entry)
     end
+    -- NOTE: return to the main loop to show results from DB
+    async.util.sleep(self.config.sleep_interval)
     if need_scandir and path then
       local count = 0
       local index = #self.entries
