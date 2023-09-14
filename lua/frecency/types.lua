@@ -106,7 +106,7 @@ local PlenaryAsyncUv = {}
 ---@async
 ---@param path string
 ---@return string? err
----@return { mtime: integer, size: integer, type: "file"|"directory" }
+---@return { mtime: FrecencyRawTime, size: integer, type: "file"|"directory" }
 function PlenaryAsyncUv.fs_stat(path) end
 
 ---@async
