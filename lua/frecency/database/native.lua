@@ -1,5 +1,6 @@
 local FileLock = require "frecency.file_lock"
 local wait = require "frecency.wait"
+local watcher = require "frecency.database.native.watcher"
 local log = require "plenary.log"
 local async = require "plenary.async" --[[@as PlenaryAsync]]
 
@@ -31,9 +32,18 @@ Native.new = function(fs, config)
   }, { __index = Native })
   self.filename = self.config.root .. "/file_frecency.bin"
   self.file_lock = FileLock.new(self.filename)
+  local tx, rx = async.control.channel.counter()
+  watcher.watch(self.filename, tx)
   wait(function()
     self:load()
   end)
+  async.void(function()
+    while true do
+      rx.last()
+      log.debug "file changed. loading..."
+      self:load()
+    end
+  end)()
   return self
 end
 
@@ -102,8 +112,6 @@ end
 ---@param datetime string?
 ---@return FrecencyDatabaseEntry[]
 function Native:get_entries(workspace, datetime)
-  -- TODO: check mtime of DB and reload it
-  -- self:load()
   local now = self:now(datetime)
   local items = {}
   for path, record in pairs(self.table.records) do
@@ -143,6 +151,7 @@ function Native:load()
     err, data = async.uv.fs_read(fd, stat.size)
     assert(not err)
     assert(not async.uv.fs_close(fd))
+    watcher.update(stat)
     return data
   end)
   assert(not err, err)
@@ -164,6 +173,10 @@ function Native:save()
     assert(not err)
     assert(not async.uv.fs_write(fd, data))
     assert(not async.uv.fs_close(fd))
+    local stat
+    err, stat = async.uv.fs_stat(self.filename)
+    assert(not err, err)
+    watcher.update(stat)
     return nil
   end)
   assert(not err, err)
