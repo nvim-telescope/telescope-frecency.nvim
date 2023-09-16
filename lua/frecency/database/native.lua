@@ -132,7 +132,7 @@ end
 function Native:load()
   local start = os.clock()
   local err, data = self.file_lock:with(function()
-    local err, st = async.uv.fs_stat(self.filename)
+    local err, stat = async.uv.fs_stat(self.filename)
     if err then
       return nil
     end
@@ -140,7 +140,7 @@ function Native:load()
     err, fd = async.uv.fs_open(self.filename, "r", tonumber("644", 8))
     assert(not err)
     local data
-    err, data = async.uv.fs_read(fd, st.size)
+    err, data = async.uv.fs_read(fd, stat.size)
     assert(not err)
     assert(not async.uv.fs_close(fd))
     return data
