@@ -41,7 +41,7 @@ jobs:
         with:
           neovim: true
           version: ${{ matrix.version }}
-      - name: Run tests
+      - name: Run tests (not for Windows)
         env:
           PLENARY_PATH: plenary.nvim
           TELESCOPE_PATH: telescope.nvim
@@ -54,7 +54,7 @@ jobs:
           NVIM=$(perl -e '$_ = $ENV{EXE}; s,\\,/,g; print')
           $NVIM --headless --clean -u $MINIMAL_LUA -c "PlenaryBustedDirectory $TEST_DIR {minimal_init = '$MINIMAL_LUA'}"
         if: matrix.os != 'windows-latest'
-      - name: Run tests
+      - name: Run tests (for Windows)
         shell: bash
         env:
           PLENARY_PATH: plenary.nvim
