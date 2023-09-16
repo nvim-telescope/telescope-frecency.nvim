@@ -63,6 +63,10 @@ jobs:
           DEBUG_PLENARY: 1
           EXE: ${{ steps.nvim.outputs.executable }}
         run: |-
+          # NOTE: This is needed because it fails to add runtimepath's.
+          cp -af $PLENARY_PATH/lua/plenary/ lua/
+          cp -af $TELESCOPE_PATH/lua/telescope/ lua/
+          cp -af $SQLITE_PATH/lua/sqlite/ lua/
           TEST_DIR=lua/frecency/tests/
           MINIMAL_LUA=${TEST_DIR}minimal.lua
           NVIM=$(perl -e '$_ = $ENV{EXE}; s,\\,/,g; print')
