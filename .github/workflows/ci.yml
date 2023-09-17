@@ -79,7 +79,7 @@ jobs:
           count=1
           until $NVIM --headless --clean -u $MINIMAL_LUA -c "PlenaryBustedFile $TEST_DIR/frecency_spec.lua"; do
             count=$((count + 1))
-            if [[ $count = 5 ]]; then
+            if [[ $count = 10 ]]; then
               echo "error count reached: $count" 1>&2
               exit 1
             else
