@@ -55,6 +55,7 @@
 ---@field parent PlenaryPath
 ---@field path { sep: string }
 ---@field rm fun(self: PlenaryPath, opts: { recursive: boolean }?): nil
+---@field touch fun(self: PlenaryPath, opts: { parents: boolean }?): nil
 
 ---@class PlenaryScanDirOptions
 ---@field hidden boolean if true hidden files will be added
@@ -70,9 +71,11 @@
 
 ---@class PlenaryAsync
 ---@field control PlenaryAsyncControl
+---@field tests { add_to_env: fun(): nil }
 ---@field util PlenaryAsyncUtil
 ---@field uv PlenaryAsyncUv
 ---@field void fun(f: fun(): nil): fun(): nil
+---@field wrap fun(f: (fun(...): any), args: integer): (fun(...): any)
 local PlenaryAsync = {}
 
 ---@async
@@ -85,17 +88,22 @@ function PlenaryAsync.run(f) end
 
 ---@class PlenaryAsyncControlChannel
 ---@field mpsc fun(): PlenaryAsyncControlChannelTx, PlenaryAsyncControlChannelRx
+---@field counter fun(): PlenaryAsyncControlChannelTx, PlenaryAsyncControlChannelRx
 
 ---@class PlenaryAsyncControlChannelTx
----@field send fun(entry: FrecencyEntry?): nil
+---@field send fun(entry: any?): nil
 local PlenaryAsyncControlChannelTx = {}
 
 ---@class PlenaryAsyncControlChannelRx
 local PlenaryAsyncControlChannelRx = {}
 
 ---@async
----@return FrecencyEntry?
+---@return any?
 function PlenaryAsyncControlChannelRx.recv() end
+
+---@async
+---@return any?
+function PlenaryAsyncControlChannelRx.last() end
 
 ---@class PlenaryAsyncUtil
 local PlenaryAsyncUtil = {}
@@ -103,10 +111,19 @@ local PlenaryAsyncUtil = {}
 ---@class PlenaryAsyncUv
 local PlenaryAsyncUv = {}
 
+---@class FsStatMtime
+---@field sec integer
+---@field nsec integer
+
+---@class FsStat
+---@field mtime FsStatMtime
+---@field size integer
+---@field type "file"|"directory"
+
 ---@async
 ---@param path string
 ---@return string? err
----@return { mtime: integer, size: integer, type: "file"|"directory" }
+---@return { mtime: FsStatMtime, size: integer, type: "file"|"directory" }
 function PlenaryAsyncUv.fs_stat(path) end
 
 ---@async
@@ -184,3 +201,8 @@ function PlenaryAsyncUtil.sleep(ms) end
 ---@class WinInfo
 ---@field topline integer
 ---@field botline integer
+
+---@class UvFsEventHandle
+---@field stop fun(self: UvFsEventHandle): nil
+---@field start fun(self: UvFsEventHandle, path: string, opts: { recursive: boolean }, cb: fun(err: string?, filename: string?, events: string[])): nil
+---@field close fun(self: UvFsEventHandle): nil

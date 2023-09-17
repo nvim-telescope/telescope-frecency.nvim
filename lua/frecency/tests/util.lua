@@ -1,5 +1,7 @@
 local uv = vim.uv or vim.loop
+local async = require "plenary.async" --[[@as PlenaryAsync]]
 local Path = require "plenary.path"
+local Job = require "plenary.job"
 
 ---@return PlenaryPath
 ---@return fun(): nil close swwp all entries
@@ -22,4 +24,35 @@ local function make_tree(entries)
   return dir, close
 end
 
-return { make_tree = make_tree, tmpdir = tmpdir }
+local AsyncJob = async.wrap(function(cmd, callback)
+  return Job:new({
+    command = cmd[1],
+    args = { select(2, unpack(cmd)) },
+    on_exit = function(self, code, _)
+      local stdout = code == 0 and table.concat(self:result(), "\n") or nil
+      callback(stdout, code)
+    end,
+  }):start()
+end, 2)
+
+-- NOTE: vim.fn.strptime cannot be used in Lua loop
+local function time_piece(iso8601)
+  local stdout, code =
+    AsyncJob { "perl", "-MTime::Piece", "-e", "print Time::Piece->strptime('" .. iso8601 .. "', '%FT%T%z')->epoch" }
+  return code == 0 and tonumber(stdout) or nil
+end
+
+---@param source table<string,{ count: integer, timestamps: string[] }>
+local function v1_table(source)
+  local records = {}
+  for path, record in pairs(source) do
+    local timestamps = {}
+    for _, iso8601 in ipairs(record.timestamps) do
+      table.insert(timestamps, time_piece(iso8601))
+    end
+    records[path] = { count = record.count, timestamps = timestamps }
+  end
+  return { version = "v1", records = records }
+end
+
+return { make_tree = make_tree, tmpdir = tmpdir, v1_table = v1_table, time_piece = time_piece }

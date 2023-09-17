@@ -2,7 +2,6 @@ local Sqlite = require "frecency.database.sqlite"
 local Native = require "frecency.database.native"
 local EntryMaker = require "frecency.entry_maker"
 local FS = require "frecency.fs"
-local Finder = require "frecency.finder"
 local Migrator = require "frecency.migrator"
 local Picker = require "frecency.picker"
 local Recency = require "frecency.recency"
@@ -14,7 +13,7 @@ local log = require "plenary.log"
 ---@field config FrecencyConfig
 ---@field private buf_registered table<integer, boolean> flag to indicate the buffer is registered to the database.
 ---@field private database FrecencyDatabase
----@field private finder FrecencyFinder
+---@field private entry_maker FrecencyEntryMaker
 ---@field private fs FrecencyFS
 ---@field private migrator FrecencyMigrator
 ---@field private picker FrecencyPicker
@@ -69,11 +68,10 @@ Frecency.new = function(opts)
   end
   self.database = Database.new(self.fs, { root = config.db_root })
   local web_devicons = WebDevicons.new(not config.disable_devicons)
-  local entry_maker = EntryMaker.new(self.fs, web_devicons, {
+  self.entry_maker = EntryMaker.new(self.fs, web_devicons, {
     show_filter_column = config.show_filter_column,
     show_scores = config.show_scores,
   })
-  self.finder = Finder.new(entry_maker, self.fs)
   self.recency = Recency.new()
   self.migrator = Migrator.new(self.fs, self.recency, self.config.db_root)
   return self
@@ -122,7 +120,7 @@ function Frecency:start(opts)
   local start = os.clock()
   log.debug "Frecency:start"
   opts = opts or {}
-  self.picker = Picker.new(self.database, self.finder, self.fs, self.recency, {
+  self.picker = Picker.new(self.database, self.entry_maker, self.fs, self.recency, {
     default_workspace_tag = self.config.default_workspace,
     editing_bufnr = vim.api.nvim_get_current_buf(),
     filter_delimiter = self.config.filter_delimiter,

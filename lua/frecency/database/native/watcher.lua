@@ -1,0 +1,87 @@
+local async = require "plenary.async" --[[@as PlenaryAsync]]
+local log = require "plenary.log"
+local uv = vim.loop or vim.uv
+
+---@class FrecencyNativeWatcherMtime
+---@field sec integer
+---@field nsec integer
+local Mtime = {}
+
+---@param mtime FsStatMtime
+---@return FrecencyNativeWatcherMtime
+Mtime.new = function(mtime)
+  return setmetatable({ sec = mtime.sec, nsec = mtime.nsec }, Mtime)
+end
+
+---@param other FrecencyNativeWatcherMtime
+---@return boolean
+function Mtime:__eq(other)
+  return self.sec == other.sec and self.nsec == other.nsec
+end
+
+---@return string
+function Mtime:__tostring()
+  return string.format("%d.%d", self.sec, self.nsec)
+end
+
+---@class FrecencyNativeWatcher
+---@field handler UvFsEventHandle
+---@field path string
+---@field mtime FrecencyNativeWatcherMtime
+local Watcher = {}
+
+---@return FrecencyNativeWatcher
+Watcher.new = function()
+  return setmetatable({ path = "", mtime = Mtime.new { sec = 0, nsec = 0 } }, { __index = Watcher })
+end
+
+---@param path string
+---@param tx PlenaryAsyncControlChannelTx
+function Watcher:watch(path, tx)
+  if self.handler then
+    self.handler:stop()
+  end
+  self.handler = assert(uv.new_fs_event()) --[[@as UvFsEventHandle]]
+  self.handler:start(path, { recursive = true }, function(err, _, _)
+    if err then
+      log.debug("failed to watch path: " .. err)
+      return
+    end
+    async.void(function()
+      -- NOTE: wait for updating mtime
+      async.util.sleep(50)
+      local stat
+      err, stat = async.uv.fs_stat(path)
+      if err then
+        log.debug("failed to stat path: " .. err)
+        return
+      end
+      local mtime = Mtime.new(stat.mtime)
+      if self.mtime ~= mtime then
+        log.debug(("mtime changed: %s -> %s"):format(self.mtime, mtime))
+        self.mtime = mtime
+        tx.send()
+      end
+    end)()
+  end)
+end
+
+local watcher = Watcher.new()
+
+return {
+  ---@param path string
+  ---@param tx PlenaryAsyncControlChannelTx
+  ---@return nil
+  watch = function(path, tx)
+    log.debug("watch path: " .. path)
+    watcher:watch(path, tx)
+  end,
+
+  ---@param stat FsStat
+  ---@return nil
+  update = function(stat)
+    local mtime = Mtime.new(stat.mtime)
+    log.debug(("update mtime: %s -> %s"):format(watcher.mtime, mtime))
+    watcher.mtime = mtime
+  end,
+}

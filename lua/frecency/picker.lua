@@ -1,4 +1,5 @@
 local State = require "frecency.state"
+local Finder = require "frecency.finder"
 local log = require "plenary.log"
 local Path = require "plenary.path" --[[@as PlenaryPath]]
 local actions = require "telescope.actions"
@@ -11,12 +12,12 @@ local uv = vim.loop or vim.uv
 ---@class FrecencyPicker
 ---@field private config FrecencyPickerConfig
 ---@field private database FrecencyDatabase
----@field private finder FrecencyFinder
+---@field private entry_maker FrecencyEntryMaker
 ---@field private fs FrecencyFS
 ---@field private lsp_workspaces string[]
 ---@field private namespace integer
 ---@field private recency FrecencyRecency
----@field private results table[]
+---@field private state FrecencyState
 ---@field private workspace string?
 ---@field private workspace_tag_regex string
 local Picker = {}
@@ -37,21 +38,20 @@ local Picker = {}
 ---@field score number
 
 ---@param database FrecencyDatabase
----@param finder FrecencyFinder
+---@param entry_maker FrecencyEntryMaker
 ---@param fs FrecencyFS
 ---@param recency FrecencyRecency
 ---@param config FrecencyPickerConfig
 ---@return FrecencyPicker
-Picker.new = function(database, finder, fs, recency, config)
+Picker.new = function(database, entry_maker, fs, recency, config)
   local self = setmetatable({
     config = config,
     database = database,
-    finder = finder,
+    entry_maker = entry_maker,
     fs = fs,
     lsp_workspaces = {},
     namespace = vim.api.nvim_create_namespace "frecency",
     recency = recency,
-    results = {},
   }, { __index = Picker })
   local d = self.config.filter_delimiter
   self.workspace_tag_regex = "^%s*" .. d .. "(%S+)" .. d
@@ -70,6 +70,16 @@ end
 ---| fun(opts: FrecencyPickerOptions, path: string): string
 ---@field workspace string?
 
+---@param opts table
+---@param workspace string?
+---@param workspace_tag string?
+function Picker:finder(opts, workspace, workspace_tag)
+  local filepath_formatter = self:filepath_formatter(opts)
+  local entry_maker = self.entry_maker:create(filepath_formatter, workspace, workspace_tag)
+  local need_scandir = not not (workspace and self.config.show_unindexed)
+  return Finder.new(self.database, entry_maker, self.fs, need_scandir, workspace, self.recency, self.state)
+end
+
 ---@param opts FrecencyPickerOptions?
 function Picker:start(opts)
   opts = vim.tbl_extend("force", {
@@ -80,34 +90,23 @@ function Picker:start(opts)
   }, opts or {}) --[[@as FrecencyPickerOptions]]
   self.workspace = self:get_workspace(opts.cwd, self.config.initial_workspace_tag)
   log.debug { workspace = self.workspace }
-  self.results = self:fetch_results(self.workspace)
 
-  local state = State.new()
-
-  local filepath_formatter = self:filepath_formatter(opts)
-  local finder = self.finder:start(state, filepath_formatter, self.results, {
-    need_scandir = self.workspace and self.config.show_unindexed and true or false,
-    workspace = self.workspace,
-    workspace_tag = self.config.initial_workspace_tag,
-  })
-
+  self.state = State.new()
+  local finder = self:finder(opts, self.workspace, self.config.initial_workspace_tag)
   local picker = pickers.new(opts, {
     prompt_title = "Frecency",
     finder = finder,
     previewer = config_values.file_previewer(opts),
     sorter = sorters.get_substr_matcher(),
-    on_input_filter_cb = self:on_input_filter_cb(state, opts),
+    on_input_filter_cb = self:on_input_filter_cb(opts),
     attach_mappings = function(prompt_bufnr)
       return self:attach_mappings(prompt_bufnr)
     end,
   })
-  state:set(picker)
+  self.state:set(picker)
   picker:find()
+  finder:start()
   self:set_prompt_options(picker.prompt_bufnr)
-end
-
-function Picker:discard_results()
-  -- TODO: implement here when it needs to cache.
 end
 
 --- See :h 'complete-functions'
@@ -179,34 +178,6 @@ function Picker:get_workspace(cwd, tag)
 end
 
 ---@private
----@param workspace string?
----@param datetime string? ISO8601 format string
----@return FrecencyFile[]
-function Picker:fetch_results(workspace, datetime)
-  log.debug { workspace = workspace or "NONE" }
-  local start_fetch = os.clock()
-  local files = self.database:get_entries(workspace, datetime)
-  log.debug(("it takes %f seconds in fetching entries"):format(os.clock() - start_fetch))
-  local start_results = os.clock()
-  local elapsed_recency = 0
-  for _, file in ipairs(files) do
-    local start_recency = os.clock()
-    file.score = file.ages and self.recency:calculate(file.count, file.ages) or 0
-    file.ages = nil
-    elapsed_recency = elapsed_recency + (os.clock() - start_recency)
-  end
-  log.debug(("it takes %f seconds in calculating recency"):format(elapsed_recency))
-  log.debug(("it takes %f seconds in making results"):format(os.clock() - start_results))
-
-  local start_sort = os.clock()
-  table.sort(files, function(a, b)
-    return a.score > b.score or (a.score == b.score and a.path > b.path)
-  end)
-  log.debug(("it takes %f seconds in sorting"):format(os.clock() - start_sort))
-  return files
-end
-
----@private
 ---@return string?
 function Picker:get_lsp_workspace()
   if vim.tbl_isempty(self.lsp_workspaces) then
@@ -216,11 +187,9 @@ function Picker:get_lsp_workspace()
 end
 
 ---@private
----@param state FrecencyState
 ---@param picker_opts table
 ---@return fun(prompt: string): table
-function Picker:on_input_filter_cb(state, picker_opts)
-  local filepath_formatter = self:filepath_formatter(picker_opts)
+function Picker:on_input_filter_cb(picker_opts)
   return function(prompt)
     local workspace
     local start, finish, tag = prompt:find(self.workspace_tag_regex)
@@ -230,7 +199,7 @@ function Picker:on_input_filter_cb(state, picker_opts)
     else
       workspace = self:get_workspace(picker_opts.cwd, tag) or self.workspace
     end
-    local picker = state:get()
+    local picker = self.state:get()
     if picker then
       local buf = picker.prompt_bufnr
       vim.api.nvim_buf_clear_namespace(buf, self.namespace, 0, -1)
@@ -249,13 +218,7 @@ function Picker:on_input_filter_cb(state, picker_opts)
     end
     if self.workspace ~= workspace then
       self.workspace = workspace
-      self.results = self:fetch_results(workspace)
-      opts.updated_finder = self.finder:start(state, filepath_formatter, self.results, {
-        initial_results = self.results,
-        need_scandir = self.workspace and self.config.show_unindexed and true or false,
-        workspace = self.workspace,
-        workspace_tag = tag,
-      })
+      opts.updated_finder = self:finder(picker_opts, self.workspace, tag or self.config.initial_workspace_tag):start()
     end
     return opts
   end

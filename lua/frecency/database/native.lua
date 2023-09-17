@@ -1,7 +1,9 @@
 local FileLock = require "frecency.file_lock"
 local wait = require "frecency.wait"
+local watcher = require "frecency.database.native.watcher"
 local log = require "plenary.log"
 local async = require "plenary.async" --[[@as PlenaryAsync]]
+local Path = require "plenary.path" --[[@as PlenaryPath]]
 
 ---@class FrecencyDatabaseNative: FrecencyDatabase
 ---@field version "v1"
@@ -29,11 +31,20 @@ Native.new = function(fs, config)
     table = { version = version, records = {} },
     version = version,
   }, { __index = Native })
-  self.filename = self.config.root .. "/file_frecency.bin"
+  self.filename = Path.new(self.config.root, "file_frecency.bin").filename
   self.file_lock = FileLock.new(self.filename)
+  local tx, rx = async.control.channel.counter()
+  watcher.watch(self.filename, tx)
   wait(function()
     self:load()
   end)
+  async.void(function()
+    while true do
+      rx.last()
+      log.debug "file changed. loading..."
+      self:load()
+    end
+  end)()
   return self
 end
 
@@ -102,8 +113,6 @@ end
 ---@param datetime string?
 ---@return FrecencyDatabaseEntry[]
 function Native:get_entries(workspace, datetime)
-  -- TODO: check mtime of DB and reload it
-  -- self:load()
   local now = self:now(datetime)
   local items = {}
   for path, record in pairs(self.table.records) do
@@ -120,11 +129,21 @@ function Native:get_entries(workspace, datetime)
   return items
 end
 
+-- TODO: remove this func
+-- This is a func for testing
 ---@private
 ---@param datetime string?
 ---@return integer
 function Native:now(datetime)
-  return datetime and vim.fn.strptime("%FT%T%z", datetime) or os.time()
+  if not datetime then
+    return os.time()
+  end
+  local epoch
+  wait(function()
+    local tz_fix = datetime:gsub("+(%d%d):(%d%d)$", "+%1%2")
+    epoch = require("frecency.tests.util").time_piece(tz_fix)
+  end)
+  return epoch
 end
 
 ---@async
@@ -132,17 +151,18 @@ end
 function Native:load()
   local start = os.clock()
   local err, data = self.file_lock:with(function()
-    local err, st = async.uv.fs_stat(self.filename)
+    local err, stat = async.uv.fs_stat(self.filename)
     if err then
       return nil
     end
     local fd
     err, fd = async.uv.fs_open(self.filename, "r", tonumber("644", 8))
-    assert(not err)
+    assert(not err, err)
     local data
-    err, data = async.uv.fs_read(fd, st.size)
-    assert(not err)
+    err, data = async.uv.fs_read(fd, stat.size)
+    assert(not err, err)
     assert(not async.uv.fs_close(fd))
+    watcher.update(stat)
     return data
   end)
   assert(not err, err)
@@ -158,16 +178,23 @@ end
 function Native:save()
   local start = os.clock()
   local err = self.file_lock:with(function()
-    local f = assert(load("return " .. vim.inspect(self.table)))
-    local data = string.dump(f)
-    local err, fd = async.uv.fs_open(self.filename, "w", tonumber("644", 8))
-    assert(not err)
-    assert(not async.uv.fs_write(fd, data))
-    assert(not async.uv.fs_close(fd))
+    self:raw_save(self.table)
+    local err, stat = async.uv.fs_stat(self.filename)
+    assert(not err, err)
+    watcher.update(stat)
     return nil
   end)
   assert(not err, err)
   log.debug(("save() takes %f seconds"):format(os.clock() - start))
+end
+
+function Native:raw_save(tbl)
+  local f = assert(load("return " .. vim.inspect(tbl)))
+  local data = string.dump(f)
+  local err, fd = async.uv.fs_open(self.filename, "w", tonumber("644", 8))
+  assert(not err, err)
+  assert(not async.uv.fs_write(fd, data))
+  assert(not async.uv.fs_close(fd))
 end
 
 return Native
