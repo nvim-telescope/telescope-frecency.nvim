@@ -188,7 +188,10 @@ describe("frecency", function()
               for i = 1, file_count do
                 local file = ("hoge%08d.txt"):format(i)
                 table.insert(expected, { count = 1, path = filepath(dir, file), score = 10 })
+                -- HACK: disable log because it fails with too many logging
+                log.new({ level = "info" }, true)
                 register(file, "2023-07-29T00:00:00+09:00")
+                log.new({}, true)
               end
               local start = os.clock()
               local results = finder:get_results(nil, "2023-07-29T00:01:00+09:00")
