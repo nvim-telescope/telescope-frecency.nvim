@@ -29,6 +29,7 @@ local Frecency = {}
 ---@field disable_devicons boolean? default: false
 ---@field filter_delimiter string? default: ":"
 ---@field ignore_patterns string[]? default: { "*.git/*", "*/tmp/*", "term://*" }
+---@field max_timestamps integer? default: 10
 ---@field show_filter_column boolean|string[]|nil default: true
 ---@field show_scores boolean? default: false
 ---@field show_unindexed boolean? default: true
@@ -48,6 +49,7 @@ Frecency.new = function(opts)
     disable_devicons = false,
     filter_delimiter = ":",
     ignore_patterns = { "*.git/*", "*/tmp/*", "term://*" },
+    max_timestamps = 10,
     show_filter_column = true,
     show_scores = false,
     show_unindexed = true,
@@ -72,7 +74,8 @@ Frecency.new = function(opts)
     show_filter_column = config.show_filter_column,
     show_scores = config.show_scores,
   })
-  self.recency = Recency.new()
+  local max_count = config.max_timestamps > 0 and config.max_timestamps or 10
+  self.recency = Recency.new { max_count = max_count }
   self.migrator = Migrator.new(self.fs, self.recency, self.config.db_root)
   return self
 end
