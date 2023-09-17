@@ -147,10 +147,10 @@ function Native:load()
     end
     local fd
     err, fd = async.uv.fs_open(self.filename, "r", tonumber("644", 8))
-    assert(not err)
+    assert(not err, err)
     local data
     err, data = async.uv.fs_read(fd, stat.size)
-    assert(not err)
+    assert(not err, err)
     assert(not async.uv.fs_close(fd))
     watcher.update(stat)
     return data
@@ -168,20 +168,23 @@ end
 function Native:save()
   local start = os.clock()
   local err = self.file_lock:with(function()
-    local f = assert(load("return " .. vim.inspect(self.table)))
-    local data = string.dump(f)
-    local err, fd = async.uv.fs_open(self.filename, "w", tonumber("644", 8))
-    assert(not err)
-    assert(not async.uv.fs_write(fd, data))
-    assert(not async.uv.fs_close(fd))
-    local stat
-    err, stat = async.uv.fs_stat(self.filename)
+    self:raw_save(self.table)
+    local err, stat = async.uv.fs_stat(self.filename)
     assert(not err, err)
     watcher.update(stat)
     return nil
   end)
   assert(not err, err)
   log.debug(("save() takes %f seconds"):format(os.clock() - start))
+end
+
+function Native:raw_save(tbl)
+  local f = assert(load("return " .. vim.inspect(tbl)))
+  local data = string.dump(f)
+  local err, fd = async.uv.fs_open(self.filename, "w", tonumber("644", 8))
+  assert(not err, err)
+  assert(not async.uv.fs_write(fd, data))
+  assert(not async.uv.fs_close(fd))
 end
 
 return Native

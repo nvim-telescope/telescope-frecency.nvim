@@ -55,6 +55,7 @@
 ---@field parent PlenaryPath
 ---@field path { sep: string }
 ---@field rm fun(self: PlenaryPath, opts: { recursive: boolean }?): nil
+---@field touch fun(self: PlenaryPath, opts: { parents: boolean }?): nil
 
 ---@class PlenaryScanDirOptions
 ---@field hidden boolean if true hidden files will be added
@@ -70,9 +71,11 @@
 
 ---@class PlenaryAsync
 ---@field control PlenaryAsyncControl
+---@field tests { add_to_env: fun(): nil }
 ---@field util PlenaryAsyncUtil
 ---@field uv PlenaryAsyncUv
 ---@field void fun(f: fun(): nil): fun(): nil
+---@field wrap fun(f: (fun(...): any), args: integer): (fun(...): any)
 local PlenaryAsync = {}
 
 ---@async

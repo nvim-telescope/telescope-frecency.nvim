@@ -74,6 +74,7 @@ jobs:
           $NVIM --headless --clean -u $MINIMAL_LUA -c "PlenaryBustedFile $TEST_DIR/recency_spec.lua"
           $NVIM --headless --clean -u $MINIMAL_LUA -c "PlenaryBustedFile $TEST_DIR/migrator_spec.lua"
           $NVIM --headless --clean -u $MINIMAL_LUA -c "PlenaryBustedFile $TEST_DIR/file_lock_spec.lua"
+          $NVIM --headless --clean -u $MINIMAL_LUA -c "PlenaryBustedFile $TEST_DIR/native_spec.lua"
 
           count=1
           until $NVIM --headless --clean -u $MINIMAL_LUA -c "PlenaryBustedFile $TEST_DIR/frecency_spec.lua"; do

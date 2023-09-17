@@ -32,8 +32,7 @@ local Watcher = {}
 
 ---@return FrecencyNativeWatcher
 Watcher.new = function()
-  local self = setmetatable({ path = "", mtime = Mtime.new { sec = 0, nsec = 0 } }, { __index = Watcher })
-  return self
+  return setmetatable({ path = "", mtime = Mtime.new { sec = 0, nsec = 0 } }, { __index = Watcher })
 end
 
 ---@param path string
@@ -85,6 +84,4 @@ return {
     log.debug(("update mtime: %s -> %s"):format(watcher.mtime, mtime))
     watcher.mtime = mtime
   end,
-
-  mtime = Mtime,
 }
