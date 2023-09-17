@@ -30,7 +30,8 @@ local Finder = {}
 ---@param config FrecencyFinderConfig?
 ---@return FrecencyFinder
 Finder.new = function(database, entry_maker, fs, need_scandir, path, recency, state, config)
-  local self = setmetatable({
+  local tx, rx = async.control.channel.mpsc()
+  return setmetatable({
     config = vim.tbl_extend("force", { chunk_size = 1000, sleep_interval = 50 }, config or {}),
     closed = false,
     database = database,
@@ -40,7 +41,9 @@ Finder.new = function(database, entry_maker, fs, need_scandir, path, recency, st
     need_scandir = need_scandir,
     path = path,
     recency = recency,
+    rx = rx,
     state = state,
+    tx = tx,
   }, {
     __index = Finder,
     ---@param self FrecencyFinder
@@ -48,17 +51,12 @@ Finder.new = function(database, entry_maker, fs, need_scandir, path, recency, st
       return self:find(...)
     end,
   })
-  local tx, rx = async.control.channel.mpsc()
-  self.tx = tx
-  self.rx = rx
-  return self
 end
 
----@async
 ---@param datetime string?
----@return FrecencyFinder
+---@return nil
 function Finder:start(datetime)
-  async.run(function()
+  async.void(function()
     -- NOTE: return to the main loop to show the main window
     async.util.sleep(0)
     local seen = {}
@@ -69,37 +67,42 @@ function Finder:start(datetime)
       table.insert(self.entries, entry)
       self.tx.send(entry)
     end
-    -- NOTE: return to the main loop to show results from DB
-    async.util.sleep(self.config.sleep_interval)
     if self.need_scandir and self.path then
-      local count = 0
-      local index = #self.entries
-      for name in self.fs:scan_dir(self.path) do
-        if self.closed then
-          break
-        end
-        local fullpath = self.fs.joinpath(self.path, name)
-        if not seen[fullpath] then
-          seen[fullpath] = true
-          count = count + 1
-          local entry = self.entry_maker { id = 0, count = 0, path = fullpath, score = 0 }
-          if entry then
-            index = index + 1
-            entry.index = index
-            table.insert(self.entries, entry)
-            self.tx.send(entry)
-            if count % self.config.chunk_size == 0 then
-              self:reflow_results()
-              async.util.sleep(self.config.sleep_interval)
-            end
-          end
-        end
-      end
+      -- NOTE: return to the main loop to show results from DB
+      async.util.sleep(self.config.sleep_interval)
+      self:scan_dir(seen)
     end
     self:close()
     self.tx.send(nil)
-  end)
-  return self
+  end)()
+end
+
+---@param seen table<string, boolean>
+---@return nil
+function Finder:scan_dir(seen)
+  local count = 0
+  local index = #self.entries
+  for name in self.fs:scan_dir(self.path) do
+    if self.closed then
+      break
+    end
+    local fullpath = self.fs.joinpath(self.path, name)
+    if not seen[fullpath] then
+      seen[fullpath] = true
+      count = count + 1
+      local entry = self.entry_maker { id = 0, count = 0, path = fullpath, score = 0 }
+      if entry then
+        index = index + 1
+        entry.index = index
+        table.insert(self.entries, entry)
+        self.tx.send(entry)
+        if count % self.config.chunk_size == 0 then
+          self:reflow_results()
+          async.util.sleep(self.config.sleep_interval)
+        end
+      end
+    end
+  end
 end
 
 ---@param _ string
