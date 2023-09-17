@@ -70,22 +70,7 @@ jobs:
           TEST_DIR=lua/frecency/tests/
           MINIMAL_LUA=${TEST_DIR}minimal.lua
           NVIM=$(perl -e '$_ = $ENV{EXE}; s,\\,/,g; print')
-          # TODO: PlenaryBustedDirectory seems not to run on Windows
-          $NVIM --headless --clean -u $MINIMAL_LUA -c "PlenaryBustedFile $TEST_DIR/recency_spec.lua"
-          $NVIM --headless --clean -u $MINIMAL_LUA -c "PlenaryBustedFile $TEST_DIR/migrator_spec.lua"
-          $NVIM --headless --clean -u $MINIMAL_LUA -c "PlenaryBustedFile $TEST_DIR/file_lock_spec.lua"
-          $NVIM --headless --clean -u $MINIMAL_LUA -c "PlenaryBustedFile $TEST_DIR/native_spec.lua"
-
-          count=1
-          until $NVIM --headless --clean -u $MINIMAL_LUA -c "PlenaryBustedFile $TEST_DIR/frecency_spec.lua"; do
-            count=$((count + 1))
-            if [[ $count = 10 ]]; then
-              echo "error count reached: $count" 1>&2
-              exit 1
-            else
-              echo 'try again' 1>&2
-            fi
-          done
+          $NVIM --headless --clean -u $MINIMAL_LUA -c "PlenaryBustedDirectory $TEST_DIR {minimal_init = '$MINIMAL_LUA', sequential = true}"
         if: matrix.os == 'windows-latest'
       - name: Type Check Code Base
         uses: mrcjkb/lua-typecheck-action@v0.2.0
