@@ -55,4 +55,4 @@ local function v1_table(source)
   return { version = "v1", records = records }
 end
 
-return { make_tree = make_tree, tmpdir = tmpdir, v1_table = v1_table }
+return { make_tree = make_tree, tmpdir = tmpdir, v1_table = v1_table, time_piece = time_piece }

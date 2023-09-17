@@ -129,11 +129,21 @@ function Native:get_entries(workspace, datetime)
   return items
 end
 
+-- TODO: remove this func
+-- This is a func for testing
 ---@private
 ---@param datetime string?
 ---@return integer
 function Native:now(datetime)
-  return datetime and vim.fn.strptime("%FT%T%z", datetime) or os.time()
+  if not datetime then
+    return os.time()
+  end
+  local epoch
+  wait(function()
+    local tz_fix = datetime:gsub("+(%d%d):(%d%d)$", "+%1%2")
+    epoch = require("frecency.tests.util").time_piece(tz_fix)
+  end)
+  return epoch
 end
 
 ---@async
