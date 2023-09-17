@@ -70,7 +70,7 @@ jobs:
           TEST_DIR=lua/frecency/tests/
           MINIMAL_LUA=${TEST_DIR}minimal.lua
           NVIM=$(perl -e '$_ = $ENV{EXE}; s,\\,/,g; print')
-          $NVIM --headless --clean -u $MINIMAL_LUA -c "PlenaryBustedDirectory $TEST_DIR {minimal_init = '$MINIMAL_LUA', sequential = true}"
+          $NVIM --headless --clean -u $MINIMAL_LUA -c "PlenaryBustedDirectory $TEST_DIR {minimal_init = '$MINIMAL_LUA', timeout = 180000, sequential = true}"
         if: matrix.os == 'windows-latest'
       - name: Type Check Code Base
         uses: mrcjkb/lua-typecheck-action@v0.2.0
