@@ -63,7 +63,7 @@ jobs:
           DEBUG_PLENARY: 1
           EXE: ${{ steps.nvim.outputs.executable }}
         run: |-
-          # NOTE: This is needed because it fails to add runtimepath's.
+          # HACK: This is needed because it fails to add runtimepath's.
           cp -af $PLENARY_PATH/lua/plenary/ lua/
           cp -af $TELESCOPE_PATH/lua/telescope/ lua/
           cp -af $SQLITE_PATH/lua/sqlite/ lua/
