@@ -34,10 +34,10 @@ FS.new = function(config)
   return self
 end
 
----@param path string
+---@param path string?
 ---@return boolean
 function FS:is_valid_path(path)
-  return Path:new(path):is_file() and not self:is_ignored(path)
+  return not not path and Path:new(path):is_file() and not self:is_ignored(path)
 end
 
 ---@param path string
