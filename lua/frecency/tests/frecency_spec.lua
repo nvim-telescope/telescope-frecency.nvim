@@ -42,6 +42,7 @@ local function make_register(frecency, dir)
       frecency.buf_registered[bufnr] = nil
     end
     frecency:register(bufnr, datetime)
+    util.sleep(50)
   end
 end
 
@@ -63,6 +64,7 @@ local function with_fake_register(frecency, dir, callback)
     bufnr = bufnr + 1
     buffers[bufnr] = path
     frecency:register(bufnr, datetime)
+    util.sleep(50)
   end
   callback(register)
   vim.api.nvim_buf_get_name = original_nvim_buf_get_name

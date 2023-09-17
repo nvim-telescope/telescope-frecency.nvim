@@ -2,6 +2,7 @@ local uv = vim.uv or vim.loop
 local async = require "plenary.async" --[[@as PlenaryAsync]]
 local Path = require "plenary.path"
 local Job = require "plenary.job"
+local wait = require "frecency.wait"
 
 ---@return PlenaryPath
 ---@return fun(): nil close swwp all entries
@@ -55,4 +56,10 @@ local function v1_table(source)
   return { version = "v1", records = records }
 end
 
-return { make_tree = make_tree, tmpdir = tmpdir, v1_table = v1_table, time_piece = time_piece }
+local function sleep(interval_ms)
+  wait(function()
+    async.util.sleep(interval_ms)
+  end)
+end
+
+return { make_tree = make_tree, tmpdir = tmpdir, v1_table = v1_table, time_piece = time_piece, sleep = sleep }

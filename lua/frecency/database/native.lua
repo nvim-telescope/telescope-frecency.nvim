@@ -62,9 +62,9 @@ function Native:insert_files(paths)
   for _, path in ipairs(paths) do
     self.table.records[path] = { count = 1, timestamps = { 0 } }
   end
-  wait(function()
+  async.void(function()
     self:save()
-  end)
+  end)()
 end
 
 ---@return string[]
@@ -83,9 +83,9 @@ function Native:remove_files(paths)
   for _, file in ipairs(paths) do
     self.table.records[file] = nil
   end
-  wait(function()
+  async.void(function()
     self:save()
-  end)
+  end)()
 end
 
 ---@param path string
@@ -104,9 +104,9 @@ function Native:update(path, max_count, datetime)
     record.timestamps = new_table
   end
   self.table.records[path] = record
-  wait(function()
+  async.void(function()
     self:save()
-  end)
+  end)()
 end
 
 ---@param workspace string?
