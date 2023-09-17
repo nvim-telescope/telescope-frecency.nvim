@@ -3,6 +3,7 @@ local wait = require "frecency.wait"
 local watcher = require "frecency.database.native.watcher"
 local log = require "plenary.log"
 local async = require "plenary.async" --[[@as PlenaryAsync]]
+local Path = require "plenary.path" --[[@as PlenaryPath]]
 
 ---@class FrecencyDatabaseNative: FrecencyDatabase
 ---@field version "v1"
@@ -30,7 +31,7 @@ Native.new = function(fs, config)
     table = { version = version, records = {} },
     version = version,
   }, { __index = Native })
-  self.filename = self.config.root .. "/file_frecency.bin"
+  self.filename = Path.new(self.config.root, "file_frecency.bin").filename
   self.file_lock = FileLock.new(self.filename)
   local tx, rx = async.control.channel.counter()
   watcher.watch(self.filename, tx)
