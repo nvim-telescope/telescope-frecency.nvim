@@ -1,5 +1,6 @@
 local sqlite = require "frecency.sqlite"
 local log = require "plenary.log"
+local Path = require "plenary.path" --[[@as PlenaryPath]]
 
 ---@class FrecencySqliteDB: sqlite_db
 ---@field files sqlite_tbl
@@ -25,20 +26,32 @@ local Sqlite = {}
 ---@param config FrecencyDatabaseConfig
 ---@return FrecencyDatabaseSqlite
 Sqlite.new = function(fs, config)
-  local lib = sqlite.lib
   local self = setmetatable(
     { config = config, buf_registered_flag_name = "telescope_frecency_registered", fs = fs },
     { __index = Sqlite }
   )
-  self.sqlite = sqlite {
-    uri = self.config.root .. "/file_frecency.sqlite3",
-    files = { id = true, count = { "integer", default = 1, required = true }, path = "string" },
-    timestamps = {
-      id = true,
-      file_id = { "integer", reference = "files.id", on_delete = "cascade" },
-      timestamp = { "real", default = lib.julianday "now" },
-    },
-  }
+  self.filename = Path.new(self.config.root, "file_frecency.sqlite3").filename
+  self.sqlite = setmetatable({}, {
+    __index = function(this, key)
+      if not rawget(this, "instance") then
+        local lib = sqlite.lib
+        rawset(
+          this,
+          "instance",
+          sqlite {
+            uri = self.filename,
+            files = { id = true, count = { "integer", default = 1, required = true }, path = "string" },
+            timestamps = {
+              id = true,
+              file_id = { "integer", reference = "files.id", on_delete = "cascade" },
+              timestamp = { "real", default = lib.julianday "now" },
+            },
+          }
+        )
+      end
+      return rawget(this, "instance")[key]
+    end,
+  })
   return self
 end
 
