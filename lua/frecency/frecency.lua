@@ -88,10 +88,7 @@ function Frecency:setup()
   vim.api.nvim_set_hl(0, "TelescopeQueryFilter", { link = "WildMenu", default = true })
 
   -- TODO: Should we schedule this after loading shada?
-  if not self.database:has_entry() then
-    self.database:insert_files(vim.v.oldfiles)
-    self:notify("Imported %d entries from oldfiles.", #vim.v.oldfiles)
-  end
+  self:assert_db_entries()
 
   ---@param cmd_info { bang: boolean }
   vim.api.nvim_create_user_command("FrecencyValidate", function(cmd_info)
@@ -140,6 +137,22 @@ end
 ---@return integer|''|string[]
 function Frecency:complete(findstart, base)
   return self.picker:complete(findstart, base)
+end
+
+---@private
+---@return nil
+function Frecency:assert_db_entries()
+  if self.database:has_entry() then
+    return
+  elseif not self.config.use_sqlite and sqlite_module.can_use then
+    local sqlite = Sqlite.new(self.fs, { root = self.config.db_root })
+    if sqlite:has_entry() then
+      self:migrate_database()
+      return
+    end
+  end
+  self.database:insert_files(vim.v.oldfiles)
+  self:notify("Imported %d entries from oldfiles.", #vim.v.oldfiles)
 end
 
 ---@private
@@ -211,7 +224,7 @@ function Frecency:migrate_database(to_sqlite)
     else
       self.migrator:to_v1()
     end
-    self:notify "migration finished successfully"
+    self:notify "Migration is finished successfully. You can remove sqlite.lua from dependencies."
   end)
 end
 
