@@ -33,7 +33,7 @@ local Frecency = {}
 ---@field show_filter_column boolean|string[]|nil default: true
 ---@field show_scores boolean? default: false
 ---@field show_unindexed boolean? default: true
----@field use_sqlite boolean? default: true
+---@field use_sqlite boolean? default: false
 ---@field workspaces table<string, string>? default: {}
 
 ---@param opts FrecencyConfig?
@@ -53,7 +53,7 @@ Frecency.new = function(opts)
     show_filter_column = true,
     show_scores = false,
     show_unindexed = true,
-    use_sqlite = true,
+    use_sqlite = false,
     workspaces = {},
   }, opts or {})
   local self = setmetatable({ buf_registered = {}, config = config }, { __index = Frecency })--[[@as Frecency]]
@@ -66,6 +66,7 @@ Frecency.new = function(opts)
     self:warn "use_sqlite = true, but sqlite module can not be found. It fallbacks to native code."
     Database = Native
   else
+    self:warn "SQLite mode is deprecated."
     Database = Sqlite
   end
   self.database = Database.new(self.fs, { root = config.db_root })
