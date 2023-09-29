@@ -88,11 +88,12 @@ function Picker:start(opts)
       return self:default_path_display(picker_opts, path)
     end,
   }, opts or {}) --[[@as FrecencyPickerOptions]]
-  self.workspace = self:get_workspace(opts.cwd, self.config.initial_workspace_tag)
+  self.workspace = self:get_workspace(opts.cwd, self.config.initial_workspace_tag or self.config.default_workspace_tag)
   log.debug { workspace = self.workspace }
 
   self.state = State.new()
-  local finder = self:finder(opts, self.workspace, self.config.initial_workspace_tag)
+  local finder =
+    self:finder(opts, self.workspace, self.config.initial_workspace_tag or self.config.default_workspace_tag)
   local picker = pickers.new(opts, {
     prompt_title = "Frecency",
     finder = finder,
@@ -218,7 +219,11 @@ function Picker:on_input_filter_cb(picker_opts)
     end
     if self.workspace ~= workspace then
       self.workspace = workspace
-      opts.updated_finder = self:finder(picker_opts, self.workspace, tag or self.config.initial_workspace_tag)
+      opts.updated_finder = self:finder(
+        picker_opts,
+        self.workspace,
+        tag or self.config.initial_workspace_tag or self.config.default_workspace_tag
+      )
       opts.updated_finder:start()
     end
     return opts
