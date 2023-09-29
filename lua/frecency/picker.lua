@@ -218,7 +218,8 @@ function Picker:on_input_filter_cb(picker_opts)
     end
     if self.workspace ~= workspace then
       self.workspace = workspace
-      opts.updated_finder = self:finder(picker_opts, self.workspace, tag or self.config.initial_workspace_tag):start()
+      opts.updated_finder = self:finder(picker_opts, self.workspace, tag or self.config.initial_workspace_tag)
+      opts.updated_finder:start()
     end
     return opts
   end
