@@ -148,7 +148,7 @@ function Frecency:assert_db_entries()
   elseif not self.config.use_sqlite and sqlite_module.can_use then
     local sqlite = Sqlite.new(self.fs, { root = self.config.db_root })
     if sqlite:has_entry() then
-      self:migrate_database()
+      self:migrate_database(false, true)
       return
     end
   end
@@ -200,10 +200,28 @@ function Frecency:register(bufnr, datetime)
 end
 
 ---@param to_sqlite boolean?
+---@param silently boolean?
 ---@return nil
-function Frecency:migrate_database(to_sqlite)
-  local prompt = to_sqlite and "migrate the DB into SQLite from native code?"
-    or "migrate the DB into native code from SQLite?"
+function Frecency:migrate_database(to_sqlite, silently)
+  local function migrate()
+    if not sqlite_module.can_use then
+      self:error "sqlite.lua is unavailable"
+    elseif to_sqlite then
+      self.migrator:to_sqlite()
+      self:notify "Migration is finished successfully."
+    else
+      self.migrator:to_v1()
+      self:notify "Migration is finished successfully. You can remove sqlite.lua from dependencies."
+    end
+  end
+
+  if silently then
+    migrate()
+    return
+  end
+
+  local prompt = to_sqlite and "Migrate the DB into SQLite from native code?"
+    or "Migrate the DB into native code from SQLite?"
   vim.ui.select({ "y", "n" }, {
     prompt = prompt,
     ---@param item "y"|"n"
@@ -212,20 +230,11 @@ function Frecency:migrate_database(to_sqlite)
       return item == "y" and "Yes, Migrate it." or "No. Do nothing."
     end,
   }, function(item)
-    if item == "n" then
-      self:notify "migration aborted"
-      return
-    elseif to_sqlite then
-      if sqlite_module.can_use then
-        self.migrator:to_sqlite()
-      else
-        self:error "sqlite.lua is unavailable"
-        return
-      end
+    if item == "y" then
+      migrate()
     else
-      self.migrator:to_v1()
+      self:notify "Migration aborted"
     end
-    self:notify "Migration is finished successfully. You can remove sqlite.lua from dependencies."
   end)
 end
 
