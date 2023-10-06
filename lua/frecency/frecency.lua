@@ -173,7 +173,7 @@ function Frecency:validate_database(force)
     return
   end
   vim.ui.select({ "y", "n" }, {
-    prompt = self:message("remove %d entries from SQLite3 database?", #unlinked),
+    prompt = self:message("remove %d entries from database?", #unlinked),
     ---@param item "y"|"n"
     ---@return string
     format_item = function(item)
