@@ -7,7 +7,6 @@ local Path = require "plenary.path" --[[@as PlenaryPath]]
 
 ---@class FrecencyDatabaseNative: FrecencyDatabase
 ---@field version "v1"
----@field filename string
 ---@field file_lock FrecencyFileLock
 ---@field table FrecencyDatabaseNativeTable
 local Native = {}

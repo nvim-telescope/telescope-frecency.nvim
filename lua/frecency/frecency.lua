@@ -33,7 +33,7 @@ local Frecency = {}
 ---@field show_filter_column boolean|string[]|nil default: true
 ---@field show_scores boolean? default: false
 ---@field show_unindexed boolean? default: true
----@field use_sqlite boolean? default: true
+---@field use_sqlite boolean? default: false
 ---@field workspaces table<string, string>? default: {}
 
 ---@param opts FrecencyConfig?
@@ -53,7 +53,7 @@ Frecency.new = function(opts)
     show_filter_column = true,
     show_scores = false,
     show_unindexed = true,
-    use_sqlite = true,
+    use_sqlite = false,
     workspaces = {},
   }, opts or {})
   local self = setmetatable({ buf_registered = {}, config = config }, { __index = Frecency })--[[@as Frecency]]
@@ -66,6 +66,7 @@ Frecency.new = function(opts)
     self:warn "use_sqlite = true, but sqlite module can not be found. It fallbacks to native code."
     Database = Native
   else
+    self:warn "SQLite mode is deprecated."
     Database = Sqlite
   end
   self.database = Database.new(self.fs, { root = config.db_root })
@@ -88,10 +89,7 @@ function Frecency:setup()
   vim.api.nvim_set_hl(0, "TelescopeQueryFilter", { link = "WildMenu", default = true })
 
   -- TODO: Should we schedule this after loading shada?
-  if not self.database:has_entry() then
-    self.database:insert_files(vim.v.oldfiles)
-    self:notify("Imported %d entries from oldfiles.", #vim.v.oldfiles)
-  end
+  self:assert_db_entries()
 
   ---@param cmd_info { bang: boolean }
   vim.api.nvim_create_user_command("FrecencyValidate", function(cmd_info)
@@ -143,6 +141,22 @@ function Frecency:complete(findstart, base)
 end
 
 ---@private
+---@return nil
+function Frecency:assert_db_entries()
+  if self.database:has_entry() then
+    return
+  elseif not self.config.use_sqlite and sqlite_module.can_use then
+    local sqlite = Sqlite.new(self.fs, { root = self.config.db_root })
+    if sqlite:has_entry() then
+      self:migrate_database(false, true)
+      return
+    end
+  end
+  self.database:insert_files(vim.v.oldfiles)
+  self:notify("Imported %d entries from oldfiles.", #vim.v.oldfiles)
+end
+
+---@private
 ---@param force boolean?
 ---@return nil
 function Frecency:validate_database(force)
@@ -159,7 +173,7 @@ function Frecency:validate_database(force)
     return
   end
   vim.ui.select({ "y", "n" }, {
-    prompt = self:message("remove %d entries from SQLite3 database?", #unlinked),
+    prompt = self:message("remove %d entries from database?", #unlinked),
     ---@param item "y"|"n"
     ---@return string
     format_item = function(item)
@@ -186,10 +200,28 @@ function Frecency:register(bufnr, datetime)
 end
 
 ---@param to_sqlite boolean?
+---@param silently boolean?
 ---@return nil
-function Frecency:migrate_database(to_sqlite)
-  local prompt = to_sqlite and "migrate the DB into SQLite from native code?"
-    or "migrate the DB into native code from SQLite?"
+function Frecency:migrate_database(to_sqlite, silently)
+  local function migrate()
+    if not sqlite_module.can_use then
+      self:error "sqlite.lua is unavailable"
+    elseif to_sqlite then
+      self.migrator:to_sqlite()
+      self:notify "Migration is finished successfully."
+    else
+      self.migrator:to_v1()
+      self:notify "Migration is finished successfully. You can remove sqlite.lua from dependencies."
+    end
+  end
+
+  if silently then
+    migrate()
+    return
+  end
+
+  local prompt = to_sqlite and "Migrate the DB into SQLite from native code?"
+    or "Migrate the DB into native code from SQLite?"
   vim.ui.select({ "y", "n" }, {
     prompt = prompt,
     ---@param item "y"|"n"
@@ -198,20 +230,11 @@ function Frecency:migrate_database(to_sqlite)
       return item == "y" and "Yes, Migrate it." or "No. Do nothing."
     end,
   }, function(item)
-    if item == "n" then
-      self:notify "migration aborted"
-      return
-    elseif to_sqlite then
-      if sqlite_module.can_use then
-        self.migrator:to_sqlite()
-      else
-        self:error "sqlite.lua is unavailable"
-        return
-      end
+    if item == "y" then
+      migrate()
     else
-      self.migrator:to_v1()
+      self:notify "Migration aborted"
     end
-    self:notify "migration finished successfully"
   end)
 end
 
