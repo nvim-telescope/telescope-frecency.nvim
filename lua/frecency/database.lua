@@ -26,6 +26,10 @@ function Database:unlinked_entries() end
 function Database:remove_files(files) end
 
 ---@param path string
+---@return boolean
+function Database:remove_entry(path) end
+
+---@param path string
 ---@param max_count integer
 ---@param datetime string?
 ---@return nil
