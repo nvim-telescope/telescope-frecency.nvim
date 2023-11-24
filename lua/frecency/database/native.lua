@@ -196,4 +196,17 @@ function Native:raw_save(tbl)
   assert(not async.uv.fs_close(fd))
 end
 
+---@param path string
+---@return boolean
+function Native:remove_entry(path)
+  if not self.table.records[path] then
+    return false
+  end
+  self.table.records[path] = nil
+  wait(function()
+    self:save()
+  end)
+  return true
+end
+
 return Native

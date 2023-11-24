@@ -394,6 +394,35 @@ describe("frecency", function()
           end)
         end)
       end)
+
+      describe("delete", function()
+        describe("when file exists", function()
+          with_files({ "hoge1.txt", "hoge2.txt" }, function(frecency, finder, dir)
+            local register = make_register(frecency, dir)
+            register("hoge1.txt", "2023-07-29T00:00:00+09:00")
+            register("hoge2.txt", "2023-07-29T00:01:00+09:00")
+
+            it("deletes the file successfully", function()
+              local path = filepath(dir, "hoge2.txt")
+              local result
+              ---@diagnostic disable-next-line: duplicate-set-field
+              frecency.notify = function(self, fmt, ...)
+                vim.notify(self:message(fmt, ...))
+                result = true
+              end
+              frecency:delete(path)
+              assert.are.same(result, true)
+            end)
+
+            it("returns valid results", function()
+              local results = finder:get_results(nil, "2023-07-29T02:00:00+09:00")
+              assert.are.same({
+                { count = 1, path = filepath(dir, "hoge1.txt"), score = 10 },
+              }, results)
+            end)
+          end)
+        end)
+      end)
     end)
   end
 

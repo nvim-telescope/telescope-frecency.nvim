@@ -263,6 +263,19 @@ The command `FrecencyValidate` can be used to clean the database when
 :FrecencyValidate!
 ```
 
+### Delete entries
+
+You can delete entries from DB by `FrecencyDelete` command. This command does
+not remove the file itself, only from DB.
+
+```vim
+" delete the current opened file
+:FrecencyDelete
+
+" delete the supplied path
+:FrecencyDelete /full/path/to/the/file
+```
+
 ### Remove dependency for [sqlite.lua][]
 
 The former version of this plugin has used SQLite3 library to store data. When

@@ -145,4 +145,11 @@ function Sqlite:remove_files(ids)
   self.sqlite.files:remove { id = ids }
 end
 
+---@param path string
+---@return boolean
+function Sqlite:remove_entry(path)
+  local exists = not not self.sqlite.files:get({ where = { path = path } })[1]
+  return exists and self.sqlite.files:remove { path = path } or false
+end
+
 return Sqlite

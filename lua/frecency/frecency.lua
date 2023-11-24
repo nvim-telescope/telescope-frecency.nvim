@@ -104,6 +104,12 @@ function Frecency:setup()
     self:migrate_database()
   end, { desc = "Migrate DB telescope-frecency to native code" })
 
+  vim.api.nvim_create_user_command("FrecencyDelete", function(info)
+    local path_string = info.args == "" and "%:p" or info.args
+    local path = vim.fn.expand(path_string) --[[@as string]]
+    self:delete(path)
+  end, { nargs = "?", complete = "file", desc = "Delete entry from telescope-frecency" })
+
   local group = vim.api.nvim_create_augroup("TelescopeFrecency", {})
   vim.api.nvim_create_autocmd({ "BufWinEnter", "BufWritePost" }, {
     desc = "Update database for telescope-frecency",
@@ -236,6 +242,16 @@ function Frecency:migrate_database(to_sqlite, silently)
       self:notify "Migration aborted"
     end
   end)
+end
+
+---@param path string
+---@return nil
+function Frecency:delete(path)
+  if self.database:remove_entry(path) then
+    self:notify("successfully deleted: %s", path)
+  else
+    self:warn("failed to delete: %s", path)
+  end
 end
 
 ---@private
