@@ -33,9 +33,13 @@ function FileLock:get()
       break
     end
     async.util.sleep(self.config.interval)
-    if count == self.config.retry then
-      log.debug(("file_lock get() failed: retry count reached: %d"):format(count))
-      return "failed to get lock"
+    if count >= self.config.retry then
+      log.debug(("file_lock get(): retry count reached. try to delete the lock file: %d"):format(count))
+      err = async.uv.fs_unlink(self.filename)
+      if err then
+        log.debug("file_lock get() failed: " .. err)
+        return "failed to get lock"
+      end
     end
     log.debug(("file_lock get() retry: %d"):format(count))
   end

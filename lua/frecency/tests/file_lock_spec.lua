@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-field
 local FileLock = require "frecency.file_lock"
 local util = require "frecency.tests.util"
 local async = require "plenary.async" --[[@as PlenaryAsync]]
@@ -8,6 +9,18 @@ local function with_dir(f)
   local filename = (dir / "file_lock_test").filename
   f(filename)
   close()
+end
+
+local function with_unlink_fails(f)
+  return function()
+    local original = async.uv.fs_unlink
+    ---@diagnostic disable-next-line: duplicate-set-field
+    async.uv.fs_unlink = function()
+      return "overwritten"
+    end
+    f()
+    async.uv.fs_unlink = original
+  end
 end
 
 a.describe("file_lock", function()
@@ -24,9 +37,9 @@ a.describe("file_lock", function()
     a.describe("when with a lock file", function()
       with_dir(function(filename)
         local fl = FileLock.new(filename, { retry = 1, interval = 10 })
-        a.it("fails to get", function()
+        a.it("gets successfully", function()
           assert.is.Nil(async.uv.fs_open(fl.filename, "wx", tonumber("600", 8)))
-          assert.are.same("failed to get lock", fl:get())
+          assert.is.Nil(fl:get())
         end)
       end)
     end)
@@ -34,10 +47,23 @@ a.describe("file_lock", function()
     a.describe("when getting twice", function()
       with_dir(function(filename)
         local fl = FileLock.new(filename, { retry = 1, interval = 10 })
-        a.it("fails to get", function()
+        a.it("gets successfully", function()
           assert.is.Nil(fl:get())
-          assert.are.same("failed to get lock", fl:get())
+          assert.is.Nil(fl:get())
         end)
+      end)
+    end)
+
+    a.describe("when getting twice but unlink fails", function()
+      with_dir(function(filename)
+        local fl = FileLock.new(filename, { retry = 1, interval = 10 })
+        a.it(
+          "fails to get",
+          with_unlink_fails(function()
+            assert.is.Nil(fl:get())
+            assert.are.same("failed to get lock", fl:get())
+          end)
+        )
       end)
     end)
   end)
@@ -78,15 +104,18 @@ a.describe("file_lock", function()
     a.describe("when get() fails", function()
       with_dir(function(filename)
         local fl = FileLock.new(filename, { retry = 1, interval = 10 })
-        a.it("fails with a valid err", function()
-          assert.is.Nil(fl:get())
-          assert.are.same(
-            "failed to get lock",
-            fl:with(function()
-              return nil
-            end)
-          )
-        end)
+        a.it(
+          "fails with a valid err",
+          with_unlink_fails(function()
+            assert.is.Nil(fl:get())
+            assert.are.same(
+              "failed to get lock",
+              fl:with(function()
+                return nil
+              end)
+            )
+          end)
+        )
       end)
     end)
 
