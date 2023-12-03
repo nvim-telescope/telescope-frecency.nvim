@@ -9,13 +9,14 @@ local FileLock = {}
 
 ---@class FrecencyFileLockConfig
 ---@field retry integer default: 5
+---@field unlink_retry integer default: 5
 ---@field interval integer default: 500
 
 ---@param path string
 ---@param opts FrecencyFileLockConfig?
 ---@return FrecencyFileLock
 FileLock.new = function(path, opts)
-  local config = vim.tbl_extend("force", { retry = 5, interval = 500 }, opts or {})
+  local config = vim.tbl_extend("force", { retry = 5, unlink_retry = 5, interval = 500 }, opts or {})
   local self = setmetatable({ config = config }, { __index = FileLock })
   self.filename = path .. ".lock"
   return self
@@ -25,6 +26,7 @@ end
 ---@return string? err
 function FileLock:get()
   local count = 0
+  local unlink_count = 0
   local err, fd
   while true do
     count = count + 1
@@ -38,7 +40,11 @@ function FileLock:get()
       err = async.uv.fs_unlink(self.filename)
       if err then
         log.debug("file_lock get() failed: " .. err)
-        return "failed to get lock"
+        unlink_count = unlink_count + 1
+        if unlink_count >= self.config.unlink_retry then
+          log.error("file_lock get(): failed to unlink the lock file: " .. err)
+          return "failed to get lock"
+        end
       end
     end
     log.debug(("file_lock get() retry: %d"):format(count))
