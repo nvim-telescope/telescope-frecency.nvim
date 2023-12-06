@@ -40,11 +40,24 @@ function FS:is_valid_path(path)
   return not not path and Path:new(path):is_file() and not self:is_ignored(path)
 end
 
+local elapsed
+function _G.scan_dir_elapsed()
+  return ("%.3f ms"):format(elapsed / 1000000)
+end
+
 ---@param path string
 ---@return function
 function FS:scan_dir(path)
   log.debug { path = path }
-  local gitignore = self:make_gitignore(path)
+  elapsed = 0
+  local original = self:make_gitignore(path)
+  local function gitignore(basepaths, entry)
+    local start = uv.hrtime()
+    local is_permitted = original(basepaths, entry)
+    local finish = uv.hrtime()
+    elapsed = elapsed + (finish - start)
+    return is_permitted
+  end
   return coroutine.wrap(function()
     for name, type in
       vim.fs.dir(path, {
