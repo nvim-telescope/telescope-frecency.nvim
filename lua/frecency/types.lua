@@ -166,6 +166,10 @@ function PlenaryAsyncUv.fs_close(fd) end
 ---@return nil
 function PlenaryAsyncUtil.sleep(ms) end
 
+---@async
+---@return nil
+function PlenaryAsyncUtil.scheduler() end
+
 -- NOTE: types are for telescope.nvim
 
 ---@alias TelescopeEntryDisplayer fun(items: string[]): table
@@ -198,11 +202,20 @@ function PlenaryAsyncUtil.sleep(ms) end
 
 -- NOTE: types for default functions
 
----@class WinInfo
----@field topline integer
----@field botline integer
-
 ---@class UvFsEventHandle
 ---@field stop fun(self: UvFsEventHandle): nil
 ---@field start fun(self: UvFsEventHandle, path: string, opts: { recursive: boolean }, cb: fun(err: string?, filename: string?, events: string[])): nil
 ---@field close fun(self: UvFsEventHandle): nil
+
+--- @class VimSystemObj
+--- @field pid integer
+--- @field wait fun(self: VimSystemObj, timeout?: integer): VimSystemCompleted
+--- @field kill fun(self: VimSystemObj, signal: integer|string)
+--- @field write fun(self: VimSystemObj, data?: string|string[])
+--- @field is_closing fun(self: VimSystemObj): boolean?
+
+--- @class VimSystemCompleted
+--- @field code integer
+--- @field signal integer
+--- @field stdout? string
+--- @field stderr? string
