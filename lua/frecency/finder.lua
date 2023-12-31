@@ -1,3 +1,4 @@
+local Job = require "plenary.job"
 local async = require "plenary.async" --[[@as PlenaryAsync]]
 local log = require "plenary.log"
 
@@ -74,7 +75,7 @@ function Finder:start(datetime)
   local ok
   if cmd ~= "LUA" and self.need_scan_dir then
     ---@type string[][]
-    local cmds = cmd and { cmd } or { { "rg", "-0.g", "!.git", "--files" }, { "fdfind", "-0Htf" }, { "fd", "-0Htf" } }
+    local cmds = cmd and { cmd } or { { "rg", "-.g", "!.git", "--files" }, { "fdfind", "-Htf" }, { "fd", "-Htf" } }
     for _, c in ipairs(cmds) do
       ok = self:scan_dir_cmd(c)
       if ok then
@@ -102,25 +103,52 @@ end
 ---@param cmd string[]
 ---@return boolean
 function Finder:scan_dir_cmd(cmd)
-  local ok
-  ---@diagnostic disable-next-line: assign-type-mismatch
-  ok, self.process = pcall(vim.system, cmd, {
-    cwd = self.path,
-    stdout = function(err, chunk)
-      if not self.closed and not err and chunk then
-        for name in chunk:gmatch "[^%z]+" do
-          local cleaned = name:gsub("^%./", "")
-          local fullpath = self.fs.joinpath(self.path, cleaned)
-          local entry = self.entry_maker { id = 0, count = 0, path = fullpath, score = 0 }
-          self.scan_tx.send(entry)
-        end
+  local function stdout(err, chunk)
+    if not self.closed and not err and chunk then
+      for name in chunk:gmatch "[^\n]+" do
+        local cleaned = name:gsub("^%./", "")
+        local fullpath = self.fs.joinpath(self.path, cleaned)
+        local entry = self.entry_maker { id = 0, count = 0, path = fullpath, score = 0 }
+        self.scan_tx.send(entry)
       end
-    end,
-  }, function()
+    end
+  end
+
+  local function on_exit()
     self.process = nil
     self:close()
     self.scan_tx.send(nil)
-  end)
+  end
+
+  local ok
+  if vim.system then
+    ---@diagnostic disable-next-line: assign-type-mismatch
+    ok, self.process = pcall(vim.system, cmd, {
+      cwd = self.path,
+      text = true,
+      stdout = stdout,
+    }, on_exit)
+  else
+    -- for Neovim v0.9.x
+    ok, self.process = pcall(function()
+      local args = {}
+      for i, arg in ipairs(cmd) do
+        if i > 1 then
+          table.insert(args, arg)
+        end
+      end
+      log.debug { cmd = cmd[1], args = args }
+      local job = Job:new {
+        cwd = self.path,
+        command = cmd[1],
+        args = args,
+        on_stdout = stdout,
+        on_exit = on_exit,
+      }
+      job:start()
+      return job.handle
+    end)
+  end
   if not ok then
     self.process = nil
   end

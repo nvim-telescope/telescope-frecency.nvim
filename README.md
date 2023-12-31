@@ -215,14 +215,13 @@ See [default configuration](https://github.com/nvim-telescope/telescope.nvim#tel
   value: `nil`, it uses these way below to make entries for workspace files.
   It tries in order until it works successfully.
 
-  1. `rg -0.g '!.git' --files`
-  2. `fdfind -0Htf`
-  3. `fd -0Htf`
+  1. `rg -.g '!.git' --files`
+  2. `fdfind -Htf`
+  3. `fd -Htf`
   4. Native Lua code (old way)
 
   If you like another commands, set them to this option, like
-  `workspace_scan_cmd = { "find", ".", "-type", "f", "-print0" }`. This command
-  must use NUL characters for delimiters.
+  `workspace_scan_cmd = { "find", ".", "-type", "f" }`.
 
   If you prefer Native Lua code, set `workspace_scan_cmd = "LUA"`.
 
