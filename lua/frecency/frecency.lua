@@ -129,6 +129,9 @@ function Frecency:start(opts)
   local start = os.clock()
   log.debug "Frecency:start"
   opts = opts or {}
+  if opts.cwd then
+    opts.cwd = vim.fn.expand(opts.cwd)
+  end
   self.picker = Picker.new(self.database, self.entry_maker, self.fs, self.recency, {
     default_workspace_tag = self.config.default_workspace,
     editing_bufnr = vim.api.nvim_get_current_buf(),
