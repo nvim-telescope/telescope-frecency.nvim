@@ -248,19 +248,18 @@ function Finder:reflow_results()
   if not picker then
     return
   end
+  async.util.scheduler()
   local bufnr = picker.results_bufnr
   local win = picker.results_win
-  if not bufnr or not win then
+  if not bufnr or not win or not vim.api.nvim_buf_is_valid(bufnr) or not vim.api.nvim_win_is_valid(win) then
     return
   end
-  async.util.scheduler()
   picker:clear_extra_rows(bufnr)
   if picker.sorting_strategy == "descending" then
     local manager = picker.manager
     if not manager then
       return
     end
-    async.util.scheduler()
     local worst_line = picker:get_row(manager:num_results())
     local wininfo = vim.fn.getwininfo(win)[1]
     local bottom = vim.api.nvim_buf_line_count(bufnr)
