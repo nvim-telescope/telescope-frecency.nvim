@@ -23,8 +23,9 @@ local log = require "plenary.log"
 local Finder = {}
 
 ---@class FrecencyFinderConfig
----@field chunk_size integer default: 1000
----@field sleep_interval integer default: 50
+---@field chunk_size integer? default: 1000
+---@field sleep_interval integer? default: 50
+---@field workspace_scan_cmd "LUA"|string[]|nil default: nil
 
 ---@param database FrecencyDatabase
 ---@param entry_maker FrecencyEntryMakerInstance
@@ -69,11 +70,15 @@ end
 ---@param datetime string?
 ---@return nil
 function Finder:start(datetime)
+  local cmd = self.config.workspace_scan_cmd
   local ok
-  if self.need_scan_dir then
-    for _, cmd in ipairs { { "rg", "-0.g", "!.git", "--files" }, { "fdfind", "-0Htf" }, { "fd", "-0Htf" } } do
-      ok = self:scan_dir_cmd(cmd)
+  if cmd ~= "LUA" and self.need_scan_dir then
+    ---@type string[][]
+    local cmds = cmd and { cmd } or { { "rg", "-0.g", "!.git", "--files" }, { "fdfind", "-0Htf" }, { "fd", "-0Htf" } }
+    for _, c in ipairs(cmds) do
+      ok = self:scan_dir_cmd(c)
       if ok then
+        log.debug("scan_dir_cmd: " .. vim.inspect(c))
         break
       end
     end
@@ -87,6 +92,7 @@ function Finder:start(datetime)
     end
     self.tx.send(nil)
     if self.need_scan_dir and not ok then
+      log.debug "scan_dir_lua"
       async.util.scheduler()
       self:scan_dir_lua()
     end
