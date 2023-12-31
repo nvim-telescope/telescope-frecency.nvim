@@ -28,6 +28,7 @@ local Picker = {}
 ---@field filter_delimiter string
 ---@field initial_workspace_tag string?
 ---@field show_unindexed boolean
+---@field workspace_scan_cmd "LUA"|string[]|nil
 ---@field workspaces table<string, string>
 
 ---@class FrecencyPickerEntry
@@ -77,7 +78,16 @@ function Picker:finder(opts, workspace, workspace_tag)
   local filepath_formatter = self:filepath_formatter(opts)
   local entry_maker = self.entry_maker:create(filepath_formatter, workspace, workspace_tag)
   local need_scandir = not not (workspace and self.config.show_unindexed)
-  return Finder.new(self.database, entry_maker, self.fs, need_scandir, workspace, self.recency, self.state)
+  return Finder.new(
+    self.database,
+    entry_maker,
+    self.fs,
+    need_scandir,
+    workspace,
+    self.recency,
+    self.state,
+    { workspace_scan_cmd = self.config.workspace_scan_cmd }
+  )
 end
 
 ---@param opts FrecencyPickerOptions?

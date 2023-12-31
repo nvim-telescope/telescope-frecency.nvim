@@ -34,6 +34,7 @@ local Frecency = {}
 ---@field show_scores boolean? default: false
 ---@field show_unindexed boolean? default: true
 ---@field use_sqlite boolean? default: false
+---@field workspace_scan_cmd "LUA"|string[]|nil default: nil
 ---@field workspaces table<string, string>? default: {}
 
 ---@param opts FrecencyConfig?
@@ -54,6 +55,7 @@ Frecency.new = function(opts)
     show_scores = false,
     show_unindexed = true,
     use_sqlite = false,
+    workspace_scan_cmd = nil,
     workspaces = {},
   }, opts or {})
   local self = setmetatable({ buf_registered = {}, config = config }, { __index = Frecency })--[[@as Frecency]]
@@ -133,6 +135,7 @@ function Frecency:start(opts)
     filter_delimiter = self.config.filter_delimiter,
     initial_workspace_tag = opts.workspace,
     show_unindexed = self.config.show_unindexed,
+    workspace_scan_cmd = self.config.workspace_scan_cmd,
     workspaces = self.config.workspaces,
   })
   self.picker:start(vim.tbl_extend("force", self.config, opts))

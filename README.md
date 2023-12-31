@@ -79,11 +79,17 @@ directories provided by the language server.
 
 - [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) (required)
 - [nvim-web-devicons](https://github.com/kyazdani42/nvim-web-devicons) (optional)
+- [ripgrep](https://github.com/BurntSushi/ripgrep) or [fd](https://github.com/sharkdp/fd) (optional)
 
 **NOTE:** The former version of this plugin has used [SQLite3][] database to
 store timestamps and file records. But the current build uses Lua native code
 to store them, so you can now remove [sqlite.lua][] from dependencies. See
 [*Remove dependency for sqlite.lua*][remove-sqlite] for the detail.
+
+**NOTE:** `ripgrep` or `fd` will be used to list up workspace files. They are
+extremely faster than the native Lua logic. If you don't have them, it
+fallbacks to Lua code automatically. See the detail for `workspace_scan_cmd`
+option.
 
 [SQLite3]: https://www.sqlite.org/index.html
 [sqlite.lua]: https://github.com/kkharji/sqlite.lua
@@ -202,6 +208,23 @@ See [default configuration](https://github.com/nvim-telescope/telescope.nvim#tel
 
   Use [sqlite.lua][] with `true` or native code with `false`. See [*Remove
   dependency for sqlite.lua*][remove-sqlite] for the detail.
+
+- `workspace_scan_cmd` (default: `nil`)
+
+  This option can be set values as `"LUA"|string[]|nil`. With the default
+  value: `nil`, it uses these way below to make entries for workspace files.
+  It tries in order until it works successfully.
+
+  1. `rg -0.g '!.git' --files`
+  2. `fdfind -0Htf`
+  3. `fd -0Htf`
+  4. Native Lua code (old way)
+
+  If you like another commands, set them to this option, like
+  `workspace_scan_cmd = { "find", ".", "-type", "f", "-print0" }`. This command
+  must use NUL characters for delimiters.
+
+  If you prefer Native Lua code, set `workspace_scan_cmd = "LUA"`.
 
 - `workspaces` (default: `{}`)
 

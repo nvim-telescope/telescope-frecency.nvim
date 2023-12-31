@@ -5,20 +5,27 @@ local log = require "plenary.log"
 ---@field config FrecencyFinderConfig
 ---@field closed boolean
 ---@field entries FrecencyEntry[]
+---@field scanned_entries FrecencyEntry[]
 ---@field entry_maker FrecencyEntryMakerInstance
 ---@field fs FrecencyFS
----@field need_scandir boolean
 ---@field path string?
 ---@field private database FrecencyDatabase
----@field private recency FrecencyRecency
 ---@field private rx PlenaryAsyncControlChannelRx
----@field private state FrecencyState
 ---@field private tx PlenaryAsyncControlChannelTx
+---@field private scan_rx PlenaryAsyncControlChannelRx
+---@field private scan_tx PlenaryAsyncControlChannelTx
+---@field private need_scan_db boolean
+---@field private need_scan_dir boolean
+---@field private seen table<string, boolean>
+---@field private process VimSystemObj?
+---@field private recency FrecencyRecency
+---@field private state FrecencyState
 local Finder = {}
 
 ---@class FrecencyFinderConfig
----@field chunk_size integer default: 1000
----@field sleep_interval integer default: 50
+---@field chunk_size integer? default: 1000
+---@field sleep_interval integer? default: 50
+---@field workspace_scan_cmd "LUA"|string[]|nil default: nil
 
 ---@param database FrecencyDatabase
 ---@param entry_maker FrecencyEntryMakerInstance
@@ -31,19 +38,26 @@ local Finder = {}
 ---@return FrecencyFinder
 Finder.new = function(database, entry_maker, fs, need_scandir, path, recency, state, config)
   local tx, rx = async.control.channel.mpsc()
+  local scan_tx, scan_rx = async.control.channel.mpsc()
   return setmetatable({
     config = vim.tbl_extend("force", { chunk_size = 1000, sleep_interval = 50 }, config or {}),
     closed = false,
     database = database,
-    entries = {},
     entry_maker = entry_maker,
     fs = fs,
-    need_scandir = need_scandir,
     path = path,
     recency = recency,
-    rx = rx,
     state = state,
+
+    seen = {},
+    entries = {},
+    scanned_entries = {},
+    need_scan_db = true,
+    need_scan_dir = need_scandir and path,
+    rx = rx,
     tx = tx,
+    scan_rx = scan_rx,
+    scan_tx = scan_tx,
   }, {
     __index = Finder,
     ---@param self FrecencyFinder
@@ -56,78 +70,147 @@ end
 ---@param datetime string?
 ---@return nil
 function Finder:start(datetime)
+  local cmd = self.config.workspace_scan_cmd
+  local ok
+  if cmd ~= "LUA" and self.need_scan_dir then
+    ---@type string[][]
+    local cmds = cmd and { cmd } or { { "rg", "-0.g", "!.git", "--files" }, { "fdfind", "-0Htf" }, { "fd", "-0Htf" } }
+    for _, c in ipairs(cmds) do
+      ok = self:scan_dir_cmd(c)
+      if ok then
+        log.debug("scan_dir_cmd: " .. vim.inspect(c))
+        break
+      end
+    end
+  end
   async.void(function()
     -- NOTE: return to the main loop to show the main window
-    async.util.sleep(0)
-    local seen = {}
-    for i, file in ipairs(self:get_results(self.path, datetime)) do
+    async.util.scheduler()
+    for _, file in ipairs(self:get_results(self.path, datetime)) do
       local entry = self.entry_maker(file)
-      seen[entry.filename] = true
-      entry.index = i
-      table.insert(self.entries, entry)
       self.tx.send(entry)
     end
-    if self.need_scandir and self.path then
-      -- NOTE: return to the main loop to show results from DB
-      async.util.sleep(self.config.sleep_interval)
-      self:scan_dir(seen)
-    end
-    self:close()
     self.tx.send(nil)
+    if self.need_scan_dir and not ok then
+      log.debug "scan_dir_lua"
+      async.util.scheduler()
+      self:scan_dir_lua()
+    end
   end)()
 end
 
----@param seen table<string, boolean>
+---@param cmd string[]
+---@return boolean
+function Finder:scan_dir_cmd(cmd)
+  local ok
+  ---@diagnostic disable-next-line: assign-type-mismatch
+  ok, self.process = pcall(vim.system, cmd, {
+    cwd = self.path,
+    stdout = function(err, chunk)
+      if not self.closed and not err and chunk then
+        for name in chunk:gmatch "[^%z]+" do
+          local cleaned = name:gsub("^%./", "")
+          local fullpath = self.fs.joinpath(self.path, cleaned)
+          local entry = self.entry_maker { id = 0, count = 0, path = fullpath, score = 0 }
+          self.scan_tx.send(entry)
+        end
+      end
+    end,
+  }, function()
+    self.process = nil
+    self:close()
+    self.scan_tx.send(nil)
+  end)
+  if not ok then
+    self.process = nil
+  end
+  return ok
+end
+
+---@async
 ---@return nil
-function Finder:scan_dir(seen)
+function Finder:scan_dir_lua()
   local count = 0
-  local index = #self.entries
   for name in self.fs:scan_dir(self.path) do
     if self.closed then
       break
     end
     local fullpath = self.fs.joinpath(self.path, name)
-    if not seen[fullpath] then
-      seen[fullpath] = true
-      count = count + 1
-      local entry = self.entry_maker { id = 0, count = 0, path = fullpath, score = 0 }
-      if entry then
-        index = index + 1
-        entry.index = index
-        table.insert(self.entries, entry)
-        self.tx.send(entry)
-        if count % self.config.chunk_size == 0 then
-          self:reflow_results()
-          async.util.sleep(self.config.sleep_interval)
-        end
-      end
+    local entry = self.entry_maker { id = 0, count = 0, path = fullpath, score = 0 }
+    self.scan_tx.send(entry)
+    count = count + 1
+    if count % self.config.chunk_size == 0 then
+      async.util.sleep(self.config.sleep_interval)
     end
   end
+  self.scan_tx.send(nil)
 end
 
+---@async
 ---@param _ string
 ---@param process_result fun(entry: FrecencyEntry): nil
 ---@param process_complete fun(): nil
 ---@return nil
 function Finder:find(_, process_result, process_complete)
-  local index = 0
-  for _, entry in ipairs(self.entries) do
-    index = index + 1
-    if process_result(entry) then
-      return
-    end
+  if self:process_table(process_result, self.entries) then
+    return
   end
-  local count = 0
-  while not self.closed do
-    count = count + 1
-    local entry = self.rx.recv()
-    if not entry then
-      break
-    elseif entry.index > index and process_result(entry) then
+  if self.need_scan_db then
+    if self:process_channel(process_result, self.entries, self.rx) then
       return
     end
+    self.need_scan_db = false
+  end
+  if self:process_table(process_result, self.scanned_entries) then
+    return
+  end
+  if self.need_scan_dir then
+    if self:process_channel(process_result, self.scanned_entries, self.scan_rx, #self.entries) then
+      return
+    end
+    self.need_scan_dir = false
   end
   process_complete()
+end
+
+---@param process_result fun(entry: FrecencyEntry): nil
+---@param entries FrecencyEntry[]
+---@return boolean?
+function Finder:process_table(process_result, entries)
+  for _, entry in ipairs(entries) do
+    if process_result(entry) then
+      return true
+    end
+  end
+end
+
+---@async
+---@param process_result fun(entry: FrecencyEntry): nil
+---@param entries FrecencyEntry[]
+---@param rx PlenaryAsyncControlChannelRx
+---@param start_index integer?
+---@return boolean?
+function Finder:process_channel(process_result, entries, rx, start_index)
+  local index = #entries > 0 and entries[#entries].index or start_index or 0
+  local count = 0
+  while true do
+    local entry = rx.recv()
+    if not entry then
+      break
+    elseif not self.seen[entry.filename] then
+      self.seen[entry.filename] = true
+      index = index + 1
+      entry.index = index
+      table.insert(entries, entry)
+      if process_result(entry) then
+        return true
+      end
+    end
+    count = count + 1
+    if count % self.config.chunk_size == 0 then
+      self:reflow_results()
+    end
+  end
 end
 
 ---@param workspace string?
@@ -159,16 +242,22 @@ end
 
 function Finder:close()
   self.closed = true
+  if self.process then
+    self.process:kill(9)
+  end
 end
 
+---@async
+---@return nil
 function Finder:reflow_results()
   local picker = self.state:get()
   if not picker then
     return
   end
+  async.util.scheduler()
   local bufnr = picker.results_bufnr
   local win = picker.results_win
-  if not bufnr or not win then
+  if not bufnr or not win or not vim.api.nvim_buf_is_valid(bufnr) or not vim.api.nvim_win_is_valid(win) then
     return
   end
   picker:clear_extra_rows(bufnr)
@@ -178,7 +267,6 @@ function Finder:reflow_results()
       return
     end
     local worst_line = picker:get_row(manager:num_results())
-    ---@type WinInfo
     local wininfo = vim.fn.getwininfo(win)[1]
     local bottom = vim.api.nvim_buf_line_count(bufnr)
     if not self.reflowed or worst_line > wininfo.botline then
