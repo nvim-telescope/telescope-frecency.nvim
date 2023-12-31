@@ -189,6 +189,8 @@ function Finder:find(_, process_result, process_complete)
     end
     self.need_scan_db = false
   end
+  -- HACK: This is needed for heavy workspaces to show up entries immediately.
+  async.util.scheduler()
   if self:process_table(process_result, self.scanned_entries) then
     return
   end
@@ -219,6 +221,8 @@ end
 ---@param start_index integer?
 ---@return boolean?
 function Finder:process_channel(process_result, entries, rx, start_index)
+  -- HACK: This is needed for small workspaces that it shows up entries fast.
+  async.util.sleep(self.config.sleep_interval)
   local index = #entries > 0 and entries[#entries].index or start_index or 0
   local count = 0
   while true do
