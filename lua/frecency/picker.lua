@@ -105,7 +105,7 @@ function Picker:start(opts)
     prompt_title = "Frecency",
     finder = finder,
     previewer = config_values.file_previewer(opts),
-    sorter = sorters.get_substr_matcher(),
+    sorter = require "frecency.sorter",
     on_input_filter_cb = self:on_input_filter_cb(opts),
     attach_mappings = function(prompt_bufnr)
       return self:attach_mappings(prompt_bufnr)
