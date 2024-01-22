@@ -155,10 +155,24 @@ available tags.
 
 See [default configuration](https://github.com/nvim-telescope/telescope.nvim#telescope-defaults) for full details on configuring Telescope.
 
+- `auto_validate`  (default: `true`)
+
+  If `true`, it removes stale entries count over than `db_validate_threshold`. See
+  the note for [DB maintenance](#maintainance)
+
 - `db_root` (default: `vim.fn.stdpath "data"`)
 
   Path to parent directory of custom database location. Defaults to
   `$XDG_DATA_HOME/nvim` if unset.
+
+- `db_safe_mode` (default: `true`)
+
+  If `true`, it shows confirmation dialog by `vim.ui.select()` before validating
+  DB. See the note for [DB maintenance](#maintainance).
+
+- `db_validate_threshold` (default: `10`)
+
+  It will removes over than this count in validating DB.
 
 - `default_workspace` (default: `nil`)
 
@@ -169,6 +183,10 @@ See [default configuration](https://github.com/nvim-telescope/telescope.nvim#tel
 - `disable_devicons` (default: `false`)
 
   Disable devicons (if available)
+
+- `filter_delimiter` (default: `":"`)
+
+  Delimiters to indicate the filter like `:CWD:`.
 
 - `ignore_patterns` (default: `{ "*.git/*", "*/tmp/*", "term://*" }`)
 
