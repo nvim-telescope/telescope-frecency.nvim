@@ -163,9 +163,9 @@ function Picker:default_path_display(opts, path)
   local filename = Path:new(path):make_relative(opts.cwd)
   if not self.workspace then
     if vim.startswith(filename, self.fs.os_homedir) then
-      filename = "~/" .. self.fs:relative_from_home(filename)
+      filename = "~" .. Path.path.sep .. self.fs:relative_from_home(filename)
     elseif filename ~= path then
-      filename = "./" .. filename
+      filename = "." .. Path.path.sep .. filename
     end
   end
   return filename
