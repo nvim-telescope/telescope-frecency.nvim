@@ -7,6 +7,7 @@ local Picker = require "frecency.picker"
 local Recency = require "frecency.recency"
 local WebDevicons = require "frecency.web_devicons"
 local sqlite_module = require "frecency.sqlite"
+local os_util = require "frecency.os_util"
 local log = require "plenary.log"
 
 ---@class Frecency
