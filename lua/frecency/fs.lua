@@ -66,6 +66,22 @@ function FS:relative_from_home(path)
   return Path:new(path):make_relative(self.os_homedir)
 end
 
+---@type table<string,string>
+local with_sep = {}
+
+---@param path string
+---@param base string?
+---@return boolean
+function FS:starts_with(path, base)
+  if not base then
+    return true
+  end
+  if not with_sep[base] then
+    with_sep[base] = base .. (base:sub(#base) == Path.path.sep and "" or Path.path.sep)
+  end
+  return path:find(with_sep[base], 1, true) == 1
+end
+
 ---@private
 ---@param path string
 ---@return boolean
