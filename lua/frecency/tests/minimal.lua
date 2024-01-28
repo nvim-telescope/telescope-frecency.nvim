@@ -4,10 +4,6 @@ end
 if not vim.env.TELESCOPE_PATH then
   error "set $TELESCOPE_PATH to find telescope.nvim"
 end
-if not vim.env.SQLITE_PATH then
-  error "set $SQLITE_PATH to find telescope.nvim"
-end
 vim.opt.runtimepath:append(vim.env.PLENARY_PATH)
 vim.opt.runtimepath:append(vim.env.TELESCOPE_PATH)
-vim.opt.runtimepath:append(vim.env.SQLITE_PATH)
 vim.cmd.runtime "plugin/plenary.vim"
