@@ -115,7 +115,7 @@ function Native:get_entries(workspace, datetime)
   local now = self:now(datetime)
   local items = {}
   for path, record in pairs(self.table.records) do
-    if not workspace or path:find(workspace .. "/", 1, true) then
+    if self.fs:starts_with(path, workspace) then
       table.insert(items, {
         path = path,
         count = record.count,

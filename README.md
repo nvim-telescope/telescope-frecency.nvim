@@ -188,7 +188,9 @@ See [default configuration](https://github.com/nvim-telescope/telescope.nvim#tel
 
   Delimiters to indicate the filter like `:CWD:`.
 
-- `ignore_patterns` (default: `{ "*.git/*", "*/tmp/*", "term://*" }`)
+- `ignore_patterns`
+  (default: for non-Windows → `{ "*.git/*", "*/tmp/*", "term://*" }`,
+  for Windows → `{ [[*.git\*]], [[*\tmp\*]], "term://*" }`)
 
   Patterns in this table control which files are indexed (and subsequently
   which you'll see in the finder results).

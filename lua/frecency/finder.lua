@@ -1,3 +1,4 @@
+local os_util = require "frecency.os_util"
 local Job = require "plenary.job"
 local async = require "plenary.async" --[[@as PlenaryAsync]]
 local log = require "plenary.log"
@@ -88,6 +89,7 @@ function Finder:start(datetime)
     -- NOTE: return to the main loop to show the main window
     async.util.scheduler()
     for _, file in ipairs(self:get_results(self.path, datetime)) do
+      file.path = os_util.normalize_sep(file.path)
       local entry = self.entry_maker(file)
       self.tx.send(entry)
     end
@@ -107,7 +109,7 @@ function Finder:scan_dir_cmd(cmd)
     if not self.closed and not err and chunk then
       for name in chunk:gmatch "[^\n]+" do
         local cleaned = name:gsub("^%./", "")
-        local fullpath = self.fs.joinpath(self.path, cleaned)
+        local fullpath = os_util.join_path(self.path, cleaned)
         local entry = self.entry_maker { id = 0, count = 0, path = fullpath, score = 0 }
         self.scan_tx.send(entry)
       end
@@ -163,7 +165,7 @@ function Finder:scan_dir_lua()
     if self.closed then
       break
     end
-    local fullpath = self.fs.joinpath(self.path, name)
+    local fullpath = os_util.join_path(self.path, name)
     local entry = self.entry_maker { id = 0, count = 0, path = fullpath, score = 0 }
     self.scan_tx.send(entry)
     count = count + 1

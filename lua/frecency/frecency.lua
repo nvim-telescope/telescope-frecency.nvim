@@ -7,6 +7,7 @@ local Picker = require "frecency.picker"
 local Recency = require "frecency.recency"
 local WebDevicons = require "frecency.web_devicons"
 local sqlite_module = require "frecency.sqlite"
+local os_util = require "frecency.os_util"
 local log = require "plenary.log"
 
 ---@class Frecency
@@ -49,7 +50,8 @@ Frecency.new = function(opts)
     default_workspace = nil,
     disable_devicons = false,
     filter_delimiter = ":",
-    ignore_patterns = { "*.git/*", "*/tmp/*", "term://*" },
+    ignore_patterns = os_util.is_windows and { [[*.git\*]], [[*\tmp\*]], "term://*" }
+      or { "*.git/*", "*/tmp/*", "term://*" },
     max_timestamps = 10,
     show_filter_column = true,
     show_scores = false,
