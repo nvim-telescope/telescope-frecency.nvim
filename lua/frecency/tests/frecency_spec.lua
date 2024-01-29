@@ -1,3 +1,7 @@
+-- HACK: This is needed because plenary.test_harness resets &rtp.
+-- https://github.com/nvim-lua/plenary.nvim/blob/663246936325062427597964d81d30eaa42ab1e4/lua/plenary/test_harness.lua#L86-L86
+vim.opt.runtimepath:append(vim.env.TELESCOPE_PATH)
+
 ---@diagnostic disable: invisible, undefined-field
 local Frecency = require "frecency.frecency"
 local Picker = require "frecency.picker"
@@ -11,7 +15,7 @@ local Path = require "plenary.path"
 local function with_files(files, callback)
   local dir, close = util.make_tree(files)
   log.debug { db_root = dir.filename }
-  local frecency = Frecency.new { db_root = dir.filename}
+  local frecency = Frecency.new { db_root = dir.filename }
   frecency.picker = Picker.new(
     frecency.database,
     frecency.entry_maker,
@@ -228,35 +232,32 @@ describe("frecency", function()
 
     describe("when with not force", function()
       describe("when files are unlinked but it is less than threshold", function()
-        with_files(
-          { "hoge1.txt", "hoge2.txt", "hoge3.txt", "hoge4.txt", "hoge5.txt" },
-          function(frecency, finder, dir)
-            local register = make_register(frecency, dir)
-            register("hoge1.txt", "2023-07-29T00:00:00+09:00")
-            register("hoge2.txt", "2023-07-29T00:01:00+09:00")
-            register("hoge3.txt", "2023-07-29T00:02:00+09:00")
-            register("hoge4.txt", "2023-07-29T00:03:00+09:00")
-            register("hoge5.txt", "2023-07-29T00:04:00+09:00")
-            frecency.config.db_validate_threshold = 3
-            dir:joinpath("hoge1.txt"):rm()
-            dir:joinpath("hoge2.txt"):rm()
-            frecency:validate_database()
+        with_files({ "hoge1.txt", "hoge2.txt", "hoge3.txt", "hoge4.txt", "hoge5.txt" }, function(frecency, finder, dir)
+          local register = make_register(frecency, dir)
+          register("hoge1.txt", "2023-07-29T00:00:00+09:00")
+          register("hoge2.txt", "2023-07-29T00:01:00+09:00")
+          register("hoge3.txt", "2023-07-29T00:02:00+09:00")
+          register("hoge4.txt", "2023-07-29T00:03:00+09:00")
+          register("hoge5.txt", "2023-07-29T00:04:00+09:00")
+          frecency.config.db_validate_threshold = 3
+          dir:joinpath("hoge1.txt"):rm()
+          dir:joinpath("hoge2.txt"):rm()
+          frecency:validate_database()
 
-            it("removes no entries", function()
-              local results = finder:get_results(nil, "2023-07-29T02:00:00+09:00")
-              table.sort(results, function(a, b)
-                return a.path < b.path
-              end)
-              assert.are.same({
-                { count = 1, path = filepath(dir, "hoge1.txt"), score = 10 },
-                { count = 1, path = filepath(dir, "hoge2.txt"), score = 10 },
-                { count = 1, path = filepath(dir, "hoge3.txt"), score = 10 },
-                { count = 1, path = filepath(dir, "hoge4.txt"), score = 10 },
-                { count = 1, path = filepath(dir, "hoge5.txt"), score = 10 },
-              }, results)
+          it("removes no entries", function()
+            local results = finder:get_results(nil, "2023-07-29T02:00:00+09:00")
+            table.sort(results, function(a, b)
+              return a.path < b.path
             end)
-          end
-        )
+            assert.are.same({
+              { count = 1, path = filepath(dir, "hoge1.txt"), score = 10 },
+              { count = 1, path = filepath(dir, "hoge2.txt"), score = 10 },
+              { count = 1, path = filepath(dir, "hoge3.txt"), score = 10 },
+              { count = 1, path = filepath(dir, "hoge4.txt"), score = 10 },
+              { count = 1, path = filepath(dir, "hoge5.txt"), score = 10 },
+            }, results)
+          end)
+        end)
       end)
 
       describe("when files are unlinked and it is more than threshold", function()
