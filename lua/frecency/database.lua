@@ -204,6 +204,8 @@ function Database:save()
   log.debug(("save() takes %f seconds"):format(os.clock() - start))
 end
 
+---@async
+---@param tbl FrecencyDatabaseTable
 function Database:raw_save(tbl)
   local f = assert(load("return " .. vim.inspect(tbl)))
   local data = string.dump(f)
