@@ -81,19 +81,10 @@ directories provided by the language server.
 - [nvim-web-devicons](https://github.com/kyazdani42/nvim-web-devicons) (optional)
 - [ripgrep](https://github.com/BurntSushi/ripgrep) or [fd](https://github.com/sharkdp/fd) (optional)
 
-**NOTE:** The former version of this plugin has used [SQLite3][] database to
-store timestamps and file records. But the current build uses Lua native code
-to store them, so you can now remove [sqlite.lua][] from dependencies. See
-[*Remove dependency for sqlite.lua*][remove-sqlite] for the detail.
-
 **NOTE:** `ripgrep` or `fd` will be used to list up workspace files. They are
 extremely faster than the native Lua logic. If you don't have them, it
 fallbacks to Lua code automatically. See the detail for `workspace_scan_cmd`
 option.
-
-[SQLite3]: https://www.sqlite.org/index.html
-[sqlite.lua]: https://github.com/kkharji/sqlite.lua
-[remove-sqlite]: #user-content-remove-dependency-for-sqlitelua
 
 ## Installation
 
@@ -224,11 +215,6 @@ See [default configuration](https://github.com/nvim-telescope/telescope.nvim#tel
 
   Determines if non-indexed files are included in workspace filter results.
 
-- `use_sqlite` (default: `false`)
-
-  Use [sqlite.lua][] with `true` or native code with `false`. See [*Remove
-  dependency for sqlite.lua*][remove-sqlite] for the detail.
-
 - `workspace_scan_cmd` (default: `nil`)
 
   This option can be set values as `"LUA"|string[]|nil`. With the default
@@ -280,7 +266,7 @@ telescope.setup {
 
 The default location for the database is `$XDG_DATA_HOME/nvim` (eg
 `~/.local/share/nvim/` on linux). This can be configured with the `db_root`
-config option.
+config option. The filename for the database is `file_frecency.bin`.
 
 ### Maintainance
 
@@ -318,21 +304,22 @@ not remove the file itself, only from DB.
 :FrecencyDelete /full/path/to/the/file
 ```
 
-### Remove dependency for [sqlite.lua][]
+### Note about the compatibility for the former version.
 
-The former version of this plugin has used SQLite3 library to store data. When
-you upgrade from such version, Neovim will silently migrate DB and inform that
-you can remove `sqlite.lua` from dependencies.
+The former version of this plugin has used SQLite3 library to store data. [#172][]
+has removed the whole code for that. If you prefer the old SQLite database,
+you should lock the version to [a3e818d][] with your favorite plugin manager.
 
-| made by default | made by `sqlite.lua` |
-|--|--|
-| `~/.local/share/nvim/file_frecency.bin` | `~/.local/share/nvim/file_frecency.sqlite3` |
+[#172]: https://github.com/nvim-telescope/telescope-frecency.nvim/pull/172
+[a3e818d]: https://github.com/nvim-telescope/telescope-frecency.nvim/commit/a3e818d001baad9ee2f6800d3bbc71c4275364ae
 
-The DB file will be migrated into a filename above, and old file (SQLite3
-version) will still remain. If you still want to use SQLite3 version, set
-`use_sqlite = true`.
-
-Also you can explicitly migrate DB by calling `:FrecencyMigrateDB` command.
+```lua
+-- example for lazy.nvim
+{
+  "nvim-telescope/telescope-frecency.nvim",
+  commit = "a3e818d001baad9ee2f6800d3bbc71c4275364ae",
+}
+```
 
 ## Highlight Groups
 
