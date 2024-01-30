@@ -1,12 +1,9 @@
-local Sqlite = require "frecency.database.sqlite"
-local Native = require "frecency.database.native"
+local Database = require "frecency.database"
 local EntryMaker = require "frecency.entry_maker"
 local FS = require "frecency.fs"
-local Migrator = require "frecency.migrator"
 local Picker = require "frecency.picker"
 local Recency = require "frecency.recency"
 local WebDevicons = require "frecency.web_devicons"
-local sqlite_module = require "frecency.sqlite"
 local os_util = require "frecency.os_util"
 local log = require "plenary.log"
 
@@ -16,7 +13,6 @@ local log = require "plenary.log"
 ---@field private database FrecencyDatabase
 ---@field private entry_maker FrecencyEntryMaker
 ---@field private fs FrecencyFS
----@field private migrator FrecencyMigrator
 ---@field private picker FrecencyPicker
 ---@field private recency FrecencyRecency
 local Frecency = {}
@@ -34,7 +30,6 @@ local Frecency = {}
 ---@field show_filter_column boolean|string[]|nil default: true
 ---@field show_scores boolean? default: false
 ---@field show_unindexed boolean? default: true
----@field use_sqlite boolean? default: false
 ---@field workspace_scan_cmd "LUA"|string[]|nil default: nil
 ---@field workspaces table<string, string>? default: {}
 
@@ -56,23 +51,12 @@ Frecency.new = function(opts)
     show_filter_column = true,
     show_scores = false,
     show_unindexed = true,
-    use_sqlite = false,
     workspace_scan_cmd = nil,
     workspaces = {},
   }, opts or {})
   local self = setmetatable({ buf_registered = {}, config = config }, { __index = Frecency })--[[@as Frecency]]
   self.fs = FS.new { ignore_patterns = config.ignore_patterns }
 
-  local Database
-  if not self.config.use_sqlite then
-    Database = Native
-  elseif not sqlite_module.can_use then
-    self:warn "use_sqlite = true, but sqlite module can not be found. It fallbacks to native code."
-    Database = Native
-  else
-    self:warn "SQLite mode is deprecated."
-    Database = Sqlite
-  end
   self.database = Database.new(self.fs, { root = config.db_root })
   local web_devicons = WebDevicons.new(not config.disable_devicons)
   self.entry_maker = EntryMaker.new(self.fs, web_devicons, {
@@ -81,7 +65,6 @@ Frecency.new = function(opts)
   })
   local max_count = config.max_timestamps > 0 and config.max_timestamps or 10
   self.recency = Recency.new { max_count = max_count }
-  self.migrator = Migrator.new(self.fs, self.recency, self.config.db_root)
   return self
 end
 
@@ -103,10 +86,6 @@ function Frecency:setup()
   if self.config.auto_validate then
     self:validate_database()
   end
-
-  vim.api.nvim_create_user_command("FrecencyMigrateDB", function()
-    self:migrate_database()
-  end, { desc = "Migrate DB telescope-frecency to native code" })
 
   vim.api.nvim_create_user_command("FrecencyDelete", function(info)
     local path_string = info.args == "" and "%:p" or info.args
@@ -157,17 +136,10 @@ end
 ---@private
 ---@return nil
 function Frecency:assert_db_entries()
-  if self.database:has_entry() then
-    return
-  elseif not self.config.use_sqlite and sqlite_module.can_use then
-    local sqlite = Sqlite.new(self.fs, { root = self.config.db_root })
-    if sqlite:has_entry() then
-      self:migrate_database(false, true)
-      return
-    end
+  if not self.database:has_entry() then
+    self.database:insert_files(vim.v.oldfiles)
+    self:notify("Imported %d entries from oldfiles.", #vim.v.oldfiles)
   end
-  self.database:insert_files(vim.v.oldfiles)
-  self:notify("Imported %d entries from oldfiles.", #vim.v.oldfiles)
 end
 
 ---@private
@@ -211,45 +183,6 @@ function Frecency:register(bufnr, datetime)
   end
   self.database:update(path, self.recency.config.max_count, datetime)
   self.buf_registered[bufnr] = true
-end
-
----@param to_sqlite boolean?
----@param silently boolean?
----@return nil
-function Frecency:migrate_database(to_sqlite, silently)
-  local function migrate()
-    if not sqlite_module.can_use then
-      self:error "sqlite.lua is unavailable"
-    elseif to_sqlite then
-      self.migrator:to_sqlite()
-      self:notify "Migration is finished successfully."
-    else
-      self.migrator:to_v1()
-      self:notify "Migration is finished successfully. You can remove sqlite.lua from dependencies."
-    end
-  end
-
-  if silently then
-    migrate()
-    return
-  end
-
-  local prompt = to_sqlite and "Migrate the DB into SQLite from native code?"
-    or "Migrate the DB into native code from SQLite?"
-  vim.ui.select({ "y", "n" }, {
-    prompt = prompt,
-    ---@param item "y"|"n"
-    ---@return string
-    format_item = function(item)
-      return item == "y" and "Yes, Migrate it." or "No. Do nothing."
-    end,
-  }, function(item)
-    if item == "y" then
-      migrate()
-    else
-      self:notify "Migration aborted"
-    end
-  end)
 end
 
 ---@param path string
