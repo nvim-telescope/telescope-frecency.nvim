@@ -12,7 +12,6 @@ local Path = require "plenary.path" --[[@as PlenaryPath]]
 ---@field path string?
 ---@field workspace string?
 
----@async
 ---@class FrecencyDatabaseEntry
 ---@field ages number[]
 ---@field count integer
