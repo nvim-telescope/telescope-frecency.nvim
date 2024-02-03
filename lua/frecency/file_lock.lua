@@ -8,9 +8,9 @@ local log = require "plenary.log"
 local FileLock = {}
 
 ---@class FrecencyFileLockConfig
----@field retry integer default: 5
----@field unlink_retry integer default: 5
----@field interval integer default: 500
+---@field retry integer? default: 5
+---@field unlink_retry integer? default: 5
+---@field interval integer? default: 500
 
 ---@param path string
 ---@param opts FrecencyFileLockConfig?
