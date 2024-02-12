@@ -65,7 +65,7 @@ available by pressing `<Tab>` after the first `:` character.
 
 When a filter is applied, results are reduced to entries whose path is a
 descendant of the workspace directory. The indexed results are optionally
-augmented with a listing of _all_ files found in a recurssive search of the
+augmented with a listing of _all_ files found in a recursive search of the
 workspace directory. Non-indexed files are given a score of zero and appear
 below the 'frecent' entries. When a non-indexed file is opened, it gains a
 score value and is available in future 'frecent' search results.
@@ -149,7 +149,7 @@ See [default configuration](https://github.com/nvim-telescope/telescope.nvim#tel
 - `auto_validate`  (default: `true`)
 
   If `true`, it removes stale entries count over than `db_validate_threshold`. See
-  the note for [DB maintenance](#maintainance)
+  the note for [DB maintenance](#maintenance)
 
 - `db_root` (default: `vim.fn.stdpath "data"`)
 
@@ -159,7 +159,7 @@ See [default configuration](https://github.com/nvim-telescope/telescope.nvim#tel
 - `db_safe_mode` (default: `true`)
 
   If `true`, it shows confirmation dialog by `vim.ui.select()` before validating
-  DB. See the note for [DB maintenance](#maintainance).
+  DB. See the note for [DB maintenance](#maintenance).
 
 - `db_validate_threshold` (default: `10`)
 
@@ -268,7 +268,7 @@ The default location for the database is `$XDG_DATA_HOME/nvim` (eg
 `~/.local/share/nvim/` on linux). This can be configured with the `db_root`
 config option. The filename for the database is `file_frecency.bin`.
 
-### Maintainance
+### Maintenance
 
 By default, frecency will prune files that no longer exist from the database.
 In certain workflows, switching branches in a repository, that behaviour might
