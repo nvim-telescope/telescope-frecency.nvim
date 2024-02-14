@@ -79,6 +79,7 @@ end
 ---@param path string
 ---@param max_count integer
 ---@param datetime string?
+---@return nil
 function Sync:update(path, max_count, datetime)
   local record = self.table.records[path] or { count = 0, timestamps = {} }
   record.count = record.count + 1

@@ -44,8 +44,9 @@ function PlenaryAsync.run(f) end
 ---@field channel PlenaryAsyncControlChannel
 
 ---@class PlenaryAsyncControlChannel
----@field mpsc fun(): PlenaryAsyncControlChannelTx, PlenaryAsyncControlChannelRx
 ---@field counter fun(): PlenaryAsyncControlChannelTx, PlenaryAsyncControlChannelRx
+---@field mpsc fun(): PlenaryAsyncControlChannelTx, PlenaryAsyncControlChannelRx
+---@field oneshot fun(): PlenaryAsyncControlChannelTx, PlenaryAsyncControlChannelRx
 
 ---@class PlenaryAsyncControlChannelTx
 ---@field send fun(entry: any?): nil
