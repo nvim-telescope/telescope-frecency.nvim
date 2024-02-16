@@ -25,6 +25,7 @@ local Frecency = {}
 ---@field default_workspace string? default: nil
 ---@field disable_devicons boolean? default: false
 ---@field filter_delimiter string? default: ":"
+---@field hide_current_buffer boolean default: false
 ---@field ignore_patterns string[]? default: { "*.git/*", "*/tmp/*", "term://*" }
 ---@field max_timestamps integer? default: 10
 ---@field show_filter_column boolean|string[]|nil default: true
@@ -45,6 +46,7 @@ Frecency.new = function(opts)
     default_workspace = nil,
     disable_devicons = false,
     filter_delimiter = ":",
+    hide_current_buffer = false,
     ignore_patterns = os_util.is_windows and { [[*.git\*]], [[*\tmp\*]], "term://*" }
       or { "*.git/*", "*/tmp/*", "term://*" },
     max_timestamps = 10,
@@ -113,10 +115,15 @@ function Frecency:start(opts)
   if opts.cwd then
     opts.cwd = vim.fn.expand(opts.cwd)
   end
+  local ignore_filenames
+  if opts.hide_current_buffer or self.config.hide_current_buffer then
+    ignore_filenames = { vim.api.nvim_buf_get_name(0) }
+  end
   self.picker = Picker.new(self.database, self.entry_maker, self.fs, self.recency, {
     default_workspace_tag = self.config.default_workspace,
     editing_bufnr = vim.api.nvim_get_current_buf(),
     filter_delimiter = self.config.filter_delimiter,
+    ignore_filenames = ignore_filenames,
     initial_workspace_tag = opts.workspace,
     show_unindexed = self.config.show_unindexed,
     workspace_scan_cmd = self.config.workspace_scan_cmd,

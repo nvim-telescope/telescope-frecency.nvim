@@ -26,6 +26,7 @@ local Finder = {}
 
 ---@class FrecencyFinderConfig
 ---@field chunk_size integer? default: 1000
+---@field ignore_filenames string[]? default: {}
 ---@field sleep_interval integer? default: 50
 ---@field workspace_scan_cmd "LUA"|string[]|nil default: nil
 
@@ -41,7 +42,7 @@ local Finder = {}
 Finder.new = function(database, entry_maker, fs, need_scandir, path, recency, state, config)
   local tx, rx = async.control.channel.mpsc()
   local scan_tx, scan_rx = async.control.channel.mpsc()
-  return setmetatable({
+  local self = setmetatable({
     config = vim.tbl_extend("force", { chunk_size = 1000, sleep_interval = 50 }, config or {}),
     closed = false,
     database = database,
@@ -67,6 +68,12 @@ Finder.new = function(database, entry_maker, fs, need_scandir, path, recency, st
       return self:find(...)
     end,
   })
+  if self.config.ignore_filenames then
+    for _, name in ipairs(self.config.ignore_filenames or {}) do
+      self.seen[name] = true
+    end
+  end
+  return self
 end
 
 ---@param datetime string?

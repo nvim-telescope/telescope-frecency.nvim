@@ -26,6 +26,7 @@ local Picker = {}
 ---@field default_workspace_tag string?
 ---@field editing_bufnr integer
 ---@field filter_delimiter string
+---@field ignore_filenames string[]?
 ---@field initial_workspace_tag string?
 ---@field show_unindexed boolean
 ---@field workspace_scan_cmd "LUA"|string[]|nil
@@ -61,6 +62,7 @@ end
 
 ---@class FrecencyPickerOptions
 ---@field cwd string
+---@field hide_current_buffer boolean?
 ---@field path_display
 ---| "hidden"
 ---| "tail"
@@ -86,7 +88,7 @@ function Picker:finder(opts, workspace, workspace_tag)
     workspace,
     self.recency,
     self.state,
-    { workspace_scan_cmd = self.config.workspace_scan_cmd }
+    { ignore_filenames = self.config.ignore_filenames, workspace_scan_cmd = self.config.workspace_scan_cmd }
   )
 end
 
