@@ -175,6 +175,10 @@ See [default configuration](https://github.com/nvim-telescope/telescope.nvim#tel
 
   Disable devicons (if available)
 
+- `hide_current_buffer` (default: `false`)
+
+  If `true`, it does not show the current buffer in candidates.
+
 - `filter_delimiter` (default: `":"`)
 
   Delimiters to indicate the filter like `:CWD:`.
