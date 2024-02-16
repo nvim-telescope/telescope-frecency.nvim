@@ -53,7 +53,7 @@ end
 
 ---@param data any
 ---@return nil
-function Work:run_async(data)
+function Work:void(data)
   async.void(function()
     self:run(data)
   end)()

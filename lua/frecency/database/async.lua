@@ -7,7 +7,6 @@ local async = require "plenary.async" --[[@as PlenaryAsync]]
 
 ---@class FrecencyAsyncDatabase: FrecencyDatabase
 ---@field work FrecencyWork
----@field ready boolean
 local Async = {}
 
 ---@param fs FrecencyFS
@@ -17,23 +16,19 @@ Async.new = function(fs, config)
   local self = setmetatable({
     config = config,
     fs = fs,
-    ready = false,
-    table = { version = "v1", records = {} },
+    table = nil, -- NOTE: will be set by another coroutine
     version = "v1",
   }, {
     __index = function(self, key)
       if key == "table" then
-        if not self.ready then
+        if not self.table then
           wait(function()
-            return self.ready
+            return not not self.table
           end)
         end
-        return self[key]
-      elseif self[key] then
-        return self[key]
-      else
-        return Async[key]
+        return self.table
       end
+      return self[key] or Async[key]
     end,
   })
   self.filename = Path.new(self.config.root, "file_frecency.bin").filename
@@ -45,6 +40,7 @@ Async.new = function(fs, config)
       rx.last()
       local err, result = self.work:run { command = "load", filename = self.filename, version = self.version }
       if not err then
+        assert(not not result, "no error found, but result is nil")
         self.table = result --[[@as FrecencyDatabaseTable]]
         local stat
         err, stat = async.uv.fs_stat(self.filename)
@@ -57,8 +53,8 @@ Async.new = function(fs, config)
   async.void(function()
     local err, result = self.work:run { command = "load", filename = self.filename, version = self.version }
     if not err then
+      assert(not not result, "no error found, but result is nil")
       self.table = result --[[@as FrecencyDatabaseTable]]
-      self.ready = true
       local stat
       err, stat = async.uv.fs_stat(self.filename)
       if not err then
@@ -69,26 +65,14 @@ Async.new = function(fs, config)
   return self
 end
 
----@private
----@return nil
-function Async:wait_ready()
-  if not self.ready then
-    wait(function()
-      return self.ready
-    end)
-  end
-end
-
 ---@return boolean
 function Async:has_entry()
-  self:wait_ready()
   return not vim.tbl_isempty(self.table.records)
 end
 
 ---@param paths string[]
 ---@return nil
 function Async:insert_files(paths)
-  self:wait_ready()
   if #paths == 0 then
     return
   end
@@ -100,7 +84,6 @@ end
 
 ---@return string[]
 function Async:unlink_entries()
-  self:wait_ready()
   local paths = {}
   for file in pairs(self.table.records) do
     if not self.fs:is_valid_path(file) then
@@ -112,7 +95,6 @@ end
 
 ---@param paths string[]
 function Async:remove_files(paths)
-  self:wait_ready()
   for _, file in ipairs(paths) do
     self.table.records[file] = nil
   end
@@ -124,7 +106,6 @@ end
 ---@param datetime string?
 ---@return nil
 function Async:update(path, max_count, datetime)
-  self:wait_ready()
   local record = self.table.records[path] or { count = 0, timestamps = {} }
   record.count = record.count + 1
   local now = self:now(datetime)
@@ -144,7 +125,6 @@ end
 ---@param datetime string?
 ---@return FrecencyDatabaseEntry[]
 function Async:get_entries(workspace, datetime)
-  self:wait_ready()
   local now = self:now(datetime)
   local items = {}
   for path, record in pairs(self.table.records) do
@@ -164,7 +144,6 @@ end
 ---@param path string
 ---@return boolean
 function Async:remove_entry(path)
-  self:wait_ready()
   if not self.table.records[path] then
     return false
   end
