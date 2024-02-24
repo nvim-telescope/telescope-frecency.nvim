@@ -1,11 +1,11 @@
 local State = require "frecency.state"
 local Finder = require "frecency.finder"
+local sorters = require "frecency.sorters"
 local log = require "plenary.log"
 local Path = require "plenary.path" --[[@as PlenaryPath]]
 local actions = require "telescope.actions"
 local config_values = require("telescope.config").values
 local pickers = require "telescope.pickers"
-local sorters = require "telescope.sorters"
 local utils = require "telescope.utils" --[[@as TelescopeUtils]]
 local uv = vim.loop or vim.uv
 
@@ -110,7 +110,7 @@ function Picker:start(opts)
     prompt_title = "Frecency",
     finder = finder,
     previewer = config_values.file_previewer(opts),
-    sorter = sorters.get_substr_matcher(),
+    sorter = sorters.get_frecency_matcher(),
     on_input_filter_cb = self:on_input_filter_cb(opts),
     attach_mappings = function(prompt_bufnr)
       return self:attach_mappings(prompt_bufnr)
