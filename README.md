@@ -142,6 +142,20 @@ Filter tags are applied by typing the `:tag:` name (adding surrounding colons)
 in the finder query. Entering `:<Tab>` will trigger omnicompletion for
 available tags.
 
+### Dealing with upper case letters
+
+In default, the sorter always ignores upper case letters in your input string.
+But when [`'smartcase'`][smartcase] is ON and input string includes one upper case letter at
+least, it matches against exact the same as you input.
+
+| input string | `'smartcase'` is ON          | `'smartcase'` is OFF        |
+|--------------|-----------------------------|-----------------------------|
+| `abc`        | matches `abc`, `ABC`, `aBc` | matches `abc`, `ABC`, `aBc` |
+| `aBc`        | matches `aBc`               | no match                    |
+| `ABC`        | matches `ABC`               | no match                    |
+
+[smartcase]: https://neovim.io/doc/user/options.html#'smartcase'
+
 ## Configuration
 
 See [default configuration](https://github.com/nvim-telescope/telescope.nvim#telescope-defaults) for full details on configuring Telescope.
