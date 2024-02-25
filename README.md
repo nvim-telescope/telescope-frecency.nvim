@@ -77,7 +77,7 @@ directories provided by the language server.
 
 ## Requirements
 
-- [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) (required)
+- [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) **(required)**
 - [nvim-web-devicons](https://github.com/kyazdani42/nvim-web-devicons) (optional)
 - [ripgrep](https://github.com/BurntSushi/ripgrep) or [fd](https://github.com/sharkdp/fd) (optional)
 
