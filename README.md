@@ -77,7 +77,7 @@ directories provided by the language server.
 
 ## Requirements
 
-- [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) (required)
+- [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) **(required)**
 - [nvim-web-devicons](https://github.com/kyazdani42/nvim-web-devicons) (optional)
 - [ripgrep](https://github.com/BurntSushi/ripgrep) or [fd](https://github.com/sharkdp/fd) (optional)
 
@@ -141,6 +141,20 @@ vim.keymap.set("n", "<leader><leader>", "<Cmd>Telescope frecency workspace=CWD<C
 Filter tags are applied by typing the `:tag:` name (adding surrounding colons)
 in the finder query. Entering `:<Tab>` will trigger omnicompletion for
 available tags.
+
+### Dealing with upper case letters
+
+In default, the sorter always ignores upper case letters in your input string.
+But when [`'smartcase'`][smartcase] is ON and input string includes one upper case letter at
+least, it matches against exact the same as you input.
+
+| input string | `'smartcase'` is ON          | `'smartcase'` is OFF        |
+|--------------|-----------------------------|-----------------------------|
+| `abc`        | matches `abc`, `ABC`, `aBc` | matches `abc`, `ABC`, `aBc` |
+| `aBc`        | matches `aBc`               | no match                    |
+| `ABC`        | matches `ABC`               | no match                    |
+
+[smartcase]: https://neovim.io/doc/user/options.html#'smartcase'
 
 ## Configuration
 
