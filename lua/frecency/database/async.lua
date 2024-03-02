@@ -1,7 +1,6 @@
 local Work = require "frecency.work"
-local wait = require "frececy.wait"
+local wait = require "frecency.wait"
 local watcher = require "frecency.watcher"
-local worker = require "frecency.database.async.worker"
 local Path = require "plenary.path" --[[@as PlenaryPath]]
 local async = require "plenary.async" --[[@as PlenaryAsync]]
 
@@ -21,27 +20,28 @@ Async.new = function(fs, config)
   }, {
     __index = function(self, key)
       if key == "table" then
-        if not self.table then
-          wait(function()
-            return not not self.table
+        if not rawget(self, "table") then
+          vim.wait(2000, function()
+            return not not rawget(self, "table")
           end)
         end
-        return self.table
+        return rawget(self, "table")
       end
-      return self[key] or Async[key]
+      return rawget(self, key) or rawget(Async, key)
     end,
   })
   self.filename = Path.new(self.config.root, "file_frecency.bin").filename
-  self.work = Work.new(worker)
+  self.work = Work.new()
   local tx, rx = async.control.channel.counter()
   watcher.watch(self.filename, tx)
   async.void(function()
     while true do
       rx.last()
+      ---@type string?, FrecencyDatabaseTable?
       local err, result = self.work:run { command = "load", filename = self.filename, version = self.version }
       if not err then
         assert(not not result, "no error found, but result is nil")
-        self.table = result --[[@as FrecencyDatabaseTable]]
+        self.table = result
         local stat
         err, stat = async.uv.fs_stat(self.filename)
         if not err then
@@ -51,6 +51,7 @@ Async.new = function(fs, config)
     end
   end)()
   async.void(function()
+    ---@type string?, FrecencyDatabaseTable?
     local err, result = self.work:run { command = "load", filename = self.filename, version = self.version }
     if not err then
       assert(not not result, "no error found, but result is nil")
@@ -79,7 +80,7 @@ function Async:insert_files(paths)
   for _, path in ipairs(paths) do
     self.table.records[path] = { count = 1, timestamps = { 0 } }
   end
-  self.work:run_async { command = "save", filename = self.filename, table = self.table }
+  self.work:void { command = "save", filename = self.filename, table = self.table, version = self.version }
 end
 
 ---@return string[]
@@ -98,7 +99,7 @@ function Async:remove_files(paths)
   for _, file in ipairs(paths) do
     self.table.records[file] = nil
   end
-  self.work:run_async { command = "save", filename = self.filename, table = self.table }
+  self.work:void { command = "save", filename = self.filename, table = self.table, version = self.version }
 end
 
 ---@param path string
@@ -118,7 +119,7 @@ function Async:update(path, max_count, datetime)
     record.timestamps = new_table
   end
   self.table.records[path] = record
-  self.work:run_async { command = "save", filename = self.filename, table = self.table }
+  self.work:void { command = "save", filename = self.filename, table = self.table, version = self.version }
 end
 
 ---@param workspace string?
@@ -148,8 +149,25 @@ function Async:remove_entry(path)
     return false
   end
   self.table.records[path] = nil
-  self.work:run_async { command = "save", filename = self.filename, table = self.table }
+  self.work:void { command = "save", filename = self.filename, table = self.table, version = self.version }
   return true
+end
+
+-- TODO: remove this func
+-- This is a func for testing
+---@private
+---@param datetime string?
+---@return integer
+function Async:now(datetime)
+  if not datetime then
+    return os.time()
+  end
+  local epoch
+  wait(function()
+    local tz_fix = datetime:gsub("+(%d%d):(%d%d)$", "+%1%2")
+    epoch = require("frecency.tests.util").time_piece(tz_fix)
+  end)
+  return epoch
 end
 
 return Async

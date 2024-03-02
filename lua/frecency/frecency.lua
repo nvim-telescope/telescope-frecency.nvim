@@ -1,4 +1,5 @@
-local Database = require "frecency.database.sync"
+-- local Database = require "frecency.database.sync"
+local Database = require "frecency.database.async"
 local EntryMaker = require "frecency.entry_maker"
 local FS = require "frecency.fs"
 local Picker = require "frecency.picker"

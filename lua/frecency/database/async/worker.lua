@@ -1,20 +1,31 @@
 ---@class FrecencyAsyncDatabaseJobData
 ---@field command string
 ---@field filename string
----@field table FrecencyDatabaseTable
+---@field table FrecencyDatabaseTable?
 ---@field version string
 
----@param data FrecencyAsyncDatabaseJobData
----@return string?
----@return FrecencyDatabaseTable?
-return function(data)
+---@param encoded_job string
+---@return string encoded_job
+---@return string? err
+---@return string? encoded_result
+return function(encoded_job)
+  local job = require("string.buffer").decode(encoded_job)
+  print(vim.inspect(job))
+  local data = job.data
+  print "s1"
   local FileLock = require "frecency.file_lock"
+  print "s2"
   local async = require "plenary.async" --[[@as PlenaryAsync]]
-  local wait = require "frececy.wait"
-  local log = require "pleanry.log"
+  print "s3"
+  local wait = require "frecency.wait"
+  print "s4"
+  -- local log = require "pleanry.log"
+  print "s5"
   local file_lock = FileLock.new(data.filename)
+  print "p1"
   if data.command == "load" then
-    local table
+    print "p2"
+    local result
     wait(function()
       local start = os.clock()
       local err, content = file_lock:with(function()
@@ -34,12 +45,12 @@ return function(data)
       if not err then
         local tbl = loadstring(content or "")() --[[@as FrecencyDatabaseTable?]]
         if tbl and tbl.version == data.version then
-          table = tbl
+          result = tbl
         end
       end
-      log.debug(("load() takes %f seconds"):format(os.clock() - start))
+      -- log.debug(("load() takes %f seconds"):format(os.clock() - start))
     end)
-    return nil, table
+    return encoded_job, nil, require("string.buffer").encode(result)
   elseif data.command == "save" then
     local start = os.clock()
     local err = file_lock:with(function()
@@ -52,9 +63,9 @@ return function(data)
       return nil
     end)
     assert(not err, err)
-    log.debug(("save() takes %f seconds"):format(os.clock() - start))
-    return
+    -- log.debug(("save() takes %f seconds"):format(os.clock() - start))
+    return encoded_job
   else
-    error(("unknown command: %s"):format(data.command))
+    return encoded_job, ("unknown command: %s"):format(data.command)
   end
 end

@@ -1,5 +1,5 @@
 local async = require "plenary.async" --[[@as PlenaryAsync]]
-local log = require "plenary.log"
+-- local log = require "plenary.log"
 
 ---@class FrecencyFileLock
 ---@field base string
@@ -36,22 +36,22 @@ function FileLock:get()
     end
     async.util.sleep(self.config.interval)
     if count >= self.config.retry then
-      log.debug(("file_lock get(): retry count reached. try to delete the lock file: %d"):format(count))
+      -- log.debug(("file_lock get(): retry count reached. try to delete the lock file: %d"):format(count))
       err = async.uv.fs_unlink(self.filename)
       if err then
-        log.debug("file_lock get() failed: " .. err)
+        -- log.debug("file_lock get() failed: " .. err)
         unlink_count = unlink_count + 1
         if unlink_count >= self.config.unlink_retry then
-          log.error("file_lock get(): failed to unlink the lock file: " .. err)
+          -- log.error("file_lock get(): failed to unlink the lock file: " .. err)
           return "failed to get lock"
         end
       end
     end
-    log.debug(("file_lock get() retry: %d"):format(count))
+    -- log.debug(("file_lock get() retry: %d"):format(count))
   end
   err = async.uv.fs_close(fd)
   if err then
-    log.debug("file_lock get() failed: " .. err)
+    -- log.debug("file_lock get() failed: " .. err)
     return err
   end
 end
@@ -61,12 +61,12 @@ end
 function FileLock:release()
   local err = async.uv.fs_stat(self.filename)
   if err then
-    log.debug("file_lock release() not found: " .. err)
+    -- log.debug("file_lock release() not found: " .. err)
     return "lock not found"
   end
   err = async.uv.fs_unlink(self.filename)
   if err then
-    log.debug("file_lock release() unlink failed: " .. err)
+    -- log.debug("file_lock release() unlink failed: " .. err)
     return err
   end
 end
