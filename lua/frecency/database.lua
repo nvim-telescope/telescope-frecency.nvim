@@ -19,13 +19,12 @@ local Path = require "plenary.path" --[[@as PlenaryPath]]
 ---@field score number
 
 ---@class FrecencyDatabase
----@field config FrecencyDatabaseConfig
----@field file_lock FrecencyFileLock
----@field filename string
----@field fs FrecencyFS
----@field new fun(fs: FrecencyFS, config: FrecencyDatabaseConfig): FrecencyDatabase
----@field table FrecencyDatabaseTable
----@field version "v1"
+---@field private config FrecencyDatabaseConfig
+---@field private file_lock FrecencyFileLock
+---@field private filename string
+---@field private fs FrecencyFS
+---@field private tbl FrecencyDatabaseTable
+---@field private version "v1"
 local Database = {}
 
 ---@class FrecencyDatabaseTable
@@ -44,7 +43,7 @@ Database.new = function(fs, config)
   local self = setmetatable({
     config = config,
     fs = fs,
-    table = { version = version, records = {} },
+    tbl = { version = version, records = {} },
     version = version,
   }, { __index = Database })
   self.filename = Path.new(self.config.root, "file_frecency.bin").filename
@@ -66,7 +65,7 @@ end
 
 ---@return boolean
 function Database:has_entry()
-  return not vim.tbl_isempty(self.table.records)
+  return not vim.tbl_isempty(self.tbl.records)
 end
 
 ---@param paths string[]
@@ -76,7 +75,7 @@ function Database:insert_files(paths)
     return
   end
   for _, path in ipairs(paths) do
-    self.table.records[path] = { count = 1, timestamps = { 0 } }
+    self.tbl.records[path] = { count = 1, timestamps = { 0 } }
   end
   wait(function()
     self:save()
@@ -86,7 +85,7 @@ end
 ---@return string[]
 function Database:unlinked_entries()
   local paths = {}
-  for file in pairs(self.table.records) do
+  for file in pairs(self.tbl.records) do
     if not self.fs:is_valid_path(file) then
       table.insert(paths, file)
     end
@@ -97,7 +96,7 @@ end
 ---@param paths string[]
 function Database:remove_files(paths)
   for _, file in ipairs(paths) do
-    self.table.records[file] = nil
+    self.tbl.records[file] = nil
   end
   wait(function()
     self:save()
@@ -108,7 +107,7 @@ end
 ---@param max_count integer
 ---@param datetime string?
 function Database:update(path, max_count, datetime)
-  local record = self.table.records[path] or { count = 0, timestamps = {} }
+  local record = self.tbl.records[path] or { count = 0, timestamps = {} }
   record.count = record.count + 1
   local now = self:now(datetime)
   table.insert(record.timestamps, now)
@@ -119,7 +118,7 @@ function Database:update(path, max_count, datetime)
     end
     record.timestamps = new_table
   end
-  self.table.records[path] = record
+  self.tbl.records[path] = record
   wait(function()
     self:save()
   end)
@@ -131,7 +130,7 @@ end
 function Database:get_entries(workspace, datetime)
   local now = self:now(datetime)
   local items = {}
-  for path, record in pairs(self.table.records) do
+  for path, record in pairs(self.tbl.records) do
     if self.fs:starts_with(path, workspace) then
       table.insert(items, {
         path = path,
@@ -184,7 +183,7 @@ function Database:load()
   assert(not err, err)
   local tbl = loadstring(data or "")() --[[@as FrecencyDatabaseTable?]]
   if tbl and tbl.version == self.version then
-    self.table = tbl
+    self.tbl = tbl
   end
   log.debug(("load() takes %f seconds"):format(os.clock() - start))
 end
@@ -194,7 +193,7 @@ end
 function Database:save()
   local start = os.clock()
   local err = self.file_lock:with(function()
-    self:raw_save(self.table)
+    self:raw_save(self.tbl)
     local err, stat = async.uv.fs_stat(self.filename)
     assert(not err, err)
     watcher.update(stat)
@@ -218,10 +217,10 @@ end
 ---@param path string
 ---@return boolean
 function Database:remove_entry(path)
-  if not self.table.records[path] then
+  if not self.tbl.records[path] then
     return false
   end
-  self.table.records[path] = nil
+  self.tbl.records[path] = nil
   wait(function()
     self:save()
   end)
