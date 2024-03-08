@@ -1,0 +1,100 @@
+local os_util = require "frecency.os_util"
+
+---@class FrecencyConfig: FrecencyRawConfig
+---@field private values FrecencyRawConfig
+local Config = {}
+
+---@class FrecencyRawConfig
+---@field auto_validate boolean default: true
+---@field db_root string default: vim.fn.stdpath "data"
+---@field db_safe_mode boolean default: true
+---@field db_validate_threshold integer default: 10
+---@field default_workspace string default: nil
+---@field disable_devicons boolean default: false
+---@field filter_delimiter string default: ":"
+---@field hide_current_buffer boolean default: false
+---@field ignore_patterns string[] default: { "*.git/*", "*/tmp/*", "term://*" }
+---@field max_timestamps integer default: 10
+---@field show_filter_column boolean|string[]|nil default: true
+---@field show_scores boolean default: false
+---@field show_unindexed boolean default: true
+---@field workspace_scan_cmd "LUA"|string[]|nil default: nil
+---@field workspaces table<string, string> default: {}
+
+---@return FrecencyConfig
+Config.new = function()
+  local default_values = {
+    auto_validate = true,
+    db_root = vim.fn.stdpath "data",
+    db_safe_mode = true,
+    db_validate_threshold = 10,
+    default_workspace = nil,
+    disable_devicons = false,
+    filter_delimiter = ":",
+    hide_current_buffer = false,
+    ignore_patterns = os_util.is_windows and { [[*.git\*]], [[*\tmp\*]], "term://*" }
+      or { "*.git/*", "*/tmp/*", "term://*" },
+    max_timestamps = 10,
+    show_filter_column = true,
+    show_scores = false,
+    show_unindexed = true,
+    workspace_scan_cmd = nil,
+    workspaces = {},
+  }
+  ---@type table<string, boolean>
+  local keys = {}
+  for k, _ in pairs(default_values) do
+    keys[k] = true
+  end
+  return setmetatable({
+    values = default_values,
+  }, {
+    __index = function(self, key)
+      if key == "values" then
+        return rawget(self, key)
+      elseif keys[key] then
+        return rawget(rawget(self, "values"), key)
+      end
+      return rawget(Config, key)
+    end,
+  })
+end
+
+local config = Config.new()
+
+---@return FrecencyRawConfig
+Config.get = function()
+  return config.values
+end
+
+---@param ext_config any
+---@return nil
+Config.setup = function(ext_config)
+  local opts = vim.tbl_extend("force", config.values, ext_config or {})
+  vim.validate {
+    auto_validate = { opts.auto_validate, "b" },
+    db_root = { opts.db_root, "s" },
+    db_safe_mode = { opts.db_safe_mode, "b" },
+    db_validate_threshold = { opts.db_validate_threshold, "n" },
+    default_workspace = { opts.default_workspace, "s", true },
+    disable_devicons = { opts.disable_devicons, "b" },
+    filter_delimiter = { opts.filter_delimiter, "s" },
+    hide_current_buffer = { opts.hide_current_buffer, "b" },
+    ignore_patterns = { opts.ignore_patterns, "t" },
+    max_timestamps = {
+      opts.max_timestamps,
+      function(v)
+        return type(v) == "number" and v > 0
+      end,
+      "positive number",
+    },
+    show_filter_column = { opts.show_filter_column, { "b", "t" }, true },
+    show_scores = { opts.show_scores, "b" },
+    show_unindexed = { opts.show_unindexed, "b" },
+    workspace_scan_cmd = { opts.workspace_scan_cmd, { "s", "t" }, true },
+    workspaces = { opts.workspaces, "t" },
+  }
+  config.values = opts
+end
+
+return config

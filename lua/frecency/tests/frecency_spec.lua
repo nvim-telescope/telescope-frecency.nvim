@@ -3,7 +3,7 @@
 vim.opt.runtimepath:append(vim.env.TELESCOPE_PATH)
 
 ---@diagnostic disable: invisible, undefined-field
-local Frecency = require "frecency.frecency"
+local Frecency = require "frecency"
 local Picker = require "frecency.picker"
 local util = require "frecency.tests.util"
 local log = require "plenary.log"
@@ -165,7 +165,7 @@ describe("frecency", function()
           local results = finder:get_results(nil, "2023-07-29T00:12:00+09:00")
           assert.are.same({
             { count = 12, path = filepath(dir, "hoge2.txt"), score = 12 * (10 * 100) / 10 },
-            { count = 2, path = filepath(dir, "hoge1.txt"), score = 2 * (2 * 100) / 10 },
+            { count = 2,  path = filepath(dir, "hoge1.txt"), score = 2 * (2 * 100) / 10 },
           }, results)
         end)
       end)
