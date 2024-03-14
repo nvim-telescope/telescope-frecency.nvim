@@ -2,6 +2,7 @@ local uv = vim.uv or vim.loop
 local async = require "plenary.async" --[[@as PlenaryAsync]]
 local Path = require "plenary.path"
 local Job = require "plenary.job"
+local wait = require "frecency.tests.wait"
 
 ---@return PlenaryPath
 ---@return fun(): nil close swwp all entries
@@ -37,9 +38,13 @@ end, 2)
 
 -- NOTE: vim.fn.strptime cannot be used in Lua loop
 local function time_piece(iso8601)
-  local stdout, code =
-    AsyncJob { "perl", "-MTime::Piece", "-e", "print Time::Piece->strptime('" .. iso8601 .. "', '%FT%T%z')->epoch" }
-  return code == 0 and tonumber(stdout) or nil
+  local epoch
+  wait(function()
+    local stdout, code =
+      AsyncJob { "perl", "-MTime::Piece", "-e", "print Time::Piece->strptime('" .. iso8601 .. "', '%FT%T%z')->epoch" }
+    epoch = code == 0 and tonumber(stdout) or nil
+  end)
+  return epoch
 end
 
 ---@param source table<string,{ count: integer, timestamps: string[] }>

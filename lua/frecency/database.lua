@@ -1,6 +1,5 @@
 local Table = require "frecency.database.table"
 local FileLock = require "frecency.file_lock"
-local wait = require "frecency.wait"
 local watcher = require "frecency.watcher"
 local log = require "plenary.log"
 local async = require "plenary.async" --[[@as PlenaryAsync]]
@@ -143,12 +142,8 @@ function Database:now(datetime)
   if not datetime then
     return os.time()
   end
-  local epoch
-  wait(function()
-    local tz_fix = datetime:gsub("+(%d%d):(%d%d)$", "+%1%2")
-    epoch = require("frecency.tests.util").time_piece(tz_fix)
-  end)
-  return epoch
+  local tz_fix = datetime:gsub("+(%d%d):(%d%d)$", "+%1%2")
+  return require("frecency.tests.util").time_piece(tz_fix)
 end
 
 ---@async

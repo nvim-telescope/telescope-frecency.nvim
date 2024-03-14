@@ -1,4 +1,3 @@
-local wait = require "frecency.wait"
 local log = require "plenary.log"
 
 ---@class FrecencyDatabaseRecord
