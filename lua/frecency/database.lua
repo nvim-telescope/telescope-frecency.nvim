@@ -1,3 +1,4 @@
+local Table = require "frecency.database.table"
 local FileLock = require "frecency.file_lock"
 local wait = require "frecency.wait"
 local watcher = require "frecency.watcher"
@@ -27,14 +28,6 @@ local Path = require "plenary.path" --[[@as PlenaryPath]]
 ---@field private version "v1"
 local Database = {}
 
----@class FrecencyDatabaseTable
----@field version string
----@field records table<string,FrecencyDatabaseRecord>
-
----@class FrecencyDatabaseRecord
----@field count integer
----@field timestamps integer[]
-
 ---@param fs FrecencyFS
 ---@param config FrecencyDatabaseConfig
 ---@return FrecencyDatabase
@@ -43,21 +36,18 @@ Database.new = function(fs, config)
   local self = setmetatable({
     config = config,
     fs = fs,
-    tbl = { version = version, records = {} },
+    tbl = Table.new(version),
     version = version,
   }, { __index = Database })
   self.filename = Path.new(self.config.root, "file_frecency.bin").filename
   self.file_lock = FileLock.new(self.filename)
   local tx, rx = async.control.channel.counter()
   watcher.watch(self.filename, tx)
-  wait(function()
-    self:load()
-  end)
   async.void(function()
     while true do
+      self:load()
       rx.last()
       log.debug "file changed. loading..."
-      self:load()
     end
   end)()
   return self
@@ -77,9 +67,9 @@ function Database:insert_files(paths)
   for _, path in ipairs(paths) do
     self.tbl.records[path] = { count = 1, timestamps = { 0 } }
   end
-  wait(function()
+  async.void(function()
     self:save()
-  end)
+  end)()
 end
 
 ---@return string[]
@@ -98,9 +88,9 @@ function Database:remove_files(paths)
   for _, file in ipairs(paths) do
     self.tbl.records[file] = nil
   end
-  wait(function()
+  async.void(function()
     self:save()
-  end)
+  end)()
 end
 
 ---@param path string
@@ -119,9 +109,9 @@ function Database:update(path, max_count, datetime)
     record.timestamps = new_table
   end
   self.tbl.records[path] = record
-  wait(function()
+  async.void(function()
     self:save()
-  end)
+  end)()
 end
 
 ---@param workspace string?
@@ -181,10 +171,8 @@ function Database:load()
     return data
   end)
   assert(not err, err)
-  local tbl = loadstring(data or "")() --[[@as FrecencyDatabaseTable?]]
-  if tbl and tbl.version == self.version then
-    self.tbl = tbl
-  end
+  local tbl = vim.F.npcall(loadstring(data or ""))
+  self.tbl:set(tbl)
   log.debug(("load() takes %f seconds"):format(os.clock() - start))
 end
 
@@ -193,7 +181,7 @@ end
 function Database:save()
   local start = os.clock()
   local err = self.file_lock:with(function()
-    self:raw_save(self.tbl)
+    self:raw_save(self.tbl:raw())
     local err, stat = async.uv.fs_stat(self.filename)
     assert(not err, err)
     watcher.update(stat)
@@ -204,7 +192,7 @@ function Database:save()
 end
 
 ---@async
----@param tbl FrecencyDatabaseTable
+---@param tbl FrecencyDatabaseRawTable
 function Database:raw_save(tbl)
   local f = assert(load("return " .. vim.inspect(tbl)))
   local data = string.dump(f)
@@ -221,9 +209,9 @@ function Database:remove_entry(path)
     return false
   end
   self.tbl.records[path] = nil
-  wait(function()
+  async.void(function()
     self:save()
-  end)
+  end)()
   return true
 end
 
