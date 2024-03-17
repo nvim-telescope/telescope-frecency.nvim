@@ -54,7 +54,10 @@ return require("telescope").register_extension {
       group = group,
       ---@param args { buf: integer }
       callback = function(args)
-        frecency.register(args.buf)
+        local is_floatwin = vim.api.nvim_win_get_config(0).relative ~= ""
+        if not is_floatwin then
+          frecency.register(args.buf)
+        end
       end,
     })
   end,
