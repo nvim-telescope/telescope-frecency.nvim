@@ -36,8 +36,8 @@ Watcher.new = function()
 end
 
 ---@param path string
----@param tx PlenaryAsyncControlChannelTx
-function Watcher:watch(path, tx)
+---@param cb fun(): nil
+function Watcher:watch(path, cb)
   if self.handler then
     self.handler:stop()
   end
@@ -60,7 +60,7 @@ function Watcher:watch(path, tx)
       if self.mtime ~= mtime then
         log.debug(("mtime changed: %s -> %s"):format(self.mtime, mtime))
         self.mtime = mtime
-        tx.send()
+        cb()
       end
     end)()
   end)
@@ -70,11 +70,11 @@ local watcher = Watcher.new()
 
 return {
   ---@param path string
-  ---@param tx PlenaryAsyncControlChannelTx
+  ---@param cb fun(): nil
   ---@return nil
-  watch = function(path, tx)
+  watch = function(path, cb)
     log.debug("watch path: " .. path)
-    watcher:watch(path, tx)
+    watcher:watch(path, cb)
   end,
 
   ---@param stat FsStat

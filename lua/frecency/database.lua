@@ -19,6 +19,7 @@ local Path = require "plenary.path" --[[@as PlenaryPath]]
 ---@field score number
 
 ---@class FrecencyDatabase
+---@field tx PlenaryAsyncControlChannelTx
 ---@field private config FrecencyDatabaseConfig
 ---@field private file_lock FrecencyFileLock
 ---@field private filename string
@@ -40,13 +41,24 @@ Database.new = function(fs, config)
   }, { __index = Database })
   self.filename = Path.new(self.config.root, "file_frecency.bin").filename
   self.file_lock = FileLock.new(self.filename)
-  local tx, rx = async.control.channel.counter()
-  watcher.watch(self.filename, tx)
+  local rx
+  self.tx, rx = async.control.channel.mpsc()
+  self.tx.send "load"
+  watcher.watch(self.filename, function()
+    self.tx.send "load"
+  end)
   async.void(function()
     while true do
-      self:load()
-      rx.last()
-      log.debug "file changed. loading..."
+      local mode = rx.recv()
+      log.debug("DB coroutine start:", mode)
+      if mode == "load" then
+        self:load()
+      elseif mode == "save" then
+        self:save()
+      else
+        log.error("unknown mode: " .. mode)
+      end
+      log.debug("DB coroutine end:", mode)
     end
   end)()
   return self
@@ -66,9 +78,7 @@ function Database:insert_files(paths)
   for _, path in ipairs(paths) do
     self.tbl.records[path] = { count = 1, timestamps = { 0 } }
   end
-  async.void(function()
-    self:save()
-  end)()
+  self.tx.send "save"
 end
 
 ---@return string[]
@@ -87,9 +97,7 @@ function Database:remove_files(paths)
   for _, file in ipairs(paths) do
     self.tbl.records[file] = nil
   end
-  async.void(function()
-    self:save()
-  end)()
+  self.tx.send "save"
 end
 
 ---@param path string
@@ -108,9 +116,7 @@ function Database:update(path, max_count, datetime)
     record.timestamps = new_table
   end
   self.tbl.records[path] = record
-  async.void(function()
-    self:save()
-  end)()
+  self.tx.send "save"
 end
 
 ---@param workspace string?
@@ -204,9 +210,7 @@ function Database:remove_entry(path)
     return false
   end
   self.tbl.records[path] = nil
-  async.void(function()
-    self:save()
-  end)()
+  self.tx.send "save"
   return true
 end
 
