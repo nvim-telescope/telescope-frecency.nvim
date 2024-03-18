@@ -42,10 +42,23 @@ Config.new = function()
     workspaces = {},
   }
   ---@type table<string, boolean>
-  local keys = {}
-  for k, _ in pairs(default_values) do
-    keys[k] = true
-  end
+  local keys = {
+    auto_validate = true,
+    db_root = true,
+    db_safe_mode = true,
+    db_validate_threshold = true,
+    default_workspace = true,
+    disable_devicons = true,
+    filter_delimiter = true,
+    hide_current_buffer = true,
+    ignore_patterns = true,
+    max_timestamps = true,
+    show_filter_column = true,
+    show_scores = true,
+    show_unindexed = true,
+    workspace_scan_cmd = true,
+    workspaces = true,
+  }
   return setmetatable({
     values = default_values,
   }, {
