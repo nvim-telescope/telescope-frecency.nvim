@@ -27,6 +27,7 @@ local function with_files(files, cb_or_config, callback)
   log.debug(cfg)
   config.setup(cfg)
   local frecency = Frecency.new()
+  frecency.database.tbl:wait_ready()
   frecency.picker = Picker.new(
     frecency.database,
     frecency.entry_maker,
