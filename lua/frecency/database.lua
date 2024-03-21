@@ -1,5 +1,5 @@
+local Table = require "frecency.database.table"
 local FileLock = require "frecency.file_lock"
-local wait = require "frecency.wait"
 local watcher = require "frecency.watcher"
 local log = require "plenary.log"
 local async = require "plenary.async" --[[@as PlenaryAsync]]
@@ -19,22 +19,14 @@ local Path = require "plenary.path" --[[@as PlenaryPath]]
 ---@field score number
 
 ---@class FrecencyDatabase
----@field config FrecencyDatabaseConfig
----@field file_lock FrecencyFileLock
----@field filename string
----@field fs FrecencyFS
----@field new fun(fs: FrecencyFS, config: FrecencyDatabaseConfig): FrecencyDatabase
----@field table FrecencyDatabaseTable
----@field version "v1"
+---@field tx PlenaryAsyncControlChannelTx
+---@field private config FrecencyDatabaseConfig
+---@field private file_lock FrecencyFileLock
+---@field private filename string
+---@field private fs FrecencyFS
+---@field private tbl FrecencyDatabaseTable
+---@field private version "v1"
 local Database = {}
-
----@class FrecencyDatabaseTable
----@field version string
----@field records table<string,FrecencyDatabaseRecord>
-
----@class FrecencyDatabaseRecord
----@field count integer
----@field timestamps integer[]
 
 ---@param fs FrecencyFS
 ---@param config FrecencyDatabaseConfig
@@ -44,21 +36,29 @@ Database.new = function(fs, config)
   local self = setmetatable({
     config = config,
     fs = fs,
-    table = { version = version, records = {} },
+    tbl = Table.new(version),
     version = version,
   }, { __index = Database })
   self.filename = Path.new(self.config.root, "file_frecency.bin").filename
   self.file_lock = FileLock.new(self.filename)
-  local tx, rx = async.control.channel.counter()
-  watcher.watch(self.filename, tx)
-  wait(function()
-    self:load()
+  local rx
+  self.tx, rx = async.control.channel.mpsc()
+  self.tx.send "load"
+  watcher.watch(self.filename, function()
+    self.tx.send "load"
   end)
   async.void(function()
     while true do
-      rx.last()
-      log.debug "file changed. loading..."
-      self:load()
+      local mode = rx.recv()
+      log.debug("DB coroutine start:", mode)
+      if mode == "load" then
+        self:load()
+      elseif mode == "save" then
+        self:save()
+      else
+        log.error("unknown mode: " .. mode)
+      end
+      log.debug("DB coroutine end:", mode)
     end
   end)()
   return self
@@ -66,7 +66,7 @@ end
 
 ---@return boolean
 function Database:has_entry()
-  return not vim.tbl_isempty(self.table.records)
+  return not vim.tbl_isempty(self.tbl.records)
 end
 
 ---@param paths string[]
@@ -76,17 +76,15 @@ function Database:insert_files(paths)
     return
   end
   for _, path in ipairs(paths) do
-    self.table.records[path] = { count = 1, timestamps = { 0 } }
+    self.tbl.records[path] = { count = 1, timestamps = { 0 } }
   end
-  wait(function()
-    self:save()
-  end)
+  self.tx.send "save"
 end
 
 ---@return string[]
 function Database:unlinked_entries()
   local paths = {}
-  for file in pairs(self.table.records) do
+  for file in pairs(self.tbl.records) do
     if not self.fs:is_valid_path(file) then
       table.insert(paths, file)
     end
@@ -97,18 +95,16 @@ end
 ---@param paths string[]
 function Database:remove_files(paths)
   for _, file in ipairs(paths) do
-    self.table.records[file] = nil
+    self.tbl.records[file] = nil
   end
-  wait(function()
-    self:save()
-  end)
+  self.tx.send "save"
 end
 
 ---@param path string
 ---@param max_count integer
 ---@param datetime string?
 function Database:update(path, max_count, datetime)
-  local record = self.table.records[path] or { count = 0, timestamps = {} }
+  local record = self.tbl.records[path] or { count = 0, timestamps = {} }
   record.count = record.count + 1
   local now = self:now(datetime)
   table.insert(record.timestamps, now)
@@ -119,10 +115,8 @@ function Database:update(path, max_count, datetime)
     end
     record.timestamps = new_table
   end
-  self.table.records[path] = record
-  wait(function()
-    self:save()
-  end)
+  self.tbl.records[path] = record
+  self.tx.send "save"
 end
 
 ---@param workspace string?
@@ -131,7 +125,7 @@ end
 function Database:get_entries(workspace, datetime)
   local now = self:now(datetime)
   local items = {}
-  for path, record in pairs(self.table.records) do
+  for path, record in pairs(self.tbl.records) do
     if self.fs:starts_with(path, workspace) then
       table.insert(items, {
         path = path,
@@ -154,12 +148,8 @@ function Database:now(datetime)
   if not datetime then
     return os.time()
   end
-  local epoch
-  wait(function()
-    local tz_fix = datetime:gsub("+(%d%d):(%d%d)$", "+%1%2")
-    epoch = require("frecency.tests.util").time_piece(tz_fix)
-  end)
-  return epoch
+  local tz_fix = datetime:gsub("+(%d%d):(%d%d)$", "+%1%2")
+  return require("frecency.tests.util").time_piece(tz_fix)
 end
 
 ---@async
@@ -182,10 +172,8 @@ function Database:load()
     return data
   end)
   assert(not err, err)
-  local tbl = loadstring(data or "")() --[[@as FrecencyDatabaseTable?]]
-  if tbl and tbl.version == self.version then
-    self.table = tbl
-  end
+  local tbl = vim.F.npcall(loadstring(data or ""))
+  self.tbl:set(tbl)
   log.debug(("load() takes %f seconds"):format(os.clock() - start))
 end
 
@@ -194,7 +182,7 @@ end
 function Database:save()
   local start = os.clock()
   local err = self.file_lock:with(function()
-    self:raw_save(self.table)
+    self:raw_save(self.tbl:raw())
     local err, stat = async.uv.fs_stat(self.filename)
     assert(not err, err)
     watcher.update(stat)
@@ -205,7 +193,7 @@ function Database:save()
 end
 
 ---@async
----@param tbl FrecencyDatabaseTable
+---@param tbl FrecencyDatabaseRawTable
 function Database:raw_save(tbl)
   local f = assert(load("return " .. vim.inspect(tbl)))
   local data = string.dump(f)
@@ -218,13 +206,11 @@ end
 ---@param path string
 ---@return boolean
 function Database:remove_entry(path)
-  if not self.table.records[path] then
+  if not self.tbl.records[path] then
     return false
   end
-  self.table.records[path] = nil
-  wait(function()
-    self:save()
-  end)
+  self.tbl.records[path] = nil
+  self.tx.send "save"
   return true
 end
 
