@@ -8,15 +8,21 @@
 ---@field start fun(opts: FrecencyPickerOptions?): nil
 ---@field validate_database fun(force: boolean?): nil
 local frecency = setmetatable({}, {
+  ---@param self FrecencyInstance
+  ---@param key "complete"|"delete"|"register"|"start"|"validate_database"
+  ---@return function
   __index = function(self, key)
+    ---@return Frecency
+    local function instance()
+      return rawget(self, "instance")
+    end
+
     return function(...)
-      local instance = rawget(self, "instance") --[[@as Frecency?]]
-      if not instance then
-        instance = require("frecency").new()
-        instance:setup()
-        rawset(self, "instance", instance)
+      if not instance() then
+        rawset(self, "instance", require("frecency").new())
+        instance():setup()
       end
-      return instance[key](instance, ...)
+      return instance()[key](instance(), ...)
     end
   end,
 })
