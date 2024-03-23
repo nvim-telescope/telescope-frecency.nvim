@@ -1,4 +1,4 @@
-local async = require "plenary.async" --[[@as PlenaryAsync]]
+local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 local log = require "plenary.log"
 local uv = vim.loop or vim.uv
 

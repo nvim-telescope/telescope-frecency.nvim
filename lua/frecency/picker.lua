@@ -2,11 +2,11 @@ local State = require "frecency.state"
 local Finder = require "frecency.finder"
 local sorters = require "telescope.sorters"
 local log = require "plenary.log"
-local Path = require "plenary.path" --[[@as PlenaryPath]]
+local Path = require "plenary.path" --[[@as FrecencyPlenaryPath]]
 local actions = require "telescope.actions"
 local config_values = require("telescope.config").values
 local pickers = require "telescope.pickers"
-local utils = require "telescope.utils" --[[@as TelescopeUtils]]
+local utils = require "telescope.utils" --[[@as FrecencyTelescopeUtils]]
 local uv = vim.loop or vim.uv
 
 ---@class FrecencyPicker

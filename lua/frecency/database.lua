@@ -2,8 +2,8 @@ local Table = require "frecency.database.table"
 local FileLock = require "frecency.file_lock"
 local watcher = require "frecency.watcher"
 local log = require "plenary.log"
-local async = require "plenary.async" --[[@as PlenaryAsync]]
-local Path = require "plenary.path" --[[@as PlenaryPath]]
+local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
+local Path = require "plenary.path" --[[@as FrecencyPlenaryPath]]
 
 ---@class FrecencyDatabaseConfig
 ---@field root string
@@ -19,7 +19,7 @@ local Path = require "plenary.path" --[[@as PlenaryPath]]
 ---@field score number
 
 ---@class FrecencyDatabase
----@field tx PlenaryAsyncControlChannelTx
+---@field tx FrecencyPlenaryAsyncControlChannelTx
 ---@field private config FrecencyDatabaseConfig
 ---@field private file_lock FrecencyFileLock
 ---@field private filename string

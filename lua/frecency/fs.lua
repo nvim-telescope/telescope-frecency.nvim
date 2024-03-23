@@ -1,5 +1,5 @@
 local os_util = require "frecency.os_util"
-local Path = require "plenary.path" --[[@as PlenaryPath]]
+local Path = require "plenary.path" --[[@as FrecencyPlenaryPath]]
 local scandir = require "plenary.scandir"
 local log = require "plenary.log"
 local uv = vim.uv or vim.loop

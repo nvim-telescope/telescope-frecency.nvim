@@ -1,10 +1,10 @@
 local uv = vim.uv or vim.loop
-local async = require "plenary.async" --[[@as PlenaryAsync]]
+local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 local Path = require "plenary.path"
 local Job = require "plenary.job"
 local wait = require "frecency.tests.wait"
 
----@return PlenaryPath
+---@return FrecencyPlenaryPath
 ---@return fun(): nil close swwp all entries
 local function tmpdir()
   local dir = Path:new(Path:new(assert(uv.fs_mkdtemp "tests_XXXXXX")):absolute())
@@ -14,7 +14,7 @@ local function tmpdir()
 end
 
 ---@param entries string[]
----@return PlenaryPath dir the top dir of tree
+---@return FrecencyPlenaryPath dir the top dir of tree
 ---@return fun(): nil close sweep all entries
 local function make_tree(entries)
   local dir, close = tmpdir()
