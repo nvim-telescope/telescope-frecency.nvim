@@ -1,7 +1,7 @@
 ---@diagnostic disable: undefined-field
 local FileLock = require "frecency.file_lock"
 local util = require "frecency.tests.util"
-local async = require "plenary.async" --[[@as PlenaryAsync]]
+local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 require("plenary.async").tests.add_to_env()
 
 local function with_dir(f)

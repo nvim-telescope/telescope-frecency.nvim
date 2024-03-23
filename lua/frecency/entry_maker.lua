@@ -1,6 +1,6 @@
-local Path = require "plenary.path" --[[@as PlenaryPath]]
-local entry_display = require "telescope.pickers.entry_display" --[[@as TelescopeEntryDisplay]]
-local utils = require "telescope.utils" --[[@as TelescopeUtils]]
+local Path = require "plenary.path" --[[@as FrecencyPlenaryPath]]
+local entry_display = require "telescope.pickers.entry_display" --[[@as FrecencyTelescopeEntryDisplay]]
+local utils = require "telescope.utils" --[[@as FrecencyTelescopeUtils]]
 
 ---@class FrecencyEntryMaker
 ---@field config FrecencyEntryMakerConfig

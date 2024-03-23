@@ -11,8 +11,8 @@ local Path = require "plenary.path"
 local config = require "frecency.config"
 
 ---@param files string[]
----@param cb_or_config table|fun(frecency: Frecency, finder: FrecencyFinder, dir: PlenaryPath): nil
----@param callback? fun(frecency: Frecency, finder: FrecencyFinder, dir: PlenaryPath): nil
+---@param cb_or_config table|fun(frecency: Frecency, finder: FrecencyFinder, dir: FrecencyPlenaryPath): nil
+---@param callback? fun(frecency: Frecency, finder: FrecencyFinder, dir: FrecencyPlenaryPath): nil
 ---@return nil
 local function with_files(files, cb_or_config, callback)
   local dir, close = util.make_tree(files)
@@ -45,7 +45,7 @@ local function filepath(dir, file)
 end
 
 ---@param frecency Frecency
----@param dir PlenaryPath
+---@param dir FrecencyPlenaryPath
 ---@return fun(file: string, datetime: string, reset: boolean?): nil
 local function make_register(frecency, dir)
   return function(file, datetime, reset)
@@ -60,7 +60,7 @@ local function make_register(frecency, dir)
 end
 
 ---@param frecency Frecency
----@param dir PlenaryPath
+---@param dir FrecencyPlenaryPath
 ---@param callback fun(register: fun(file: string, datetime: string?): nil): nil
 ---@return nil
 local function with_fake_register(frecency, dir, callback)

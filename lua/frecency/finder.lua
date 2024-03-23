@@ -1,6 +1,6 @@
 local os_util = require "frecency.os_util"
 local Job = require "plenary.job"
-local async = require "plenary.async" --[[@as PlenaryAsync]]
+local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 local log = require "plenary.log"
 
 ---@class FrecencyFinder
@@ -12,10 +12,10 @@ local log = require "plenary.log"
 ---@field fs FrecencyFS
 ---@field path string?
 ---@field private database FrecencyDatabase
----@field private rx PlenaryAsyncControlChannelRx
----@field private tx PlenaryAsyncControlChannelTx
----@field private scan_rx PlenaryAsyncControlChannelRx
----@field private scan_tx PlenaryAsyncControlChannelTx
+---@field private rx FrecencyPlenaryAsyncControlChannelRx
+---@field private tx FrecencyPlenaryAsyncControlChannelTx
+---@field private scan_rx FrecencyPlenaryAsyncControlChannelRx
+---@field private scan_tx FrecencyPlenaryAsyncControlChannelTx
 ---@field private need_scan_db boolean
 ---@field private need_scan_dir boolean
 ---@field private seen table<string, boolean>
@@ -226,7 +226,7 @@ end
 ---@async
 ---@param process_result fun(entry: FrecencyEntry): nil
 ---@param entries FrecencyEntry[]
----@param rx PlenaryAsyncControlChannelRx
+---@param rx FrecencyPlenaryAsyncControlChannelRx
 ---@param start_index integer?
 ---@return boolean?
 function Finder:process_channel(process_result, entries, rx, start_index)

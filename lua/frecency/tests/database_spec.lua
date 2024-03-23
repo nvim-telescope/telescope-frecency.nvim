@@ -1,6 +1,6 @@
 local FS = require "frecency.fs"
 local Database = require "frecency.database"
-local async = require "plenary.async" --[[@as PlenaryAsync]]
+local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 local util = require "frecency.tests.util"
 async.tests.add_to_env()
 
