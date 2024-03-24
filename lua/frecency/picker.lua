@@ -26,8 +26,8 @@ local Picker = {}
 ---@field default_workspace_tag string?
 ---@field editing_bufnr integer
 ---@field filter_delimiter string
----@field ignore_filenames string[]?
----@field initial_workspace_tag string?
+---@field ignore_filenames? string[]
+---@field initial_workspace_tag? string
 ---@field show_unindexed boolean
 ---@field workspace_scan_cmd "LUA"|string[]|nil
 ---@field workspaces table<string, string>
@@ -62,7 +62,7 @@ end
 
 ---@class FrecencyPickerOptions
 ---@field cwd string
----@field hide_current_buffer boolean?
+---@field hide_current_buffer? boolean
 ---@field path_display
 ---| "hidden"
 ---| "tail"
@@ -71,11 +71,11 @@ end
 ---| "shorten"
 ---| "truncate"
 ---| fun(opts: FrecencyPickerOptions, path: string): string
----@field workspace string?
+---@field workspace? string
 
 ---@param opts table
----@param workspace string?
----@param workspace_tag string?
+---@param workspace? string
+---@param workspace_tag? string
 function Picker:finder(opts, workspace, workspace_tag)
   local filepath_formatter = self:filepath_formatter(opts)
   local entry_maker = self.entry_maker:create(filepath_formatter, workspace, workspace_tag)
@@ -92,7 +92,7 @@ function Picker:finder(opts, workspace, workspace_tag)
   )
 end
 
----@param opts FrecencyPickerOptions?
+---@param opts? FrecencyPickerOptions
 function Picker:start(opts)
   opts = vim.tbl_extend("force", {
     cwd = uv.cwd(),
@@ -175,7 +175,7 @@ end
 
 ---@private
 ---@param cwd string
----@param tag string?
+---@param tag? string
 ---@return string?
 function Picker:get_workspace(cwd, tag)
   tag = tag or self.config.default_workspace_tag

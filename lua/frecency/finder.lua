@@ -10,7 +10,7 @@ local log = require "plenary.log"
 ---@field scanned_entries FrecencyEntry[]
 ---@field entry_maker FrecencyEntryMakerInstance
 ---@field fs FrecencyFS
----@field path string?
+---@field path? string
 ---@field private database FrecencyDatabase
 ---@field private rx FrecencyPlenaryAsyncControlChannelRx
 ---@field private tx FrecencyPlenaryAsyncControlChannelTx
@@ -25,9 +25,9 @@ local log = require "plenary.log"
 local Finder = {}
 
 ---@class FrecencyFinderConfig
----@field chunk_size integer? default: 1000
----@field ignore_filenames string[]? default: {}
----@field sleep_interval integer? default: 50
+---@field chunk_size? integer default: 1000
+---@field ignore_filenames? string[] default: {}
+---@field sleep_interval? integer default: 50
 ---@field workspace_scan_cmd "LUA"|string[]|nil default: nil
 
 ---@param database FrecencyDatabase
@@ -37,7 +37,7 @@ local Finder = {}
 ---@param path string?
 ---@param recency FrecencyRecency
 ---@param state FrecencyState
----@param config FrecencyFinderConfig?
+---@param config? FrecencyFinderConfig
 ---@return FrecencyFinder
 Finder.new = function(database, entry_maker, fs, need_scandir, path, recency, state, config)
   local tx, rx = async.control.channel.mpsc()
@@ -76,7 +76,7 @@ Finder.new = function(database, entry_maker, fs, need_scandir, path, recency, st
   return self
 end
 
----@param datetime string?
+---@param datetime? string
 ---@return nil
 function Finder:start(datetime)
   local cmd = self.config.workspace_scan_cmd
@@ -227,7 +227,7 @@ end
 ---@param process_result fun(entry: FrecencyEntry): nil
 ---@param entries FrecencyEntry[]
 ---@param rx FrecencyPlenaryAsyncControlChannelRx
----@param start_index integer?
+---@param start_index? integer
 ---@return boolean?
 function Finder:process_channel(process_result, entries, rx, start_index)
   -- HACK: This is needed for small workspaces that it shows up entries fast.
@@ -254,8 +254,8 @@ function Finder:process_channel(process_result, entries, rx, start_index)
   end
 end
 
----@param workspace string?
----@param datetime string?
+---@param workspace? string
+---@param datetime? string
 ---@return FrecencyFile[]
 function Finder:get_results(workspace, datetime)
   log.debug { workspace = workspace or "NONE" }

@@ -49,8 +49,8 @@ end
 ---@alias FrecencyEntryMakerInstance fun(file: FrecencyFile): FrecencyEntry
 
 ---@param filepath_formatter FrecencyFilepathFormatter
----@param workspace string?
----@param workspace_tag string?
+---@param workspace? string
+---@param workspace_tag? string
 ---@return FrecencyEntryMakerInstance
 function EntryMaker:create(filepath_formatter, workspace, workspace_tag)
   local displayer = entry_display.create {
@@ -76,8 +76,8 @@ function EntryMaker:create(filepath_formatter, workspace, workspace_tag)
 end
 
 ---@private
----@param workspace string?
----@param workspace_tag string?
+---@param workspace? string
+---@param workspace_tag? string
 ---@return table[]
 function EntryMaker:displayer_items(workspace, workspace_tag)
   local items = {}
@@ -96,8 +96,8 @@ end
 
 ---@private
 ---@param entry FrecencyEntry
----@param workspace string?
----@param workspace_tag string?
+---@param workspace? string
+---@param workspace_tag? string
 ---@param formatter fun(filename: string): string
 ---@return table[]
 function EntryMaker:items(entry, workspace, workspace_tag, formatter)

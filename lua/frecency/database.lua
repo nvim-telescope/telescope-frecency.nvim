@@ -102,7 +102,7 @@ end
 
 ---@param path string
 ---@param max_count integer
----@param datetime string?
+---@param datetime? string
 function Database:update(path, max_count, datetime)
   local record = self.tbl.records[path] or { count = 0, timestamps = {} }
   record.count = record.count + 1
@@ -119,8 +119,8 @@ function Database:update(path, max_count, datetime)
   self.tx.send "save"
 end
 
----@param workspace string?
----@param datetime string?
+---@param workspace? string
+---@param datetime? string
 ---@return FrecencyDatabaseEntry[]
 function Database:get_entries(workspace, datetime)
   local now = self:now(datetime)

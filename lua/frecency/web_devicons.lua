@@ -1,5 +1,5 @@
 ---@class WebDeviconsModule
----@field get_icon fun(name: string?, ext: string?, opts: table?): string, string
+---@field get_icon fun(name?: string, ext?: string, opts?: table): string, string
 
 ---@class WebDevicons
 ---@field is_enabled boolean

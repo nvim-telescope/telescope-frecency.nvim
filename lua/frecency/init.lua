@@ -40,7 +40,7 @@ function Frecency:setup()
 end
 
 ---This can be calledBy `require("telescope").extensions.frecency.frecency`.
----@param opts FrecencyPickerOptions?
+---@param opts? FrecencyPickerOptions
 ---@return nil
 function Frecency:start(opts)
   local start = os.clock()
@@ -85,7 +85,7 @@ function Frecency:assert_db_entries()
 end
 
 ---@private
----@param force boolean?
+---@param force? boolean
 ---@return nil
 function Frecency:validate_database(force)
   local unlinked = self.database:unlinked_entries()
@@ -117,7 +117,7 @@ function Frecency:validate_database(force)
 end
 
 ---@param bufnr integer
----@param datetime string? ISO8601 format string
+---@param datetime? string ISO8601 format string
 function Frecency:register(bufnr, datetime)
   local path = vim.api.nvim_buf_get_name(bufnr)
   if self.buf_registered[bufnr] or not self.fs:is_valid_path(path) then
@@ -139,7 +139,7 @@ end
 
 ---@private
 ---@param fmt string
----@param ... any?
+---@param ...? any
 ---@return string
 function Frecency:message(fmt, ...)
   return ("[Telescope-Frecency] " .. fmt):format(unpack { ... })
@@ -147,7 +147,7 @@ end
 
 ---@private
 ---@param fmt string
----@param ... any?
+---@param ...? any
 ---@return nil
 function Frecency:notify(fmt, ...)
   vim.notify(self:message(fmt, ...))
@@ -155,7 +155,7 @@ end
 
 ---@private
 ---@param fmt string
----@param ... any?
+---@param ...? any
 ---@return nil
 function Frecency:warn(fmt, ...)
   vim.notify(self:message(fmt, ...), vim.log.levels.WARN)
@@ -163,7 +163,7 @@ end
 
 ---@private
 ---@param fmt string
----@param ... any?
+---@param ...? any
 ---@return nil
 function Frecency:error(fmt, ...)
   vim.notify(self:message(fmt, ...), vim.log.levels.ERROR)

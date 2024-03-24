@@ -30,7 +30,7 @@ FS.new = function(config)
   return self
 end
 
----@param path string?
+---@param path? string
 ---@return boolean
 function FS:is_valid_path(path)
   return not not path and Path:new(path):is_file() and not self:is_ignored(path)
@@ -70,7 +70,7 @@ end
 local with_sep = {}
 
 ---@param path string
----@param base string?
+---@param base? string
 ---@return boolean
 function FS:starts_with(path, base)
   if not base then
