@@ -123,7 +123,12 @@ imported.
 or to map to a key:
 
 ```lua
+-- Bind command
 vim.keymap.set("n", "<leader><leader>", "<Cmd>Telescope frecency<CR>")
+-- Bind Lua function directly
+vim.keymap.set("n", "<leader><leader>", function()
+  require("telescope").extensions.frecency.frecency {}
+end)
 ```
 
 Use a specific workspace tag:
@@ -135,7 +140,14 @@ Use a specific workspace tag:
 or
 
 ```lua
+-- Bind command
 vim.keymap.set("n", "<leader><leader>", "<Cmd>Telescope frecency workspace=CWD<CR>")
+-- Bind Lua function directly
+vim.keymap.set("n", "<leader><leader>", function()
+  require("telescope").extensions.frecency.frecency {
+    workspace = "CWD",
+  }
+end)
 ```
 
 Filter tags are applied by typing the `:tag:` name (adding surrounding colons)
