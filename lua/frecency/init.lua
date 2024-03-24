@@ -3,7 +3,6 @@ local EntryMaker = require "frecency.entry_maker"
 local FS = require "frecency.fs"
 local Picker = require "frecency.picker"
 local Recency = require "frecency.recency"
-local WebDevicons = require "frecency.web_devicons"
 local config = require "frecency.config"
 local log = require "plenary.log"
 
@@ -19,14 +18,10 @@ local Frecency = {}
 ---@return Frecency
 Frecency.new = function()
   local self = setmetatable({ buf_registered = {} }, { __index = Frecency }) --[[@as Frecency]]
-  self.fs = FS.new { ignore_patterns = config.ignore_patterns }
-  self.database = Database.new(self.fs, { root = config.db_root })
-  local web_devicons = WebDevicons.new(not config.disable_devicons)
-  self.entry_maker = EntryMaker.new(self.fs, web_devicons, {
-    show_filter_column = config.show_filter_column,
-    show_scores = config.show_scores,
-  })
-  self.recency = Recency.new { max_count = config.max_timestamps }
+  self.fs = FS.new()
+  self.database = Database.new(self.fs)
+  self.entry_maker = EntryMaker.new(self.fs)
+  self.recency = Recency.new()
   return self
 end
 
@@ -54,14 +49,9 @@ function Frecency:start(opts)
     ignore_filenames = { vim.api.nvim_buf_get_name(0) }
   end
   self.picker = Picker.new(self.database, self.entry_maker, self.fs, self.recency, {
-    default_workspace_tag = config.default_workspace,
     editing_bufnr = vim.api.nvim_get_current_buf(),
-    filter_delimiter = config.filter_delimiter,
     ignore_filenames = ignore_filenames,
     initial_workspace_tag = opts.workspace,
-    show_unindexed = config.show_unindexed,
-    workspace_scan_cmd = config.workspace_scan_cmd,
-    workspaces = config.workspaces,
   })
   self.picker:start(vim.tbl_extend("force", config.get(), opts))
   log.debug(("Frecency:start picker:start takes %f seconds"):format(os.clock() - start))
@@ -123,7 +113,7 @@ function Frecency:register(bufnr, datetime)
   if self.buf_registered[bufnr] or not self.fs:is_valid_path(path) then
     return
   end
-  self.database:update(path, self.recency.config.max_count, datetime)
+  self.database:update(path, datetime)
   self.buf_registered[bufnr] = true
 end
 

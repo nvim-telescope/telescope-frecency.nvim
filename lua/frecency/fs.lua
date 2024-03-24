@@ -1,3 +1,4 @@
+local config = require "frecency.config"
 local os_util = require "frecency.os_util"
 local Path = require "plenary.path" --[[@as FrecencyPlenaryPath]]
 local scandir = require "plenary.scandir"
@@ -12,13 +13,12 @@ local FS = {}
 
 ---@class FrecencyFSConfig
 ---@field scan_depth integer?
----@field ignore_patterns string[]
 
----@param config FrecencyFSConfig
+---@param fs_config? FrecencyFSConfig
 ---@return FrecencyFS
-FS.new = function(config)
+FS.new = function(fs_config)
   local self = setmetatable(
-    { config = vim.tbl_extend("force", { scan_depth = 100 }, config), os_homedir = assert(uv.os_homedir()) },
+    { config = vim.tbl_extend("force", { scan_depth = 100 }, fs_config or {}), os_homedir = assert(uv.os_homedir()) },
     { __index = FS }
   )
   ---@param pattern string
@@ -26,7 +26,7 @@ FS.new = function(config)
     local escaped = pattern:gsub("[%-%.%+%[%]%(%)%$%^%%%?%*]", "%%%1")
     local regex = escaped:gsub("%%%*", ".*"):gsub("%%%?", ".")
     return "^" .. regex .. "$"
-  end, self.config.ignore_patterns)
+  end, config.ignore_patterns)
   return self
 end
 

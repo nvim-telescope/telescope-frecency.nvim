@@ -13,10 +13,10 @@ local FileLock = {}
 ---@field interval integer default: 500
 
 ---@param path string
----@param opts? FrecencyFileLockConfig
+---@param file_lock_config? FrecencyFileLockConfig
 ---@return FrecencyFileLock
-FileLock.new = function(path, opts)
-  local config = vim.tbl_extend("force", { retry = 5, unlink_retry = 5, interval = 500 }, opts or {})
+FileLock.new = function(path, file_lock_config)
+  local config = vim.tbl_extend("force", { retry = 5, unlink_retry = 5, interval = 500 }, file_lock_config or {})
   local self = setmetatable({ config = config }, { __index = FileLock })
   self.filename = path .. ".lock"
   return self

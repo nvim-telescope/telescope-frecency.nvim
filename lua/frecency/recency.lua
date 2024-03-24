@@ -1,16 +1,12 @@
+local config = require "frecency.config"
+
 ---@class FrecencyRecency
----@field config FrecencyRecencyConfig
 ---@field private modifier table<integer, { age: integer, value: integer }>
 local Recency = {}
 
----@class FrecencyRecencyConfig
----@field max_count integer default: 10
-
----@param config FrecencyRecencyConfig?
 ---@return FrecencyRecency
-Recency.new = function(config)
+Recency.new = function()
   return setmetatable({
-    config = vim.tbl_extend("force", { max_count = 10 }, config or {}),
     modifier = {
       { age = 240, value = 100 }, -- past 4 hours
       { age = 1440, value = 80 }, -- past day
@@ -36,7 +32,7 @@ function Recency:calculate(count, ages)
     end
     ::continue::
   end
-  return count * score / self.config.max_count
+  return count * score / config.max_timestamps
 end
 
 return Recency

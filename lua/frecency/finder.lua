@@ -1,3 +1,4 @@
+local config = require "frecency.config"
 local os_util = require "frecency.os_util"
 local Job = require "plenary.job"
 local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
@@ -28,7 +29,6 @@ local Finder = {}
 ---@field chunk_size? integer default: 1000
 ---@field ignore_filenames? string[] default: {}
 ---@field sleep_interval? integer default: 50
----@field workspace_scan_cmd "LUA"|string[]|nil default: nil
 
 ---@param database FrecencyDatabase
 ---@param entry_maker FrecencyEntryMakerInstance
@@ -37,13 +37,13 @@ local Finder = {}
 ---@param path string?
 ---@param recency FrecencyRecency
 ---@param state FrecencyState
----@param config? FrecencyFinderConfig
+---@param finder_config? FrecencyFinderConfig
 ---@return FrecencyFinder
-Finder.new = function(database, entry_maker, fs, need_scandir, path, recency, state, config)
+Finder.new = function(database, entry_maker, fs, need_scandir, path, recency, state, finder_config)
   local tx, rx = async.control.channel.mpsc()
   local scan_tx, scan_rx = async.control.channel.mpsc()
   local self = setmetatable({
-    config = vim.tbl_extend("force", { chunk_size = 1000, sleep_interval = 50 }, config or {}),
+    config = vim.tbl_extend("force", { chunk_size = 1000, sleep_interval = 50 }, finder_config or {}),
     closed = false,
     database = database,
     entry_maker = entry_maker,
@@ -79,11 +79,11 @@ end
 ---@param datetime? string
 ---@return nil
 function Finder:start(datetime)
-  local cmd = self.config.workspace_scan_cmd
   local ok
-  if cmd ~= "LUA" and self.need_scan_dir then
+  if config.workspace_scan_cmd ~= "LUA" and self.need_scan_dir then
     ---@type string[][]
-    local cmds = cmd and { cmd } or { { "rg", "-.g", "!.git", "--files" }, { "fdfind", "-Htf" }, { "fd", "-Htf" } }
+    local cmds = config.workspace_scan_cmd and { config.workspace_scan_cmd }
+      or { { "rg", "-.g", "!.git", "--files" }, { "fdfind", "-Htf" }, { "fd", "-Htf" } }
     for _, c in ipairs(cmds) do
       ok = self:scan_dir_cmd(c)
       if ok then
