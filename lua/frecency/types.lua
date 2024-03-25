@@ -3,7 +3,7 @@
 -- NOTE: types are borrowed from plenary.nvim
 
 ---@class FrecencyPlenaryPath
----@field new fun(self: FrecencyPlenaryPath|string, path: string?): FrecencyPlenaryPath
+---@field new fun(self: FrecencyPlenaryPath|string, path?: string): FrecencyPlenaryPath
 ---@field absolute fun(): string
 ---@field is_file fun(self: FrecencyPlenaryPath): boolean
 ---@field filename string
@@ -11,8 +11,8 @@
 ---@field make_relative fun(self: FrecencyPlenaryPath, cwd: string): string
 ---@field parent FrecencyPlenaryPath
 ---@field path { sep: string }
----@field rm fun(self: FrecencyPlenaryPath, opts: { recursive: boolean }?): nil
----@field touch fun(self: FrecencyPlenaryPath, opts: { parents: boolean }?): nil
+---@field rm fun(self: FrecencyPlenaryPath, opts?: { recursive: boolean }): nil
+---@field touch fun(self: FrecencyPlenaryPath, opts?: { parents: boolean }): nil
 
 ---@class FrecencyPlenaryScanDirOptions
 ---@field hidden boolean if true hidden files will be added
@@ -48,7 +48,7 @@ function FrecencyPlenaryAsync.run(f) end
 ---@field counter fun(): FrecencyPlenaryAsyncControlChannelTx, FrecencyPlenaryAsyncControlChannelRx
 
 ---@class FrecencyPlenaryAsyncControlChannelTx
----@field send fun(entry: any?): nil
+---@field send fun(entry?: any): nil
 local FrecencyPlenaryAsyncControlChannelTx = {}
 
 ---@class FrecencyPlenaryAsyncControlChannelRx
@@ -94,7 +94,7 @@ function FrecencyPlenaryAsyncUv.fs_open(path, flags, mode) end
 ---@async
 ---@param fd integer
 ---@param size integer
----@param offset integer?
+---@param offset? integer
 ---@return string? err
 ---@return string data
 function FrecencyPlenaryAsyncUv.fs_read(fd, size, offset) end
@@ -102,7 +102,7 @@ function FrecencyPlenaryAsyncUv.fs_read(fd, size, offset) end
 ---@async
 ---@param fd integer
 ---@param data string
----@param offset integer?
+---@param offset? integer
 ---@return string? err
 ---@return integer bytes
 function FrecencyPlenaryAsyncUv.fs_write(fd, data, offset) end
@@ -132,8 +132,8 @@ function FrecencyPlenaryAsyncUtil.scheduler() end
 ---@alias FrecencyTelescopeEntryDisplayer fun(items: string[]): table
 
 ---@class FrecencyTelescopeEntryDisplayOptions
----@field separator string?
----@field hl_chars table<string, string>?
+---@field separator? string
+---@field hl_chars? table<string, string>
 ---@field items string[]
 
 ---@class FrecencyTelescopeEntryDisplay
@@ -150,9 +150,9 @@ function FrecencyPlenaryAsyncUtil.scheduler() end
 ---@field manager FrecencyTelescopeEntryManager|false
 ---@field prompt_bufnr integer
 ---@field prompt_prefix string
----@field results_bufnr integer?
----@field results_win integer?
----@field sorting_strategy 'ascending'|'descending'
+---@field results_bufnr? integer
+---@field results_win? integer
+---@field sorting_strategy "ascending"|"descending"
 
 ---@class FrecencyTelescopeEntryManager
 ---@field num_results fun(): integer
@@ -161,7 +161,7 @@ function FrecencyPlenaryAsyncUtil.scheduler() end
 
 ---@class UvFsEventHandle
 ---@field stop fun(self: UvFsEventHandle): nil
----@field start fun(self: UvFsEventHandle, path: string, opts: { recursive: boolean }, cb: fun(err: string?, filename: string?, events: string[])): nil
+---@field start fun(self: UvFsEventHandle, path: string, opts: { recursive: boolean }, cb: fun(err?: string, filename?: string, events: string[])): nil
 ---@field close fun(self: UvFsEventHandle): nil
 
 --- @class VimSystemObj

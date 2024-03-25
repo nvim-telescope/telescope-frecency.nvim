@@ -1,16 +1,10 @@
 local Table = require "frecency.database.table"
 local FileLock = require "frecency.file_lock"
+local config = require "frecency.config"
 local watcher = require "frecency.watcher"
 local log = require "plenary.log"
 local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 local Path = require "plenary.path" --[[@as FrecencyPlenaryPath]]
-
----@class FrecencyDatabaseConfig
----@field root string
-
----@class FrecencyDatabaseGetFilesOptions
----@field path string?
----@field workspace string?
 
 ---@class FrecencyDatabaseEntry
 ---@field ages number[]
@@ -20,7 +14,6 @@ local Path = require "plenary.path" --[[@as FrecencyPlenaryPath]]
 
 ---@class FrecencyDatabase
 ---@field tx FrecencyPlenaryAsyncControlChannelTx
----@field private config FrecencyDatabaseConfig
 ---@field private file_lock FrecencyFileLock
 ---@field private filename string
 ---@field private fs FrecencyFS
@@ -29,17 +22,15 @@ local Path = require "plenary.path" --[[@as FrecencyPlenaryPath]]
 local Database = {}
 
 ---@param fs FrecencyFS
----@param config FrecencyDatabaseConfig
 ---@return FrecencyDatabase
-Database.new = function(fs, config)
+Database.new = function(fs)
   local version = "v1"
   local self = setmetatable({
-    config = config,
     fs = fs,
     tbl = Table.new(version),
     version = version,
   }, { __index = Database })
-  self.filename = Path.new(self.config.root, "file_frecency.bin").filename
+  self.filename = Path.new(config.db_root, "file_frecency.bin").filename
   self.file_lock = FileLock.new(self.filename)
   local rx
   self.tx, rx = async.control.channel.mpsc()
@@ -101,16 +92,15 @@ function Database:remove_files(paths)
 end
 
 ---@param path string
----@param max_count integer
----@param datetime string?
-function Database:update(path, max_count, datetime)
+---@param datetime? string
+function Database:update(path, datetime)
   local record = self.tbl.records[path] or { count = 0, timestamps = {} }
   record.count = record.count + 1
   local now = self:now(datetime)
   table.insert(record.timestamps, now)
-  if #record.timestamps > max_count then
+  if #record.timestamps > config.max_timestamps then
     local new_table = {}
-    for i = #record.timestamps - max_count + 1, #record.timestamps do
+    for i = #record.timestamps - config.max_timestamps + 1, #record.timestamps do
       table.insert(new_table, record.timestamps[i])
     end
     record.timestamps = new_table
@@ -119,8 +109,8 @@ function Database:update(path, max_count, datetime)
   self.tx.send "save"
 end
 
----@param workspace string?
----@param datetime string?
+---@param workspace? string
+---@param datetime? string
 ---@return FrecencyDatabaseEntry[]
 function Database:get_entries(workspace, datetime)
   local now = self:now(datetime)

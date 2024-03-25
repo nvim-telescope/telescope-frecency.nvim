@@ -9,16 +9,16 @@ local Config = {}
 ---@field db_root string default: vim.fn.stdpath "data"
 ---@field db_safe_mode boolean default: true
 ---@field db_validate_threshold integer default: 10
----@field default_workspace string default: nil
+---@field default_workspace? string default: nil
 ---@field disable_devicons boolean default: false
 ---@field filter_delimiter string default: ":"
 ---@field hide_current_buffer boolean default: false
 ---@field ignore_patterns string[] default: { "*.git/*", "*/tmp/*", "term://*" }
 ---@field max_timestamps integer default: 10
----@field show_filter_column boolean|string[]|nil default: true
+---@field show_filter_column boolean|string[] default: true
 ---@field show_scores boolean default: false
 ---@field show_unindexed boolean default: true
----@field workspace_scan_cmd "LUA"|string[]|nil default: nil
+---@field workspace_scan_cmd? "LUA"|string[] default: nil
 ---@field workspaces table<string, string> default: {}
 
 ---@return FrecencyConfig

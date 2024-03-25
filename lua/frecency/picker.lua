@@ -1,5 +1,6 @@
 local State = require "frecency.state"
 local Finder = require "frecency.finder"
+local config = require "frecency.config"
 local sorters = require "telescope.sorters"
 local log = require "plenary.log"
 local Path = require "plenary.path" --[[@as FrecencyPlenaryPath]]
@@ -23,14 +24,9 @@ local uv = vim.loop or vim.uv
 local Picker = {}
 
 ---@class FrecencyPickerConfig
----@field default_workspace_tag string?
 ---@field editing_bufnr integer
----@field filter_delimiter string
----@field ignore_filenames string[]?
----@field initial_workspace_tag string?
----@field show_unindexed boolean
----@field workspace_scan_cmd "LUA"|string[]|nil
----@field workspaces table<string, string>
+---@field ignore_filenames? string[]
+---@field initial_workspace_tag? string
 
 ---@class FrecencyPickerEntry
 ---@field display fun(entry: FrecencyPickerEntry): string
@@ -43,11 +39,11 @@ local Picker = {}
 ---@param entry_maker FrecencyEntryMaker
 ---@param fs FrecencyFS
 ---@param recency FrecencyRecency
----@param config FrecencyPickerConfig
+---@param picker_config FrecencyPickerConfig
 ---@return FrecencyPicker
-Picker.new = function(database, entry_maker, fs, recency, config)
+Picker.new = function(database, entry_maker, fs, recency, picker_config)
   local self = setmetatable({
-    config = config,
+    config = picker_config,
     database = database,
     entry_maker = entry_maker,
     fs = fs,
@@ -55,14 +51,14 @@ Picker.new = function(database, entry_maker, fs, recency, config)
     namespace = vim.api.nvim_create_namespace "frecency",
     recency = recency,
   }, { __index = Picker })
-  local d = self.config.filter_delimiter
+  local d = config.filter_delimiter
   self.workspace_tag_regex = "^%s*" .. d .. "(%S+)" .. d
   return self
 end
 
 ---@class FrecencyPickerOptions
 ---@field cwd string
----@field hide_current_buffer boolean?
+---@field hide_current_buffer? boolean
 ---@field path_display
 ---| "hidden"
 ---| "tail"
@@ -71,15 +67,15 @@ end
 ---| "shorten"
 ---| "truncate"
 ---| fun(opts: FrecencyPickerOptions, path: string): string
----@field workspace string?
+---@field workspace? string
 
 ---@param opts table
----@param workspace string?
----@param workspace_tag string?
+---@param workspace? string
+---@param workspace_tag? string
 function Picker:finder(opts, workspace, workspace_tag)
   local filepath_formatter = self:filepath_formatter(opts)
   local entry_maker = self.entry_maker:create(filepath_formatter, workspace, workspace_tag)
-  local need_scandir = not not (workspace and self.config.show_unindexed)
+  local need_scandir = not not (workspace and config.show_unindexed)
   return Finder.new(
     self.database,
     entry_maker,
@@ -88,11 +84,11 @@ function Picker:finder(opts, workspace, workspace_tag)
     workspace,
     self.recency,
     self.state,
-    { ignore_filenames = self.config.ignore_filenames, workspace_scan_cmd = self.config.workspace_scan_cmd }
+    { ignore_filenames = self.config.ignore_filenames }
   )
 end
 
----@param opts FrecencyPickerOptions?
+---@param opts? FrecencyPickerOptions
 function Picker:start(opts)
   opts = vim.tbl_extend("force", {
     cwd = uv.cwd(),
@@ -100,12 +96,11 @@ function Picker:start(opts)
       return self:default_path_display(picker_opts, path)
     end,
   }, opts or {}) --[[@as FrecencyPickerOptions]]
-  self.workspace = self:get_workspace(opts.cwd, self.config.initial_workspace_tag or self.config.default_workspace_tag)
+  self.workspace = self:get_workspace(opts.cwd, self.config.initial_workspace_tag or config.default_workspace)
   log.debug { workspace = self.workspace }
 
   self.state = State.new()
-  local finder =
-    self:finder(opts, self.workspace, self.config.initial_workspace_tag or self.config.default_workspace_tag)
+  local finder = self:finder(opts, self.workspace, self.config.initial_workspace_tag or config.default_workspace)
   local picker = pickers.new(opts, {
     prompt_title = "Frecency",
     finder = finder,
@@ -128,11 +123,10 @@ end
 ---@return integer|string[]|''
 function Picker:complete(findstart, base)
   if findstart == 1 then
-    local delimiter = self.config.filter_delimiter
     local line = vim.api.nvim_get_current_line()
-    local start = line:find(delimiter)
+    local start = line:find(config.filter_delimiter)
     -- don't complete if there's already a completed `:tag:` in line
-    if not start or line:find(delimiter, start + 1) then
+    if not start or line:find(config.filter_delimiter, start + 1) then
       return -3
     end
     return start
@@ -149,7 +143,7 @@ end
 ---@private
 ---@return string[]
 function Picker:workspace_tags()
-  local tags = vim.tbl_keys(self.config.workspaces)
+  local tags = vim.tbl_keys(config.workspaces)
   table.insert(tags, "CWD")
   if self:get_lsp_workspace() then
     table.insert(tags, "LSP")
@@ -175,14 +169,14 @@ end
 
 ---@private
 ---@param cwd string
----@param tag string?
+---@param tag? string
 ---@return string?
 function Picker:get_workspace(cwd, tag)
-  tag = tag or self.config.default_workspace_tag
+  tag = tag or config.default_workspace
   if not tag then
     return nil
-  elseif self.config.workspaces[tag] then
-    return self.config.workspaces[tag]
+  elseif config.workspaces[tag] then
+    return config.workspaces[tag]
   elseif tag == "LSP" then
     return self:get_lsp_workspace()
   elseif tag == "CWD" then
@@ -231,11 +225,8 @@ function Picker:on_input_filter_cb(picker_opts)
     end
     if self.workspace ~= workspace then
       self.workspace = workspace
-      opts.updated_finder = self:finder(
-        picker_opts,
-        self.workspace,
-        tag or self.config.initial_workspace_tag or self.config.default_workspace_tag
-      )
+      opts.updated_finder =
+        self:finder(picker_opts, self.workspace, tag or self.config.initial_workspace_tag or config.default_workspace)
       opts.updated_finder:start()
     end
     return opts
