@@ -33,7 +33,7 @@ local function with_files(files, cb_or_config, callback)
     frecency.entry_maker,
     frecency.fs,
     frecency.recency,
-    { editing_bufnr = 0, filter_delimiter = ":", show_unindexed = false, workspaces = {} }
+    { editing_bufnr = 0 }
   )
   local finder = frecency.picker:finder {}
   callback(frecency, finder, dir)
