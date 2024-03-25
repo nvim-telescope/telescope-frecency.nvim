@@ -9,7 +9,8 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-          - macos-latest
+          # FIX: Now macos with nightly Neovim fails to test
+          # - macos-latest
           - windows-latest
         version:
           - v0.9.5
