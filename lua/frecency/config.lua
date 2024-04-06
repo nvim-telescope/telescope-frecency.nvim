@@ -5,7 +5,7 @@ local os_util = require "frecency.os_util"
 local Config = {}
 
 ---@class FrecencyRawConfig
----@field recency_values table<integer, { age: integer, value: integer }> default: {}
+---@field recency_values { age: integer, value: integer }[] default: see lua/frecency/config.lua
 ---@field auto_validate boolean default: true
 ---@field db_root string default: vim.fn.stdpath "data"
 ---@field db_safe_mode boolean default: true
@@ -25,14 +25,6 @@ local Config = {}
 ---@return FrecencyConfig
 Config.new = function()
   local default_values = {
-    recency_values = {
-      { age = 240, value = 100 }, -- past 4 hours
-      { age = 1440, value = 80 }, -- past day
-      { age = 4320, value = 60 }, -- past 3 days
-      { age = 10080, value = 40 }, -- past week
-      { age = 43200, value = 20 }, -- past month
-      { age = 129600, value = 10 }, -- past 90 days
-    },
     auto_validate = true,
     db_root = vim.fn.stdpath "data",
     db_safe_mode = true,
@@ -44,6 +36,14 @@ Config.new = function()
     ignore_patterns = os_util.is_windows and { [[*.git\*]], [[*\tmp\*]], "term://*" }
       or { "*.git/*", "*/tmp/*", "term://*" },
     max_timestamps = 10,
+    recency_values = {
+      { age = 240, value = 100 }, -- past 4 hours
+      { age = 1440, value = 80 }, -- past day
+      { age = 4320, value = 60 }, -- past 3 days
+      { age = 10080, value = 40 }, -- past week
+      { age = 43200, value = 20 }, -- past month
+      { age = 129600, value = 10 }, -- past 90 days
+    },
     show_filter_column = true,
     show_scores = false,
     show_unindexed = true,
