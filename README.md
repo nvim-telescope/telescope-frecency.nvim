@@ -32,6 +32,8 @@ timestamps and the total amount of times that the file has been loaded:
 
 ### Recency values (per timestamp)
 
+These values are customizable in `setup()`.
+
 | Timestamp age | Value |
 | -------- | ---------- |
 | 4 hours  | 100        |
@@ -172,20 +174,6 @@ least, it matches against exact the same as you input.
 
 See [default configuration](https://github.com/nvim-telescope/telescope.nvim#telescope-defaults) for full details on configuring Telescope.
 
-- `recency_values` (default: see follow)
-
-  ```lua
-  -- recency_values default:
-  recency_values = {
-    { age = 240, value = 100 }, -- past 4 hours
-    { age = 1440, value = 80 }, -- past day
-    { age = 4320, value = 60 }, -- past 3 days
-    { age = 10080, value = 40 }, -- past week
-    { age = 43200, value = 20 }, -- past month
-    { age = 129600, value = 10 }, -- past 90 days
-  }
-  ```
-
 - `auto_validate`  (default: `true`)
 
   If `true`, it removes stale entries count over than `db_validate_threshold`. See
@@ -238,6 +226,24 @@ See [default configuration](https://github.com/nvim-telescope/telescope.nvim#tel
   **CAUTION** When you reduce the value of this option, it removes old
   timestamps when you open the file. It is reasonable to set this value more
   than or equal to the default value: `10`.
+
+- `recency_values` (default: see below)
+
+  Set weighting factors for calculating “frecency”. This option does not affect
+  values already recorded in DB. So you can change these values without spoiling
+  data.
+
+  ```lua
+  -- default values
+  recency_values = {
+    { age = 240, value = 100 }, -- past 4 hours
+    { age = 1440, value = 80 }, -- past day
+    { age = 4320, value = 60 }, -- past 3 days
+    { age = 10080, value = 40 }, -- past week
+    { age = 43200, value = 20 }, -- past month
+    { age = 129600, value = 10 }, -- past 90 days
+  }
+  ```
 
 - `show_filter_column` (default: `true`)
 
