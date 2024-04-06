@@ -5,6 +5,7 @@ local os_util = require "frecency.os_util"
 local Config = {}
 
 ---@class FrecencyRawConfig
+---@field recency_values table<integer, { age: integer, value: integer }> default: {}
 ---@field auto_validate boolean default: true
 ---@field db_root string default: vim.fn.stdpath "data"
 ---@field db_safe_mode boolean default: true
@@ -24,6 +25,14 @@ local Config = {}
 ---@return FrecencyConfig
 Config.new = function()
   local default_values = {
+    recency_values = {
+      { age = 240, value = 100 }, -- past 4 hours
+      { age = 1440, value = 80 }, -- past day
+      { age = 4320, value = 60 }, -- past 3 days
+      { age = 10080, value = 40 }, -- past week
+      { age = 43200, value = 20 }, -- past month
+      { age = 129600, value = 10 }, -- past 90 days
+    },
     auto_validate = true,
     db_root = vim.fn.stdpath "data",
     db_safe_mode = true,
@@ -43,6 +52,7 @@ Config.new = function()
   }
   ---@type table<string, boolean>
   local keys = {
+    recency_values = true,
     auto_validate = true,
     db_root = true,
     db_safe_mode = true,
@@ -85,6 +95,7 @@ end
 Config.setup = function(ext_config)
   local opts = vim.tbl_extend("force", config.values, ext_config or {})
   vim.validate {
+    recency_values = { opts.recency_values, "t" },
     auto_validate = { opts.auto_validate, "b" },
     db_root = { opts.db_root, "s" },
     db_safe_mode = { opts.db_safe_mode, "b" },
