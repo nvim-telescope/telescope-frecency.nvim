@@ -15,6 +15,7 @@ local Config = {}
 ---@field filter_delimiter string default: ":"
 ---@field hide_current_buffer boolean default: false
 ---@field ignore_patterns string[] default: { "*.git/*", "*/tmp/*", "term://*" }
+---@field matcher "default"|"fuzzy" default: "default"
 ---@field max_timestamps integer default: 10
 ---@field show_filter_column boolean|string[] default: true
 ---@field show_scores boolean default: false
@@ -35,6 +36,7 @@ Config.new = function()
     hide_current_buffer = false,
     ignore_patterns = os_util.is_windows and { [[*.git\*]], [[*\tmp\*]], "term://*" }
       or { "*.git/*", "*/tmp/*", "term://*" },
+    matcher = "default",
     max_timestamps = 10,
     recency_values = {
       { age = 240, value = 100 }, -- past 4 hours
@@ -62,6 +64,7 @@ Config.new = function()
     filter_delimiter = true,
     hide_current_buffer = true,
     ignore_patterns = true,
+    matcher = true,
     max_timestamps = true,
     show_filter_column = true,
     show_scores = true,
@@ -105,6 +108,13 @@ Config.setup = function(ext_config)
     filter_delimiter = { opts.filter_delimiter, "s" },
     hide_current_buffer = { opts.hide_current_buffer, "b" },
     ignore_patterns = { opts.ignore_patterns, "t" },
+    matcher = {
+      opts.matcher,
+      function(v)
+        return type(v) == "string" and (v == "default" or v == "fuzzy")
+      end,
+      '"default" or "fuzzy"',
+    },
     max_timestamps = {
       opts.max_timestamps,
       function(v)
