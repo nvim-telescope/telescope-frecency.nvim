@@ -48,12 +48,6 @@ end
 ---@param workspace_tag? string
 ---@return FrecencyEntryMakerInstance
 function EntryMaker:create(filepath_formatter, workspace, workspace_tag)
-  local displayer = entry_display.create {
-    separator = "",
-    hl_chars = { [Path.path.sep] = "TelescopePathSeparator" },
-    items = self:displayer_items(workspace, workspace_tag),
-  }
-
   return function(file)
     return {
       filename = file.path,
@@ -63,7 +57,14 @@ function EntryMaker:create(filepath_formatter, workspace, workspace_tag)
       ---@param entry FrecencyEntry
       ---@return table
       display = function(entry)
-        local items = self:items(entry, workspace, workspace_tag, filepath_formatter(workspace))
+        local items, width_items = self:items(entry, workspace, workspace_tag, filepath_formatter(workspace))
+
+        local displayer = entry_display.create {
+          separator = "",
+          hl_chars = { [Path.path.sep] = "TelescopePathSeparator" },
+          items = width_items,
+        }
+
         return displayer(items)
       end,
     }
@@ -71,45 +72,42 @@ function EntryMaker:create(filepath_formatter, workspace, workspace_tag)
 end
 
 ---@private
----@param workspace? string
----@param workspace_tag? string
----@return table[]
-function EntryMaker:displayer_items(workspace, workspace_tag)
-  local items = {}
-  if config.show_scores then
-    table.insert(items, { width = 8 })
-  end
-  if self.web_devicons.is_enabled then
-    table.insert(items, { width = 2 })
-  end
-  if config.show_filter_column and workspace and workspace_tag then
-    table.insert(items, { width = self:calculate_filter_column_width(workspace, workspace_tag) })
-  end
-  table.insert(items, { remaining = true })
-  return items
-end
-
----@private
 ---@param entry FrecencyEntry
 ---@param workspace? string
 ---@param workspace_tag? string
 ---@param formatter fun(filename: string): string
----@return table[]
+---@return table[], table[]
 function EntryMaker:items(entry, workspace, workspace_tag, formatter)
-  local items = {}
+  local items, width_items = {}, {}
   if config.show_scores then
     table.insert(items, { entry.score, "TelescopeFrecencyScores" })
+    table.insert(width_items, { width = 8 })
   end
   if self.web_devicons.is_enabled then
     table.insert(items, { self.web_devicons:get_icon(entry.name, entry.name:match "%a+$", { default = true }) })
+    table.insert(width_items, { width = 2 })
   end
   if config.show_filter_column and workspace and workspace_tag then
     local filtered = self:should_show_tail(workspace_tag) and utils.path_tail(workspace) .. Path.path.sep
       or self.fs:relative_from_home(workspace) .. Path.path.sep
     table.insert(items, { filtered, "Directory" })
+    table.insert(width_items, { width = self:calculate_filter_column_width(workspace, workspace_tag) })
   end
-  table.insert(items, { formatter(entry.name), self.loaded[entry.name] and "TelescopeBufferLoaded" or "" })
-  return items
+  local formatted_name, path_style  = formatter(entry.name)
+  if path_style and type(path_style) == "table" then
+    local filename = formatted_name:sub(1, path_style[1][1][1])
+    local parent_path = formatted_name:sub(path_style[1][1][1] + 2, path_style[1][1][2])
+    local hl = path_style[1][2]
+
+    table.insert(items, { filename, self.loaded[entry.name] and "TelescopeBufferLoaded" or "" })
+    table.insert(items, { parent_path, hl })
+    table.insert(width_items, { width = #filename+1 })
+    table.insert(width_items, { remaining = true })
+  else
+    table.insert(items, { formatted_name, self.loaded[entry.name] and "TelescopeBufferLoaded" or "" })
+    table.insert(width_items, { remaining = true })
+  end
+  return items, width_items
 end
 
 ---@private
