@@ -1,3 +1,4 @@
+local config = require "frecency.config"
 local sorters = require "telescope.sorters"
 
 ---@param opts any options for get_fzy_sorter()
@@ -16,7 +17,7 @@ return function(opts)
       if fzy_score <= 0 then
         return -1
       end
-      entry.fuzzy_score = (10 / (entry.score == 0 and 1 or entry.score)) - 1 / fzy_score
+      entry.fuzzy_score = config.scoring_function(entry.score, fzy_score)
       return entry.fuzzy_score
     end,
 
