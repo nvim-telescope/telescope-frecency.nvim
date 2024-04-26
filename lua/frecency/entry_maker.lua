@@ -33,6 +33,7 @@ end
 ---@field ordinal string
 ---@field name string
 ---@field score number
+---@field fuzzy_score? number
 ---@field display fun(entry: FrecencyEntry): string, table
 
 ---@class FrecencyFile
@@ -77,7 +78,9 @@ end
 function EntryMaker:displayer_items(workspace, workspace_tag)
   local items = {}
   if config.show_scores then
-    table.insert(items, { width = 8 })
+    table.insert(items, { width = 5 }) -- index
+    table.insert(items, { width = 6 }) -- fuzzy score
+    table.insert(items, { width = 5 }) -- recency score
   end
   if self.web_devicons.is_enabled then
     table.insert(items, { width = 2 })
@@ -98,6 +101,8 @@ end
 function EntryMaker:items(entry, workspace, workspace_tag, formatter)
   local items = {}
   if config.show_scores then
+    table.insert(items, { entry.index, "TelescopeFrecencyScores" })
+    table.insert(items, { ("%.3f"):format(entry.fuzzy_score or 0):sub(0, 5), "TelescopeFrecencyScores" })
     table.insert(items, { entry.score, "TelescopeFrecencyScores" })
   end
   if self.web_devicons.is_enabled then
