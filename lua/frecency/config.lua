@@ -15,7 +15,7 @@ local Config = {}
 ---@field filter_delimiter string default: ":"
 ---@field hide_current_buffer boolean default: false
 ---@field ignore_patterns string[] default: { "*.git/*", "*/tmp/*", "term://*" }
----@field matcher "default"|"fuzzy"|"fuzzy_full" default: "default"
+---@field matcher "default"|"fuzzy" default: "default"
 ---@field max_timestamps integer default: 10
 ---@field show_filter_column boolean|string[] default: true
 ---@field show_scores boolean default: false
@@ -111,7 +111,7 @@ Config.setup = function(ext_config)
     matcher = {
       opts.matcher,
       function(v)
-        return type(v) == "string" and (v == "default" or v == "fuzzy" or v == "fuzzy_full")
+        return type(v) == "string" and (v == "default" or v == "fuzzy")
       end,
       '"default" or "fuzzy"',
     },
