@@ -261,6 +261,27 @@ See [default configuration](https://github.com/nvim-telescope/telescope.nvim#tel
   }
   ```
 
+- `scoring_function` (default: see below)
+
+  > ___CAUTION___<br>
+  > This option is highly experimental.
+
+  This will be used only when `matcher` option is `"fuzzy"`. You can customize the
+  logic to adjust scores between [fzy matcher][fzy] scores and recency ones.
+
+  ```lua
+  -- the default value
+  ---@param recency integer
+  ---@param fzy_score number
+  ---@return number
+  scoring_function = function(recency, fzy_score)
+    return (10 / (recency == 0 and 1 or recency)) - 1 / fzy_score
+  end,
+  ```
+
+  NOTE: telescope orders candidates in the ascending order. It also accepts
+  negative numbers, but `-1` means the candidates should not be shown.
+
 - `show_filter_column` (default: `true`)
 
   Show the path of the active filter before file paths. In default, it uses the
