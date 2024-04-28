@@ -218,6 +218,22 @@ See [default configuration](https://github.com/nvim-telescope/telescope.nvim#tel
   Patterns in this table control which files are indexed (and subsequently
   which you'll see in the finder results).
 
+- `matcher` (default: `"default"`)
+
+  > ___CAUTION___<br>
+  > This option is highly experimental.
+
+  In default, it matches against candidates by the so-called “substr matcher”,
+  that is, you should input characters ordered properly. If you set here with
+  `"fuzzy"`, it uses [_fzy_ matcher][fzy] implemented in telescope itself, and
+  combines the result with recency scores. With this, you can select candidates
+  fully _fuzzily_, besides that, can select easily ones that has higher recency
+  scores.
+
+  See the discussion in https://github.com/nvim-telescope/telescope-frecency.nvim/issues/165.
+
+  [fzy]: https://github.com/jhawthorn/fzy
+
 - `max_timestamps` (default: `10`)
 
   Set the max count of timestamps DB keeps when you open files. It ignores the
