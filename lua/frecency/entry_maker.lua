@@ -78,9 +78,11 @@ end
 function EntryMaker:displayer_items(workspace, workspace_tag)
   local items = {}
   if config.show_scores then
-    table.insert(items, { width = 5 }) -- index
-    table.insert(items, { width = 6 }) -- fuzzy score
     table.insert(items, { width = 5 }) -- recency score
+    if config.matcher == "fuzzy" then
+      table.insert(items, { width = 5 }) -- index
+      table.insert(items, { width = 6 }) -- fuzzy score
+    end
   end
   if self.web_devicons.is_enabled then
     table.insert(items, { width = 2 })
@@ -101,9 +103,13 @@ end
 function EntryMaker:items(entry, workspace, workspace_tag, formatter)
   local items = {}
   if config.show_scores then
-    table.insert(items, { entry.index, "TelescopeFrecencyScores" })
-    table.insert(items, { ("%.3f"):format(entry.fuzzy_score or 0):sub(0, 5), "TelescopeFrecencyScores" })
     table.insert(items, { entry.score, "TelescopeFrecencyScores" })
+    if config.matcher == "fuzzy" then
+      table.insert(items, { entry.index, "TelescopeFrecencyScores" })
+      local score = (not entry.fuzzy_score or entry.fuzzy_score == 0) and "0"
+        or ("%.3f"):format(entry.fuzzy_score):sub(0, 5)
+      table.insert(items, { score, "TelescopeFrecencyScores" })
+    end
   end
   if self.web_devicons.is_enabled then
     table.insert(items, { self.web_devicons:get_icon(entry.name, entry.name:match "%a+$", { default = true }) })
