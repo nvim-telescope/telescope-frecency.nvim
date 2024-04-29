@@ -51,7 +51,9 @@ Config.new = function()
     ---@param fzy_score number
     ---@return number
     scoring_function = function(recency, fzy_score)
-      return (10 / (recency == 0 and 1 or recency)) - 1 / fzy_score
+      local score = (10 / (recency == 0 and 1 or recency)) - 1 / fzy_score
+      -- HACK: -1 means FILTERED, so return a bit smaller one.
+      return score == -1 and -1.000001 or score
     end,
     show_filter_column = true,
     show_scores = false,
