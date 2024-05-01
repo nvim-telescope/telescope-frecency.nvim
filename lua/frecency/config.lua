@@ -18,6 +18,7 @@ local Config = {}
 ---@field matcher "default"|"fuzzy" default: "default"
 ---@field scoring_function fun(recency: integer, fzy_score: number): number default: see lua/frecency/config.lua
 ---@field max_timestamps integer default: 10
+---@field path_display? table default: nil
 ---@field show_filter_column boolean|string[] default: true
 ---@field show_scores boolean default: false
 ---@field show_unindexed boolean default: true
@@ -75,6 +76,7 @@ Config.new = function()
     ignore_patterns = true,
     matcher = true,
     max_timestamps = true,
+    path_display = true,
     scoring_function = true,
     show_filter_column = true,
     show_scores = true,

@@ -243,6 +243,33 @@ See [default configuration](https://github.com/nvim-telescope/telescope.nvim#tel
   timestamps when you open the file. It is reasonable to set this value more
   than or equal to the default value: `10`.
 
+- `path_display` (default: `nil`)
+
+  Overwrite the `path_display` setting in telescope.nvim itself. See
+  `:h telescope.defaults.path_display` for acceptable values. This setting will
+  be used by these priorities below.
+
+  1. Option specified with the command or Lua code.
+    - `:Telescope frecency path_display={"absolute"}`.
+    - or `:lua require("telescope").extensions.frecency.frecency { path_display = { "absolute" } }`.
+  2. `opts.extensions.frecency.path_display` in setup.
+  3. `opts.defaults.path_display` in setup.
+
+     ```lua
+     require("telescope").setup {
+       defaults = {
+         -- This has the 3rd precedence.
+         path_display = { "absolute" },
+       },
+       extensions = {
+         frecency = {
+           -- This has the 2nd precedence.
+           path_display = { "shorten" },
+         },
+       },
+     }
+     ```
+
 - `recency_values` (default: see below)
 
   Set weighting factors for calculating “frecency”. This option does not affect
