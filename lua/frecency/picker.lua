@@ -96,7 +96,7 @@ function Picker:start(opts)
     path_display = function(picker_opts, path)
       return self:default_path_display(picker_opts, path)
     end,
-  }, opts or {}) --[[@as FrecencyPickerOptions]]
+  }, config_values, opts or {}) --[[@as FrecencyPickerOptions]]
   self.workspace = self:get_workspace(opts.cwd, self.config.initial_workspace_tag or config.default_workspace)
   log.debug { workspace = self.workspace }
 
@@ -272,11 +272,6 @@ function Picker:filepath_formatter(picker_opts)
     opts.cwd = workspace or self.fs.os_homedir
 
     return function(filename)
-      local path_display = config_values.path_display
-      if type(path_display) == "table" and path_display.filename_first then
-        opts.path_display = path_display
-      end
-
       return utils.transform_path(opts, filename)
     end
   end
