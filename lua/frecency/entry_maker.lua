@@ -95,7 +95,7 @@ function EntryMaker:items(entry, workspace, workspace_tag, formatter)
   end
   local formatted_name, path_style = formatter(entry.name)
   -- NOTE: this means it is formatted with the option: filename_first
-  if path_style and type(path_style) == "table" then
+  if path_style and type(path_style) == "table" and #path_style > 0 then
     local index = path_style[1][1]
     local filename = formatted_name:sub(1, index[1])
     local parent_path = formatted_name:sub(index[1] + 2, index[2])
