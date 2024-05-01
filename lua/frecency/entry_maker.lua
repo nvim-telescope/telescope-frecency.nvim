@@ -75,7 +75,7 @@ end
 ---@param entry FrecencyEntry
 ---@param workspace? string
 ---@param workspace_tag? string
----@param formatter fun(filename: string): string
+---@param formatter fun(filename: string): string, FrecencyTelescopePathStyle[]
 ---@return table[], table[]
 function EntryMaker:items(entry, workspace, workspace_tag, formatter)
   local items, width_items = {}, {}
@@ -93,15 +93,17 @@ function EntryMaker:items(entry, workspace, workspace_tag, formatter)
     table.insert(items, { filtered, "Directory" })
     table.insert(width_items, { width = self:calculate_filter_column_width(workspace, workspace_tag) })
   end
-  local formatted_name, path_style  = formatter(entry.name)
+  local formatted_name, path_style = formatter(entry.name)
+  -- NOTE: this means it is formatted with the option: filename_first
   if path_style and type(path_style) == "table" then
-    local filename = formatted_name:sub(1, path_style[1][1][1])
-    local parent_path = formatted_name:sub(path_style[1][1][1] + 2, path_style[1][1][2])
+    local index = path_style[1][1]
+    local filename = formatted_name:sub(1, index[1])
+    local parent_path = formatted_name:sub(index[1] + 2, index[2])
     local hl = path_style[1][2]
 
     table.insert(items, { filename, self.loaded[entry.name] and "TelescopeBufferLoaded" or "" })
     table.insert(items, { parent_path, hl })
-    table.insert(width_items, { width = #filename+1 })
+    table.insert(width_items, { width = #filename + 1 })
     table.insert(width_items, { remaining = true })
   else
     table.insert(items, { formatted_name, self.loaded[entry.name] and "TelescopeBufferLoaded" or "" })

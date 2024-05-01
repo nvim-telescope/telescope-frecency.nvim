@@ -139,9 +139,17 @@ function FrecencyPlenaryAsyncUtil.scheduler() end
 ---@class FrecencyTelescopeEntryDisplay
 ---@field create fun(opts: FrecencyTelescopeEntryDisplayOptions): FrecencyTelescopeEntryDisplayer
 
+---@class FrecencyTelescopePathStyleIndex
+---@field [1] integer start index of the path
+---@field [2] integer finish index of the path
+
+---@class FrecencyTelescopePathStyle
+---@field [1] FrecencyTelescopePathStyleIndex
+---@field [2] string highlight name
+
 ---@class FrecencyTelescopeUtils
 ---@field path_tail fun(path: string): string
----@field transform_path fun(opts: table, path: string): string
+---@field transform_path fun(opts: table, path: string): string, FrecencyTelescopePathStyle[]
 ---@field buf_is_loaded fun(filename: string): boolean
 
 ---@class FrecencyTelescopePicker
