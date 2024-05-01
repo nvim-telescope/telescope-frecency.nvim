@@ -257,7 +257,7 @@ function Picker:set_prompt_options(bufnr)
   vim.keymap.set("i", "<S-Tab>", "pumvisible() ? '<C-p>' : ''", { buffer = bufnr, expr = true })
 end
 
----@alias FrecencyFilepathFormatter fun(workspace: string?): fun(filename: string): string): string
+---@alias FrecencyFilepathFormatter fun(workspace: string?): fun(filename: string): string, FrecencyTelescopePathStyle[]
 
 ---@private
 ---@param picker_opts table
@@ -272,6 +272,11 @@ function Picker:filepath_formatter(picker_opts)
     opts.cwd = workspace or self.fs.os_homedir
 
     return function(filename)
+      local path_display = config_values.path_display
+      if type(path_display) == "table" and path_display.filename_first then
+        opts.path_display = path_display
+      end
+
       return utils.transform_path(opts, filename)
     end
   end
