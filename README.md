@@ -218,6 +218,22 @@ See [default configuration](https://github.com/nvim-telescope/telescope.nvim#tel
   Patterns in this table control which files are indexed (and subsequently
   which you'll see in the finder results).
 
+- `matcher` (default: `"default"`)
+
+  > ___CAUTION___<br>
+  > This option is highly experimental.
+
+  In default, it matches against candidates by the so-called “substr matcher”,
+  that is, you should input characters ordered properly. If you set here with
+  `"fuzzy"`, it uses [_fzy_ matcher][fzy] implemented in telescope itself, and
+  combines the result with recency scores. With this, you can select candidates
+  fully _fuzzily_, besides that, can select easily ones that has higher recency
+  scores.
+
+  See the discussion in https://github.com/nvim-telescope/telescope-frecency.nvim/issues/165.
+
+  [fzy]: https://github.com/jhawthorn/fzy
+
 - `max_timestamps` (default: `10`)
 
   Set the max count of timestamps DB keeps when you open files. It ignores the
@@ -244,6 +260,29 @@ See [default configuration](https://github.com/nvim-telescope/telescope.nvim#tel
     { age = 129600, value = 10 }, -- past 90 days
   }
   ```
+
+- `scoring_function` (default: see below)
+
+  > ___CAUTION___<br>
+  > This option is highly experimental.
+
+  This will be used only when `matcher` option is `"fuzzy"`. You can customize the
+  logic to adjust scores between [fzy matcher][fzy] scores and recency ones.
+
+  ```lua
+  -- the default value
+  ---@param recency integer
+  ---@param fzy_score number
+  ---@return number
+  scoring_function = function(recency, fzy_score)
+    local score = (10 / (recency == 0 and 1 or recency)) - 1 / fzy_score
+    -- HACK: -1 means FILTERED, so return a bit smaller one.
+    return score == -1 and -1.000001 or score
+  end,
+  ```
+
+  NOTE: telescope orders candidates in the ascending order. It also accepts
+  negative numbers, but `-1` means the candidates should not be shown.
 
 - `show_filter_column` (default: `true`)
 
