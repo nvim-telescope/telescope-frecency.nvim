@@ -49,6 +49,14 @@ end
 ---@param workspace_tag? string
 ---@return FrecencyEntryMakerInstance
 function EntryMaker:create(filepath_formatter, workspace, workspace_tag)
+  -- NOTE: entry_display.create calls non API-fast functions. We cannot call
+  -- in entry_maker because it will be called in a Lua loop.
+  local displayer = entry_display.create {
+    separator = "",
+    hl_chars = { [Path.path.sep] = "TelescopePathSeparator" },
+    items = self:width_items(workspace, workspace_tag),
+  }
+
   return function(file)
     return {
       filename = file.path,
@@ -58,14 +66,7 @@ function EntryMaker:create(filepath_formatter, workspace, workspace_tag)
       ---@param entry FrecencyEntry
       ---@return table
       display = function(entry)
-        local items, width_items = self:items(entry, workspace, workspace_tag, filepath_formatter(workspace))
-
-        local displayer = entry_display.create {
-          separator = "",
-          hl_chars = { [Path.path.sep] = "TelescopePathSeparator" },
-          items = width_items,
-        }
-
+        local items = self:items(entry, workspace, workspace_tag, filepath_formatter(workspace))
         return displayer(items)
       end,
     }
@@ -73,34 +74,55 @@ function EntryMaker:create(filepath_formatter, workspace, workspace_tag)
 end
 
 ---@private
----@param entry FrecencyEntry
 ---@param workspace? string
 ---@param workspace_tag? string
----@param formatter fun(filename: string): string, FrecencyTelescopePathStyle[]
----@return table[], table[]
-function EntryMaker:items(entry, workspace, workspace_tag, formatter)
-  local items, width_items = {}, {}
+---@return table[]
+function EntryMaker:width_items(workspace, workspace_tag)
+  local width_items = {}
   if config.show_scores then
-    table.insert(items, { entry.score, "TelescopeFrecencyScores" })
     table.insert(width_items, { width = 5 }) -- recency score
     if config.matcher == "fuzzy" then
-      table.insert(items, { entry.index, "TelescopeFrecencyScores" })
       table.insert(width_items, { width = 5 }) -- index
-      local score = (not entry.fuzzy_score or entry.fuzzy_score == 0) and "0"
-        or ("%.3f"):format(entry.fuzzy_score):sub(0, 5)
-      table.insert(items, { score, "TelescopeFrecencyScores" })
       table.insert(width_items, { width = 6 }) -- fuzzy score
     end
   end
   if self.web_devicons.is_enabled then
-    table.insert(items, { self.web_devicons:get_icon(entry.name, entry.name:match "%a+$", { default = true }) })
     table.insert(width_items, { width = 2 })
+  end
+  if config.show_filter_column and workspace and workspace_tag then
+    table.insert(width_items, { width = self:calculate_filter_column_width(workspace, workspace_tag) })
+  end
+  -- TODO: This is a stopgap measure to detect placeholders.
+  table.insert(width_items, {})
+  table.insert(width_items, {})
+  table.insert(width_items, {})
+  return width_items
+end
+
+---@private
+---@param entry FrecencyEntry
+---@param workspace? string
+---@param workspace_tag? string
+---@param formatter fun(filename: string): string, FrecencyTelescopePathStyle[]
+---@return table[]
+function EntryMaker:items(entry, workspace, workspace_tag, formatter)
+  local items = {}
+  if config.show_scores then
+    table.insert(items, { entry.score, "TelescopeFrecencyScores" })
+    if config.matcher == "fuzzy" then
+      table.insert(items, { entry.index, "TelescopeFrecencyScores" })
+      local score = (not entry.fuzzy_score or entry.fuzzy_score == 0) and "0"
+        or ("%.3f"):format(entry.fuzzy_score):sub(0, 5)
+      table.insert(items, { score, "TelescopeFrecencyScores" })
+    end
+  end
+  if self.web_devicons.is_enabled then
+    table.insert(items, { self.web_devicons:get_icon(entry.name, entry.name:match "%a+$", { default = true }) })
   end
   if config.show_filter_column and workspace and workspace_tag then
     local filtered = self:should_show_tail(workspace_tag) and utils.path_tail(workspace) .. Path.path.sep
       or self.fs:relative_from_home(workspace) .. Path.path.sep
     table.insert(items, { filtered, "Directory" })
-    table.insert(width_items, { width = self:calculate_filter_column_width(workspace, workspace_tag) })
   end
   local formatted_name, path_style = formatter(entry.name)
   -- NOTE: this means it is formatted with the option: filename_first
@@ -110,15 +132,12 @@ function EntryMaker:items(entry, workspace, workspace_tag, formatter)
     local parent_path = formatted_name:sub(index[1] + 2, index[2])
     local hl = path_style[1][2]
 
-    table.insert(items, { filename, self.loaded[entry.name] and "TelescopeBufferLoaded" or "" })
+    table.insert(items, { filename .. " ", self.loaded[entry.name] and "TelescopeBufferLoaded" or "" })
     table.insert(items, { parent_path, hl })
-    table.insert(width_items, { width = #filename + 1 })
-    table.insert(width_items, { remaining = true })
   else
     table.insert(items, { formatted_name, self.loaded[entry.name] and "TelescopeBufferLoaded" or "" })
-    table.insert(width_items, { remaining = true })
   end
-  return items, width_items
+  return items
 end
 
 ---@private
