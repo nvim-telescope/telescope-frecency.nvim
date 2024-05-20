@@ -83,7 +83,7 @@ function Finder:start(datetime)
   if config.workspace_scan_cmd ~= "LUA" and self.need_scan_dir then
     ---@type string[][]
     local cmds = config.workspace_scan_cmd and { config.workspace_scan_cmd }
-      or { { "rg", "-.g", "!.git", "--files" }, { "fdfind", "-Htf" }, { "fd", "-Htf" } }
+      or { { "fdfind", "-Htf" }, { "fd", "-Htf" }, { "rg", "-.g", "!.git", "--files" } }
     for _, c in ipairs(cmds) do
       ok = self:scan_dir_cmd(c)
       if ok then
