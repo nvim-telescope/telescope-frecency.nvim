@@ -13,18 +13,7 @@ local EntryMaker = {}
 ---@param fs FrecencyFS
 ---@return FrecencyEntryMaker
 EntryMaker.new = function(fs)
-  local self = setmetatable({ fs = fs, web_devicons = WebDevicons.new() }, { __index = EntryMaker })
-  local loaded_bufnrs = vim.tbl_filter(function(v)
-    return vim.api.nvim_buf_is_loaded(v)
-  end, vim.api.nvim_list_bufs())
-  self.loaded = {}
-  for _, bufnr in ipairs(loaded_bufnrs) do
-    local bufname = vim.api.nvim_buf_get_name(bufnr)
-    if bufname then
-      self.loaded[bufname] = true
-    end
-  end
-  return self
+  return setmetatable({ fs = fs, web_devicons = WebDevicons.new() }, { __index = EntryMaker })
 end
 
 ---@class FrecencyEntry
@@ -56,6 +45,18 @@ function EntryMaker:create(filepath_formatter, workspace, workspace_tag)
     hl_chars = { [Path.path.sep] = "TelescopePathSeparator" },
     items = self:width_items(workspace, workspace_tag),
   }
+
+  -- set loaded buffers for highlight
+  self.loaded = {}
+  local loaded_bufnrs = vim.tbl_filter(function(v)
+    return vim.api.nvim_buf_is_loaded(v)
+  end, vim.api.nvim_list_bufs())
+  for _, bufnr in ipairs(loaded_bufnrs) do
+    local bufname = vim.api.nvim_buf_get_name(bufnr)
+    if bufname then
+      self.loaded[bufname] = true
+    end
+  end
 
   return function(file)
     return {
