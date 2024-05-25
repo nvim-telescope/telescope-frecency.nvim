@@ -5,6 +5,7 @@
 ---@class FrecencyPlenaryPath
 ---@field new fun(self: FrecencyPlenaryPath|string, path?: string): FrecencyPlenaryPath
 ---@field absolute fun(): string
+---@field exists fun(self: FrecencyPlenaryPath): boolean
 ---@field is_file fun(self: FrecencyPlenaryPath): boolean
 ---@field filename string
 ---@field joinpath fun(self: FrecencyPlenaryPath, ...): FrecencyPlenaryPath

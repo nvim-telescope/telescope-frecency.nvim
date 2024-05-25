@@ -1,13 +1,14 @@
 local os_util = require "frecency.os_util"
 
 ---@class FrecencyConfig: FrecencyRawConfig
+---@field ext_config FrecencyRawConfig
 ---@field private values FrecencyRawConfig
 local Config = {}
 
 ---@class FrecencyRawConfig
 ---@field recency_values { age: integer, value: integer }[] default: see lua/frecency/config.lua
 ---@field auto_validate boolean default: true
----@field db_root string default: vim.fn.stdpath "data"
+---@field db_root string default: vim.fn.stdpath "state"
 ---@field db_safe_mode boolean default: true
 ---@field db_validate_threshold integer default: 10
 ---@field default_workspace? string default: nil
@@ -29,7 +30,7 @@ local Config = {}
 Config.new = function()
   local default_values = {
     auto_validate = true,
-    db_root = vim.fn.stdpath "data",
+    db_root = vim.fn.stdpath "state",
     db_safe_mode = true,
     db_validate_threshold = 10,
     default_workspace = nil,
@@ -85,6 +86,7 @@ Config.new = function()
     workspaces = true,
   }
   return setmetatable({
+    ext_config = {},
     values = default_values,
   }, {
     __index = function(self, key)
@@ -140,6 +142,7 @@ Config.setup = function(ext_config)
     workspace_scan_cmd = { opts.workspace_scan_cmd, { "s", "t" }, true },
     workspaces = { opts.workspaces, "t" },
   }
+  config.ext_config = ext_config
   config.values = opts
 end
 
