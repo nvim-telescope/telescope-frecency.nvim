@@ -8,7 +8,7 @@ local Config = {}
 ---@class FrecencyRawConfig
 ---@field recency_values { age: integer, value: integer }[] default: see lua/frecency/config.lua
 ---@field auto_validate boolean default: true
----@field db_root string default: vim.fn.stdpath "data"
+---@field db_root string default: vim.fn.stdpath "state"
 ---@field db_safe_mode boolean default: true
 ---@field db_validate_threshold integer default: 10
 ---@field default_workspace? string default: nil
@@ -30,7 +30,7 @@ local Config = {}
 Config.new = function()
   local default_values = {
     auto_validate = true,
-    db_root = vim.fn.stdpath "data",
+    db_root = vim.fn.stdpath "state",
     db_safe_mode = true,
     db_validate_threshold = 10,
     default_workspace = nil,
