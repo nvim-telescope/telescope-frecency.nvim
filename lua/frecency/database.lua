@@ -30,7 +30,20 @@ Database.new = function(fs)
     tbl = Table.new(version),
     version = version,
   }, { __index = Database })
-  self.filename = Path.new(config.db_root, "file_frecency.bin").filename
+  self.filename = (function()
+    -- NOTE: for backward compatibility
+    -- If the user does not set db_root specifically, search DB in
+    -- $XDG_DATA_HOME/nvim in addition to $XDG_STATE_HOME/nvim (default value).
+    local file = "file_frecency.bin"
+    local db = Path.new(config.db_root, file)
+    if not config.ext_config.db_root and not db:exists() then
+      local old_location = Path.new(vim.fn.stdpath "data", file)
+      if old_location:exists() then
+        return old_location.filename
+      end
+    end
+    return db.filename
+  end)()
   self.file_lock = FileLock.new(self.filename)
   local rx
   self.tx, rx = async.control.channel.mpsc()
