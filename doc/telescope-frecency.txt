@@ -241,11 +241,17 @@ If `true`, it removes stale entries count over than
 				      *telescope-frecency-configuration-db_root*
 db_root ~
 
-Default: `vim.fn.stdpath "data"`
+Default: `vim.fn.stdpath "state"`
 Type: `string`
 
 Path to the parent directory of custom database location. Defaults to
-`$XDG_DATA_HOME/nvim` if unset.
+|$XDG_STATE_HOME|/nvim (see |stdpath()|) if unset.
+
+NOTE: The default value was `vim.fn.stdpath "data"`. If you doesn't set this
+option and you have DB in `vim.fn.stdpath "data"` instead of
+`vim.fn.stdpath "state"`, it uses the one in the old path for backward
+compatibility. See the detail in the issue below.
+https://github.com/nvim-telescope/telescope-frecency.nvim/issues/200
 
 				 *telescope-frecency-configuration-db_safe_mode*
 db_safe_mode ~
