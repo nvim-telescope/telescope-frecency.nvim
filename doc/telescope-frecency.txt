@@ -1,0 +1,574 @@
+*telescope-frecency.txt*	a telescope extension to use frecency matcher
+
+License: MIT
+
+CONTENTS					   *telescope-frecency-contents*
+
+Introduction		|telescope-frecency-introduction|
+Requirements		|telescope-frecency-requirements|
+Installation		|telescope-frecency-installation|
+Usage			|telescope-frecency-usage|
+Command			|telescope-frecency-command|
+Configuration		|telescope-frecency-configuration|
+Database		|telescope-frecency-database|
+Highlight Groups	|telescope-frecency-highlight-groups|
+Reference		|telescope-frecency-reference|
+
+
+==============================================================================
+INTRODUCTION				       *telescope-frecency-introduction*
+
+This plugin is a |telescope.nvim| extension that offers intelligent
+prioritization when selecting files from your editing history.
+
+Using an implementation of Mozilla's Frecency algorithm (used in Firefox's
+address bar), files edited “frecently” are given higher precedence in the list
+index.
+
+Frecency implementation
+https://firefox-source-docs.mozilla.org/browser/urlbar/ranking.html#frecency-implementation
+Firefox's address bar
+https://support.mozilla.org/en-US/kb/address-bar-autocomplete-firefox
+
+As the extension learns your editing habits over time, the sorting of the list
+is dynamically altered to prioritize the files you're likely to need.
+
+------------------------------------------------------------------------------
+Frecency: Sorting by “frequently” and “recency”
+				      *telescope-frecency-introduction-frecency*
+
+“Frecency” is a score given to each unique file indexed in a file history
+database. A timestamp is recorded once per session when a file is first loaded
+into a buffer.
+
+The score is calculated using the age of the 10 (customizable:
+|telescope-frecency-configuration-max_timestamps|) most recent
+timestamps and the total amount of times that the file has been loaded.
+
+RECENCY VALUES			*telescope-frecency-introduction-recency-values*
+
+THese values are customizable: |telescope-frecency-configuration-recency_values|
+
+┌───────────────┬───────┐
+│ Timestamp age │ Value │
+├───────────────┼───────┤
+│ 4 hours       │ 100   │
+│ 1 day         │ 80    │
+│ 3 days        │ 60    │
+│ 1 week        │ 40    │
+│ 1 month       │ 20    │
+│ 90 days       │ 10    │
+└───────────────┴───────┘
+
+SCORE CALCULATION	     *telescope-frecency-introduction-score-calculation*
+
+Score is calculated by this formula.
+>lua
+    score = frequency * recency_score / max_number_of_timestamps
+
+------------------------------------------------------------------------------
+What about files that are neither “frequent” or “recent”?
+			     *telescope-frecency-introduction-non-indexed-files*
+
+Frecency naturally works best for indexed files that have been given a
+reasonably high score.
+
+New projects or rarely used files with generic names either don't get listed
+at all or can be buried under results with a higher score.
+
+Frecency tackles this with “Workspace Filters”.
+
+WORKSPACE FILTER	      *telescope-frecency-introduction-workspace-filter*
+
+This feature enables you to select from user defined “filter tags” that map to
+a directory or collection of directories. Filters are applied by entering
+`:workspace_tag:` anywhere in the query. Filter name completion is available by
+pressing `<Tab>` after the first `:` character.
+
+When a filter is applied, results are reduced to entries whose path is a
+descendant of the workspace directory. The indexed results are optionally
+augmented with a listing of “all” files found in a recursive search of the
+workspace directory. Non-indexed files are given a score of zero and appear
+below the “frecent” entries. When a non-indexed file is opened, it gains a
+score value and is available in future “frecent” search results.
+
+If the active buffer (prior to the finder being launched) is attached to an
+LSP server, an automatic `LSP` tag is available, which maps to the workspace
+directories provided by the language server.
+
+
+==============================================================================
+REQUIREMENTS				       *telescope-frecency-requirements*
+
+- |telescope.nvim| (required)
+  https://github.com/nvim-telescope/telescope.nvim
+- nvim-web-devicons (optional)
+  https://github.com/kyazdani42/nvim-web-devicons
+- `fd` or `ripgrep` (optional)
+  https://github.com/sharkdp/fd
+  https://github.com/BurntSushi/ripgrep
+
+Note: `fd` or `ripgrep` will be used to list up workspace files. They are extremely
+faster than the native Lua logic. If you don't have them, it fallbacks to Lua
+code automatically. See the detail in
+|telescope-frecency-configuration-workspace_scan_cmd|.
+
+
+==============================================================================
+INSTALLATION				       *telescope-frecency-installation*
+
+This is an example for |lazy.nvim|.
+
+lazy.nvim: https://github.com/folke/lazy.nvim
+>lua
+    -- for lazy.nvim
+    {
+      "nvim-telescope/telescope-frecency.nvim",
+      config = function()
+        require("telescope").load_extension "frecency"
+      end,
+    }
+
+If no database is found when running Neovim with the plugin installed, a new
+one is created and entries from |shada| and |v:oldfiles| are automatically
+imported.
+
+
+==============================================================================
+USAGE						      *telescope-frecency-usage*
+>vim
+    :Telescope frecency
+    " Use a specifix workspace tag:
+    :Telescope frecency workspace=CWD
+    " You can use with telescope's options
+    :Telescope frecency workspace=CWD path_display={"shorten"} theme=ivy
+
+or to map to a key:
+>lua
+    vim.keymap.set("n", "<Leader>tf", function()
+      require("telescope").extensions.frecency.frecency {}
+    end)
+    -- Use a specifix workspace tag:
+    vim.keymap.set("n", "<Leader>tw", function()
+      require("telescope").extensions.frecency.frecency {
+	workspace = "CWD",
+      }
+    end)
+    -- You can use with telescope's options
+    vim.keymap.set("n", "<Leader>tt", function()
+      require("telescope").extensions.frecency.frecency {
+	workspace = "CWD",
+	path_display = { "shorten" },
+	theme = "ivy",
+      }
+    end)
+
+Filter tags are applied by typing the `:tag:` name (adding surrounding colons)
+in the finder query. Entering `:<Tab>` will trigger omni completion |compl-omni|.
+
+------------------------------------------------------------------------------
+Dealing with upper case letters
+
+In default, the sorter always ignores upper case letters in your input string.
+But when |'smartcase'| is ON and input string includes one upper case letter
+at least, it matches against exact the same as you input.
+
+┌──────────────┬───────────────────────┬───────────────────────┐
+│ input string │ |'smartcase'| is ON     │ |'smartcase'| is OFF    │
+├──────────────┼───────────────────────┼───────────────────────┤
+│ `abc`          │ matches `abc`, `ABC`, `aBc` │ matches `abc`, `ABC`, `aBc` │
+│ `aBc`          │ matches `aBc`           │ no match              │
+│ `ABC`          │ matches `ABC`           │ no match              │
+└──────────────┴───────────────────────┴───────────────────────┘
+
+
+==============================================================================
+COMMAND						    *telescope-frecency-command*
+
+All commands are for DB maintenance. See also |telescope-frecency-database|.
+
+				     *telescope-frecency-command-frecencydelete*
+:FrecencyDelete [path] ~
+
+You can delete entries from DB by this command. This command does not remove
+the file itself, only from DB.
+>vim
+    " delete the current opened file
+    :FrecencyDelete
+    " delete the supplied path
+    :FrecencyDelete /full/path/to/the/file
+<
+				   *telescope-frecency-command-frecencyvalidate*
+:FrecencyValidate[!] ~
+
+You can remove stale entries from the database manually. When `!` is suffixed
+(|command-bang|), it never confirms you before removing.
+>vim
+    " clean DB
+    :FrecencyValidate
+    " clean DB without prompts to confirm
+    :FrecencyValidate!
+
+When you set `false` to |telescope-frecency-configuration-db_safe_mode|, the
+prompts are never shown even if you call without the bang.
+
+
+==============================================================================
+CONFIGURATION				      *telescope-frecency-configuration*
+
+You can call `setup()` with these configuration settings below.
+>lua
+    -- example settings
+    require("telescope").setup {
+      extensions = {
+	frecency = {
+	  auto_validate = false,
+	  matcher = "fuzzy",
+	  path_display = { "filename_first" },
+	},
+      },
+    }
+<
+			        *telescope-frecency-configuration-auto_validate*
+auto_validate ~
+
+Default: `true`
+Type: `boolean`
+
+If `true`, it removes stale entries count over than
+|telescope-frecency-configuration-db_validate_threshold|.
+
+				      *telescope-frecency-configuration-db_root*
+db_root ~
+
+Default: `vim.fn.stdpath "data"`
+Type: `string`
+
+Path to the parent directory of custom database location. Defaults to
+`$XDG_DATA_HOME/nvim` if unset.
+
+				 *telescope-frecency-configuration-db_safe_mode*
+db_safe_mode ~
+
+Default: `true`
+Type: `boolean`
+
+If `true`, it shows confirmation dialog by |vim.ui.select()| before validating DB.
+See the note for |telescope-frecency-database|.
+
+			*telescope-frecency-configuration-db_validate_threshold*
+db_validate_threshold ~
+
+Default: `10`
+Type: `integer`
+
+It will remove entries when stale ones exist more than this count.
+
+			    *telescope-frecency-configuration-default_workspace*
+default_workspace ~
+
+Default: `nil`
+Type: `string?`
+
+Default workspace tag to filter. For example, entries are filtered to ones in
+the current directory when you set this to `"CWD"`. This can be overwritten in
+querying by specifying another filter like `:FOO:`.
+
+			     *telescope-frecency-configuration-disable_devicons*
+disable_devicons ~
+
+Default: `false`
+Type: `boolean`
+
+Disable devicons (if available).
+
+			  *telescope-frecency-configuration-hide_current_buffer*
+hide_current_buffer ~
+
+Default: `false`
+Type: `boolean`
+
+If `true`, it does not show the filename in the current buffer in candidates.
+
+			     *telescope-frecency-configuration-filter_delimiter*
+filter_delimiter ~
+
+Delimiters to indicate the filter like `:CWD:`.
+
+			      *telescope-frecency-configuration-ignore_patterns*
+ignore_patterns ~
+
+Default:
+  for non-Windows: `{ "*.git/*", "*/tmp/*", "term://*" }`
+  for Windows: `{ [[*.git\*]], [[*\tmp\*]], "term://*" }`
+Type: `string`
+
+Patterns in this table control which files are indexed (and subsequently which
+you'll see in the finder results).
+
+				      *telescope-frecency-configuration-matcher*
+matcher ~
+
+Default: `"default"`
+Type: `"default"|"fuzzy"`
+
+WARNING: This option is highly experimental.
+
+In default, it matches against candidates by the so-called “substr matcher”,
+that is, you should input characters ordered properly. If you set here with
+`"fuzzy"`, it uses “fzy matcher” implemented in |telescope.nvim| itself, and
+combines the result with recency scores.
+
+fzy matcher: https://github.com/jhawthorn/fzy
+
+With this, you can select candidates fully fuzzily, besides that, can select
+easily ones that has higher recency scores.
+
+See the discussion in this issue.
+https://github.com/nvim-telescope/telescope-frecency.nvim/issues/165
+
+			       *telescope-frecency-configuration-max_timestamps*
+max_timestamps ~
+
+Default: `10`
+Type: `integer`
+
+Set the max count of timestamps DB keeps when you open files. It ignores the
+value and use `10` if you set less than or equal to `0`.
+
+Warning: When you reduce the value of this option, it removes old timestamps
+when you open the file. It is reasonable to set this value more than or equal
+to the default value: `10`.
+
+				 *telescope-frecency-configuration-path_display*
+path_display ~
+
+Default: `nil`
+Type: same as |telescope.defaults.path_display|
+
+Overwrite |telescope.defaults.path_display|. This setting will be used by
+these priorities below.
+
+1. Option specified with the command or Lua code. Such as, >vim
+    :Telescope frecency path_display={"absolute"}
+<   or >lua
+    require("telescope").extensions.frecency.frecency {
+      path_display = { "absolute" },
+    }
+
+2. `opts.extensions.frecency.path_display` in setup.
+3. `opts.defaults.path_display` in setup.
+>lua
+    require("telescope").setup {
+      defaults = {
+	-- This has the 3rd precedence.
+	path_display = { "absolute" },
+      },
+      extensions = {
+	frecency = {
+	  -- This has the 2nd precedence.
+	  path_display = { "shorten" },
+	},
+      },
+    }
+<
+			       *telescope-frecency-configuration-recency_values*
+recency_values ~
+
+Default: >lua
+    {
+      { age = 240, value = 100 }, -- past 4 hours
+      { age = 1440, value = 80 }, -- past day
+      { age = 4320, value = 60 }, -- past 3 days
+      { age = 10080, value = 40 }, -- past week
+      { age = 43200, value = 20 }, -- past month
+      { age = 129600, value = 10 }, -- past 90 days
+    }
+Type: `{ age: integer, value: integer }[]`
+
+Set weighting factors for calculating “frecency”. This option does not affect
+values already recorded in DB. So you can change these values without spoiling
+data.
+
+			     *telescope-frecency-configuration-scoring_function*
+scoring_function ~
+
+Default: >lua
+    function(recency, fzy_score)
+      local score = (10 / (recency == 0 and 1 or recency)) - 1 / fzy_score
+      return score == -1 and -1.000001 or score
+    end
+Type: `fun(recency: integer, fzy_score: number): number`
+
+WARNING: This option is highly experimental.
+
+This will be used only when |telescope-frecency-configuration-matcher| is
+`"fuzzy"`. You can customize the logic to adjust scores between “fzy matcher”
+scores and recency ones.
+
+			   *telescope-frecency-configuration-show_filter_column*
+show_filter_column ~
+
+Default: `true`
+Type: `boolean|string[]`
+
+Show the path of the active filter before file paths. In default, it uses the
+tail of paths for `"LSP"` and `"CWD"` tags. YOu can configure this by setting a
+table for this option.
+>lua
+    -- show the tail for "LSP", "CWD" and "FOO"
+    show_filter_column = { "LSP", "CWD", "FOO" }
+<
+				  *telescope-frecency-configuration-show_scores*
+show_scores ~
+
+Default: `false`
+Type: `boolean`
+
+To see scores calculated by the algorithm in the results, set this to `true`.
+
+			       *telescope-frecency-configuration-show_unindexed*
+show_unindexed ~
+
+Default: `true`
+Type: `boolean`
+
+Determines if non-indexed files are included in workspace filter results.
+
+			   *telescope-frecency-configuration-workspace_scan_cmd*
+workspace_scan_cmd ~
+
+Default: `nil`
+Type: `"LUA"|string[]|nil`
+
+With the default value: `nil`, it uses these ways below to make entries for
+workspace files. It tries in order until it works successfully.
+
+1. `fdfind -Htf`
+2. `fd -Htf`
+3. `rg -.g '!.git' --files`
+4. Native Lua code (old way)
+
+If you like another commands, set them to this option, like
+`workspace_scan_cmd = { "find", ".", "-type", "f" }`.
+
+				   *telescope-frecency-configuration-workspaces*
+workspaces ~
+
+Default: `{}`
+Type: `table<string, string>`
+
+This table contains mappings of `workspace_tag` → `workspace_directory`. The key
+corresponds to the `:tag_name` used to select the filter in queies. The value
+corresponds to the top level directory by which results will be filtered.
+>lua
+    -- example configuration
+    workspaces = {
+      ["conf"] = "/home/my_username/.config",
+      ["data"] = "/home/my_username/.local/share",
+      ["project"] = "/home/my_username/projects",
+      ["wiki"] = "/home/my_username/wiki",
+    }
+
+
+==============================================================================
+DATABASE					   *telescope-frecency-database*
+
+------------------------------------------------------------------------------
+Location				  *telescope-frecency-database-location*
+
+The default location for the database is `$XDG_DATA_HOME/nvim` (e.g.
+`~/.local/share/nvim` on Linux). This can be configured with the
+|telescope-frecency-configuration-db_root| config option. The filename for the
+database is `file_frecency.bin` (not configurable).
+
+------------------------------------------------------------------------------
+Maintenance			       *telescope-frecency-database-maintenance*
+
+By default, this plugin will prune files that no longer exist from the
+database. In certain workflows, switching branches in a repository, that
+behavior might not be desired. The following configuration control this
+behavior.
+
+- `db_safe_mode
+  When this is enabled, the user will be prompted before any entries are
+  removed from the database.
+- `auto_validate
+  When this is `false`, stale entries will never be removed automatically.
+
+If you want not to be bothered with such things and to remove stale results
+silently, set these below.
+>lua
+    require("telescope").setup {
+      extensions = {
+	frecency = {
+	  db_safe_mode = false,
+	  -- auto_validate is `true` in default
+	},
+      },
+    }
+
+------------------------------------------------------------------------------
+Compatibility			     *telescope-frecency-database-compatibility*
+
+The former version of this plugin has used SQLite3 library to store data. The
+PR #172 has removed the whole code for that.
+
+feat!: remove code for SQLite by delphinus · Pull Request #172
+https://github.com/nvim-telescope/telescope-frecency.nvim/pull/172
+
+If you prefer the old SQLite database, you should lock the version to `a3e818d`
+with your favorite plugin manager.
+>lua
+    -- example for lazy.nvim
+    {
+      "nvim-telescope/telescope-frecency.nvim",
+      commit = "a3e818d001baad9ee2f6800d3bbc71c4275364ae",
+    }
+
+
+==============================================================================
+HIGHLIGHT GROUPS			   *telescope-frecency-highlight-groups*
+
+This plugin defined these highlight groups below. You can set your own colors
+before loading plugins.
+
+		     *telescope-frecency-highlight-groups-telescopebufferloaded*
+TelescopeBufferLoaded ~
+
+Default: link to |hl-String|
+
+This is used to highlight the filename already opened in buffers.
+
+		    *telescope-frecency-highlight-groups-telescopepathseparator*
+TelescopePathSeparator ~
+
+Default: link to |hl-Directory|
+
+This is used to highlight path separators: `/` (non-Windows), `\` (Windows).
+
+		   *telescope-frecency-highlight-groups-telescopefrecencyscores*
+TelescopeFrecencyScores ~
+
+Default: link to |hl-Number|
+
+This is used to highlight scores in the results.
+
+		      *telescope-frecency-highlight-groups-telescopequeryfilter*
+TelescopeQueryFilter ~
+
+Default: link to |hl-WildMenu|
+
+This is used to highlight query filter such as `:CWD:`.
+
+
+==============================================================================
+REFERENCE					  *telescope-frecency-reference*
+
+Mozilla: Frecency algorithm
+https://developer.mozilla.org/en-US/docs/Mozilla/Tech/Places/Frecency_algorithm
+(Web Archive)
+https://web.archive.org/web/20210421120120/https://developer.mozilla.org/en-US/docs/Mozilla/Tech/Places/Frecency_algorithm
+
+
+vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl:noet
