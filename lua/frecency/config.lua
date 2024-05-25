@@ -1,6 +1,7 @@
 local os_util = require "frecency.os_util"
 
 ---@class FrecencyConfig: FrecencyRawConfig
+---@field ext_config FrecencyRawConfig
 ---@field private values FrecencyRawConfig
 local Config = {}
 
@@ -85,6 +86,7 @@ Config.new = function()
     workspaces = true,
   }
   return setmetatable({
+    ext_config = {},
     values = default_values,
   }, {
     __index = function(self, key)
@@ -140,6 +142,7 @@ Config.setup = function(ext_config)
     workspace_scan_cmd = { opts.workspace_scan_cmd, { "s", "t" }, true },
     workspaces = { opts.workspaces, "t" },
   }
+  config.ext_config = ext_config
   config.values = opts
 end
 
