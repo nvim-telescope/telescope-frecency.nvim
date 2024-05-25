@@ -10,7 +10,7 @@
 ---@field filename string
 ---@field joinpath fun(self: FrecencyPlenaryPath, ...): FrecencyPlenaryPath
 ---@field make_relative fun(self: FrecencyPlenaryPath, cwd: string): string
----@field parent FrecencyPlenaryPath
+---@field parent fun(self: FrecencyPlenaryPath): FrecencyPlenaryPath
 ---@field path { sep: string }
 ---@field rm fun(self: FrecencyPlenaryPath, opts?: { recursive: boolean }): nil
 ---@field touch fun(self: FrecencyPlenaryPath, opts?: { parents: boolean }): nil

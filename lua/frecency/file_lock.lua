@@ -1,3 +1,4 @@
+local Path = require "plenary.path" --[[@as FrecencyPlenaryPath]]
 local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 local log = require "plenary.log"
 
@@ -30,6 +31,13 @@ function FileLock:get()
   local err, fd
   while true do
     count = count + 1
+    local dir = Path.new(self.filename):parent()
+    if not dir:exists() then
+      -- TODO: make this call be async
+      log.debug(("file_lock get(): mkdir parent: %s"):format(dir.filename))
+      ---@diagnostic disable-next-line: undefined-field
+      dir:mkdir { parents = true }
+    end
     err, fd = async.uv.fs_open(self.filename, "wx", tonumber("600", 8))
     if not err then
       break
