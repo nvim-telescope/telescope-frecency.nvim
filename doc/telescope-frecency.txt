@@ -166,6 +166,7 @@ or to map to a key:
 Filter tags are applied by typing the `:tag:` name (adding surrounding colons)
 in the finder query. Entering `:<Tab>` will trigger omni completion |compl-omni|.
 
+		       *telescope-frecency-usage-dealing-with-uppercase-letters*
 ------------------------------------------------------------------------------
 Dealing with upper case letters
 
