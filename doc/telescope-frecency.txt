@@ -230,6 +230,24 @@ You can call `setup()` with these configuration settings below.
       },
     }
 <
+				 *telescope-frecency-configuration-frecencyopts*
+								  *FrecencyOpts*
+`FrecencyOpts` is a convenient type to use your own configuration. With using
+this in the type annotation, you can complete items by LSP in writing.
+
+NOTE: You need a properly configured Language Server for this feature such as
+lua-ls. https://github.com/LuaLS/lua-language-server
+>lua
+    require("telescope").setup {
+      extensions = {
+	---@type FrecencyOpts
+	frecency = {
+	  auto_validate = false,
+	  -- …… other configs
+	}
+      },
+    }
+<
 			        *telescope-frecency-configuration-auto_validate*
 auto_validate ~
 
