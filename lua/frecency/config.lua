@@ -1,5 +1,27 @@
 local os_util = require "frecency.os_util"
 
+---Type to use when users write their own config.
+---@class FrecencyOpts
+---@field recency_values? { age: integer, value: integer }[] default: see lua/frecency/config.lua
+---@field auto_validate? boolean default: true
+---@field db_root? string default: vim.fn.stdpath "state"
+---@field db_safe_mode? boolean default: true
+---@field db_validate_threshold? integer default: 10
+---@field default_workspace? string default: nil
+---@field disable_devicons? boolean default: false
+---@field filter_delimiter? string default: ":"
+---@field hide_current_buffer? boolean default: false
+---@field ignore_patterns? string[] default: { "*.git/*", "*/tmp/*", "term://*" }
+---@field matcher? "default"|"fuzzy" default: "default"
+---@field scoring_function? fun(recency: integer, fzy_score: number): number default: see lua/frecency/config.lua
+---@field max_timestamps? integer default: 10
+---@field path_display? table default: nil
+---@field show_filter_column? boolean|string[] default: true
+---@field show_scores? boolean default: false
+---@field show_unindexed? boolean default: true
+---@field workspace_scan_cmd? "LUA"|string[] default: nil
+---@field workspaces? table<string, string> default: {}
+
 ---@class FrecencyConfig: FrecencyRawConfig
 ---@field ext_config FrecencyRawConfig
 ---@field private values FrecencyRawConfig
