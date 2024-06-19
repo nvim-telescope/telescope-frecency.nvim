@@ -118,7 +118,9 @@ function EntryMaker:items(entry, workspace, workspace_tag, formatter)
     end
   end
   if self.web_devicons.is_enabled then
-    table.insert(items, { self.web_devicons:get_icon(entry.name, entry.name:match "%a+$", { default = true }) })
+    local basename = utils.path_tail(entry.name)
+    
+    table.insert(items, { self.web_devicons:get_icon(basename, utils.file_extension(basename), { default = true }) })
   end
   if config.show_filter_column and workspace and workspace_tag then
     local filtered = self:should_show_tail(workspace_tag) and utils.path_tail(workspace) .. Path.path.sep
