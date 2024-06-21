@@ -152,6 +152,7 @@ function FrecencyPlenaryAsyncUtil.scheduler() end
 ---@field path_tail fun(path: string): string
 ---@field transform_path fun(opts: table, path: string): string, FrecencyTelescopePathStyle[]
 ---@field buf_is_loaded fun(filename: string): boolean
+---@field file_extension fun(filename: string): string
 
 ---@class FrecencyTelescopePicker
 ---@field clear_extra_rows fun(self: FrecencyTelescopePicker, results_bufnr: integer): nil
