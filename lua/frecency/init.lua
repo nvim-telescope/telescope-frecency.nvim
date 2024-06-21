@@ -28,10 +28,14 @@ end
 ---This is called when `:Telescope frecency` is called at the first time.
 ---@return nil
 function Frecency:setup()
-  self:assert_db_entries()
-  if config.auto_validate then
-    self:validate_database()
-  end
+  -- HACK: Wihout this wrapping, it spoils background color detection.
+  -- See https://github.com/nvim-telescope/telescope-frecency.nvim/issues/210
+  vim.defer_fn(function()
+    self:assert_db_entries()
+    if config.auto_validate then
+      self:validate_database()
+    end
+  end, 0)
 end
 
 ---This can be calledBy `require("telescope").extensions.frecency.frecency`.
