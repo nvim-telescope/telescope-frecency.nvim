@@ -127,6 +127,98 @@ function Frecency:delete(path)
   end
 end
 
+---@alias FrecencyQueryOrder "count"|"path"|"score"|"timestamps"
+---@alias FrecencyQueryDirection "asc"|"desc"
+
+---@class FrecencyQueryOpts
+---@field direction? "asc"|"desc" default: "desc"
+---@field limit? integer default: 100
+---@field order? FrecencyQueryOrder default: "score"
+---@field record? boolean default: false
+---@field workspace? string default: nil
+
+---@class FrecencyQueryEntry
+---@field count integer
+---@field path string
+---@field score number
+---@field timestamps integer[]
+
+---@param opts? FrecencyQueryOpts
+---@param epoch? integer
+---@return FrecencyQueryEntry[]|string[]
+function Frecency:query(opts, epoch)
+  opts = vim.tbl_extend("force", {
+    direction = "desc",
+    limit = 100,
+    order = "score",
+    record = false,
+  }, opts or {})
+  ---@param entry FrecencyDatabaseEntry
+  local entries = vim.tbl_map(function(entry)
+    return {
+      count = entry.count,
+      path = entry.path,
+      score = entry.ages and self.recency:calculate(entry.count, entry.ages) or 0,
+      timestamps = entry.timestamps,
+    }
+  end, self.database:get_entries(opts.workspace, epoch))
+  table.sort(entries, self:query_sorter(opts.order, opts.direction))
+  local results = opts.record and entries or vim.tbl_map(function(entry)
+    return entry.path
+  end, entries)
+  if #results > opts.limit then
+    return vim.list_slice(results, 1, opts.limit)
+  end
+  return results
+end
+
+---@private
+---@param order FrecencyQueryOrder
+---@param direction FrecencyQueryDirection
+---@return fun(a: FrecencyQueryEntry, b: FrecencyQueryEntry): boolean
+function Frecency:query_sorter(order, direction)
+  local is_asc = direction == "asc"
+  if order == "count" then
+    if is_asc then
+      return function(a, b)
+        return a.count < b.count or (a.count == b.count and a.path < b.path)
+      end
+    end
+    return function(a, b)
+      return a.count > b.count or (a.count == b.count and a.path < b.path)
+    end
+  elseif order == "path" then
+    if is_asc then
+      return function(a, b)
+        return a.path < b.path
+      end
+    end
+    return function(a, b)
+      return a.path > b.path
+    end
+  elseif order == "score" then
+    if is_asc then
+      return function(a, b)
+        return a.score < b.score or (a.score == b.score and a.path < b.path)
+      end
+    end
+    return function(a, b)
+      return a.score > b.score or (a.score == b.score and a.path < b.path)
+    end
+  elseif is_asc then
+    return function(a, b)
+      local a_timestamp = a.timestamps[1] or 0
+      local b_timestamp = b.timestamps[1] or 0
+      return a_timestamp < b_timestamp or (a_timestamp == b_timestamp and a.path < b.path)
+    end
+  end
+  return function(a, b)
+    local a_timestamp = a.timestamps[1] or 0
+    local b_timestamp = b.timestamps[1] or 0
+    return a_timestamp > b_timestamp or (a_timestamp == b_timestamp and a.path < b.path)
+  end
+end
+
 ---@private
 ---@param fmt string
 ---@param ...? any

@@ -11,6 +11,7 @@ local Path = require "plenary.path" --[[@as FrecencyPlenaryPath]]
 ---@field count integer
 ---@field path string
 ---@field score number
+---@field timestamps integer[]
 
 ---@class FrecencyDatabase
 ---@field tx FrecencyPlenaryAsyncControlChannelTx
@@ -136,6 +137,7 @@ function Database:get_entries(workspace, datetime)
         ages = vim.tbl_map(function(v)
           return (now - v) / 60
         end, record.timestamps),
+        timestamps = record.timestamps,
       })
     end
   end
