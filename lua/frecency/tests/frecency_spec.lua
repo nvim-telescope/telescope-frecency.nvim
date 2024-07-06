@@ -510,4 +510,89 @@ describe("frecency", function()
       end)
     end)
   end)
+
+  describe("query", function()
+    with_files({ "hoge1.txt", "hoge2.txt", "hoge3.txt", "hoge4.txt" }, function(frecency, _, dir)
+      local register = make_register(frecency, dir)
+      local epoch11 = make_epoch "2023-07-29T00:00:00+09:00"
+      local epoch2 = make_epoch "2023-07-29T00:01:00+09:00"
+      local epoch12 = make_epoch "2023-07-29T00:02:00+09:00"
+      local epoch31 = make_epoch "2023-07-29T00:03:00+09:00"
+      local epoch13 = make_epoch "2023-07-29T00:04:00+09:00"
+      local epoch32 = make_epoch "2023-07-29T00:05:00+09:00"
+      local epoch4 = make_epoch "2023-07-29T00:06:00+09:00"
+      register("hoge1.txt", epoch11)
+      register("hoge2.txt", epoch2)
+      register("hoge1.txt", epoch12, true)
+      register("hoge3.txt", epoch31)
+      register("hoge1.txt", epoch13, true)
+      register("hoge3.txt", epoch32, true)
+      register("hoge4.txt", epoch4)
+
+      for _, c in ipairs {
+        {
+          desc = "with no opts",
+          opts = nil,
+          results = {
+            filepath(dir, "hoge1.txt"),
+            filepath(dir, "hoge3.txt"),
+            filepath(dir, "hoge2.txt"),
+            filepath(dir, "hoge4.txt"),
+          },
+        },
+        {
+          desc = "with an empty opts",
+          opts = {},
+          results = {
+            filepath(dir, "hoge1.txt"),
+            filepath(dir, "hoge3.txt"),
+            filepath(dir, "hoge2.txt"),
+            filepath(dir, "hoge4.txt"),
+          },
+        },
+        {
+          desc = "with limit",
+          opts = { limit = 3 },
+          results = {
+            filepath(dir, "hoge1.txt"),
+            filepath(dir, "hoge3.txt"),
+            filepath(dir, "hoge2.txt"),
+          },
+        },
+        {
+          desc = "with limit, direction",
+          opts = { direction = "asc", limit = 3 },
+          results = {
+            filepath(dir, "hoge2.txt"),
+            filepath(dir, "hoge4.txt"),
+            filepath(dir, "hoge3.txt"),
+          },
+        },
+        {
+          desc = "with limit, direction, order",
+          opts = { direction = "asc", limit = 3, order = "path" },
+          results = {
+            filepath(dir, "hoge1.txt"),
+            filepath(dir, "hoge2.txt"),
+            filepath(dir, "hoge3.txt"),
+          },
+        },
+        {
+          desc = "with limit, direction, order, record",
+          opts = { direction = "asc", limit = 3, order = "path", record = true },
+          results = {
+            { count = 3, path = filepath(dir, "hoge1.txt"), score = 90, timestamps = { epoch11, epoch12, epoch13 } },
+            { count = 1, path = filepath(dir, "hoge2.txt"), score = 10, timestamps = { epoch2 } },
+            { count = 2, path = filepath(dir, "hoge3.txt"), score = 40, timestamps = { epoch31, epoch32 } },
+          },
+        },
+      } do
+        describe(c.desc, function()
+          it("returns valid results", function()
+            assert.are.same(c.results, frecency:query(c.opts, make_epoch "2023-07-29T04:00:00+09:00"))
+          end)
+        end)
+      end
+    end)
+  end)
 end)
