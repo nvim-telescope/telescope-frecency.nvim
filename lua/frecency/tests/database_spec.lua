@@ -20,7 +20,7 @@ local function with_database(f)
   local dir, close = util.tmpdir()
   dir:joinpath("file_frecency.bin"):touch()
   return function()
-    config.setup { db_root = dir.filename }
+    config.setup { debug = true, db_root = dir.filename }
     local database = Database.new(fs)
     f(database)
     close()
