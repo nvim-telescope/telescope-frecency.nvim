@@ -391,6 +391,19 @@ Type: `integer`
 
 It will remove entries when stale ones exist more than this count.
 
+					*telescope-frecency-configuration-debug*
+debug ~
+
+Default: `false`
+Type: `boolean`
+
+This plugin uses `plenary.log` to log debugging messages. You should set this to
+`true` and set environmental variable `DEBUG_PLENARY` to see debug messages.
+>bash
+    # Launch Neovim with DEBUG_PLENARY=1 and set `debug = true` and you can
+    # see debug messages.
+    env DEBUG_PLENARY=1 nvim
+
 			    *telescope-frecency-configuration-default_workspace*
 default_workspace ~
 

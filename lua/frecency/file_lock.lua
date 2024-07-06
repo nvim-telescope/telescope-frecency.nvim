@@ -1,6 +1,6 @@
+local log = require "frecency.log"
 local Path = require "plenary.path" --[[@as FrecencyPlenaryPath]]
 local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
-local log = require "plenary.log"
 
 ---@class FrecencyFileLock
 ---@field base string
