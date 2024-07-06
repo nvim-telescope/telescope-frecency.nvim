@@ -1,8 +1,8 @@
 local config = require "frecency.config"
 local os_util = require "frecency.os_util"
+local log = require "frecency.log"
 local Job = require "plenary.job"
 local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
-local log = require "plenary.log"
 
 ---@class FrecencyFinder
 ---@field config FrecencyFinderConfig

@@ -1,8 +1,11 @@
 ---@diagnostic disable: undefined-field
+local config = require "frecency.config"
 local FileLock = require "frecency.file_lock"
 local util = require "frecency.tests.util"
 local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 require("plenary.async").tests.add_to_env()
+
+config.setup { debug = true }
 
 local function with_dir(f)
   local dir, close = util.make_tree {}

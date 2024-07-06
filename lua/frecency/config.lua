@@ -7,6 +7,7 @@ local os_util = require "frecency.os_util"
 ---@field db_root? string default: vim.fn.stdpath "state"
 ---@field db_safe_mode? boolean default: true
 ---@field db_validate_threshold? integer default: 10
+---@field debug? boolean default: false
 ---@field default_workspace? string default: nil
 ---@field disable_devicons? boolean default: false
 ---@field filter_delimiter? string default: ":"
@@ -33,6 +34,7 @@ local Config = {}
 ---@field db_root string default: vim.fn.stdpath "state"
 ---@field db_safe_mode boolean default: true
 ---@field db_validate_threshold integer default: 10
+---@field debug boolean default: false
 ---@field default_workspace? string default: nil
 ---@field disable_devicons boolean default: false
 ---@field filter_delimiter string default: ":"
@@ -55,21 +57,22 @@ Config.new = function()
     db_root = vim.fn.stdpath "state",
     db_safe_mode = true,
     db_validate_threshold = 10,
+    debug = false,
     default_workspace = nil,
     disable_devicons = false,
     filter_delimiter = ":",
     hide_current_buffer = false,
     ignore_patterns = os_util.is_windows and { [[*.git\*]], [[*\tmp\*]], "term://*" }
-      or { "*.git/*", "*/tmp/*", "term://*" },
+        or { "*.git/*", "*/tmp/*", "term://*" },
     matcher = "default",
     max_timestamps = 10,
     recency_values = {
-      { age = 240, value = 100 }, -- past 4 hours
-      { age = 1440, value = 80 }, -- past day
-      { age = 4320, value = 60 }, -- past 3 days
-      { age = 10080, value = 40 }, -- past week
-      { age = 43200, value = 20 }, -- past month
-      { age = 129600, value = 10 }, -- past 90 days
+      { age = 240,    value = 100 }, -- past 4 hours
+      { age = 1440,   value = 80 },  -- past day
+      { age = 4320,   value = 60 },  -- past 3 days
+      { age = 10080,  value = 40 },  -- past week
+      { age = 43200,  value = 20 },  -- past month
+      { age = 129600, value = 10 },  -- past 90 days
     },
     ---@param recency integer
     ---@param fzy_score number
@@ -92,6 +95,7 @@ Config.new = function()
     db_root = true,
     db_safe_mode = true,
     db_validate_threshold = true,
+    debug = true,
     default_workspace = true,
     disable_devicons = true,
     filter_delimiter = true,
@@ -139,6 +143,7 @@ Config.setup = function(ext_config)
     db_root = { opts.db_root, "s" },
     db_safe_mode = { opts.db_safe_mode, "b" },
     db_validate_threshold = { opts.db_validate_threshold, "n" },
+    debug = { opts.debug, 'b' },
     default_workspace = { opts.default_workspace, "s", true },
     disable_devicons = { opts.disable_devicons, "b" },
     filter_delimiter = { opts.filter_delimiter, "s" },

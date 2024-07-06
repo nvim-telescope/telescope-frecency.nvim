@@ -4,7 +4,7 @@ local FS = require "frecency.fs"
 local Picker = require "frecency.picker"
 local Recency = require "frecency.recency"
 local config = require "frecency.config"
-local log = require "plenary.log"
+local log = require "frecency.log"
 
 ---@class Frecency
 ---@field private buf_registered table<integer, boolean> flag to indicate the buffer is registered to the database.

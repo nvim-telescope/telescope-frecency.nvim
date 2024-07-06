@@ -2,7 +2,7 @@ local Table = require "frecency.database.table"
 local FileLock = require "frecency.file_lock"
 local config = require "frecency.config"
 local watcher = require "frecency.watcher"
-local log = require "plenary.log"
+local log = require "frecency.log"
 local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 local Path = require "plenary.path" --[[@as FrecencyPlenaryPath]]
 

@@ -281,24 +281,24 @@ plugin. See |telescope-frecency-combining-results-outside-this-plugin|.
 
 Options:			     *telescope-frecency-function-query-options*
 			   *telescope-frecency-function-query-options-direction*
-  - `direction`	type: `"asc"|"desc"`
-		default: `"desc"`
+  - `direction`	Default: `"desc"
+		`Type: `"asc"|"desc"`
 		This specifies the order direction for results.
 			       *telescope-frecency-function-query-options-limit*
-  - `limit`	type: `integer`
-		default: `100`
+  - `limit`	Default: `100
+		`Type: `integer`
 		This limits the number of results.
 			       *telescope-frecency-function-query-options-order*
-  - `order`	type: `"count"|"path"|"score"|"timestamps"`
-		default: `"score"`
+  - `order`	Default: `"score"
+		`Type: `"count"|"path"|"score"|"timestamps"`
 		This is used to sort results with their properties. With
 		`"count"`, `"score"` and `"timestamps"`, when candidates have the
 		same value, they will be sorted by `"path"` always ascendingly.
 		With `"path"`, the order direction differs by the value of
 		`direction`.
 			      *telescope-frecency-function-query-options-record*
-  - `record`	type: `boolean`
-		default: `false`
+  - `record`	Default: `false
+		Type: `boolean`
 		If `false`, it returns results containing filenames with
 		absolute paths. If `true`, it contains tables with this
 		properties below.
@@ -308,8 +308,8 @@ Options:			     *telescope-frecency-function-query-options*
 		`score`: Recency score to be used in frecency picker.
 		`timestamps`: UNIX timestamps that the file has been opened at.
 			   *telescope-frecency-function-query-options-workspace*
-  - `workspace`	type: `string?`
-		default: `nil`
+  - `workspace`	`Default: `nil`
+		Type: `string?
 		This applies |telescope-frecency-introduction-workspace-filter|
 		into query results. You can limit candidates to ones that
 		exist below the directory specified this value. See also
@@ -390,6 +390,19 @@ Default: `10`
 Type: `integer`
 
 It will remove entries when stale ones exist more than this count.
+
+					*telescope-frecency-configuration-debug*
+debug ~
+
+Default: `false`
+Type: `boolean`
+
+This plugin uses `plenary.log` to log debugging messages. You should set this to
+`true` and set environmental variable `DEBUG_PLENARY` to see debug messages.
+>bash
+    # Launch Neovim with DEBUG_PLENARY=1 and set `debug = true` and you can
+    # see debug messages.
+    env DEBUG_PLENARY=1 nvim
 
 			    *telescope-frecency-configuration-default_workspace*
 default_workspace ~

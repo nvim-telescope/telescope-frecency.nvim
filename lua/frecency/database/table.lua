@@ -1,4 +1,4 @@
-local log = require "plenary.log"
+local log = require "frecency.log"
 
 ---@class FrecencyDatabaseRecordValue
 ---@field count integer

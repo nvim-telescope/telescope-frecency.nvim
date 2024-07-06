@@ -28,9 +28,9 @@ local function with_files(files, cb_or_config, callback)
   local dir, close = util.make_tree(files)
   local cfg
   if type(cb_or_config) == "table" then
-    cfg = vim.tbl_extend("force", { db_root = dir.filename }, cb_or_config)
+    cfg = vim.tbl_extend("force", { debug = true, db_root = dir.filename }, cb_or_config)
   else
-    cfg = { db_root = dir.filename }
+    cfg = { debug = true, db_root = dir.filename }
     callback = cb_or_config
   end
   assert(callback)
