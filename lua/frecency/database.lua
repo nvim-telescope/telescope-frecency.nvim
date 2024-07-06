@@ -106,11 +106,11 @@ function Database:remove_files(paths)
 end
 
 ---@param path string
----@param datetime? string
-function Database:update(path, datetime)
+---@param epoch? integer
+function Database:update(path, epoch)
   local record = self.tbl.records[path] or { count = 0, timestamps = {} }
   record.count = record.count + 1
-  local now = self:now(datetime)
+  local now = epoch or os.time()
   table.insert(record.timestamps, now)
   if #record.timestamps > config.max_timestamps then
     local new_table = {}
@@ -124,10 +124,10 @@ function Database:update(path, datetime)
 end
 
 ---@param workspace? string
----@param datetime? string
+---@param epoch? integer
 ---@return FrecencyDatabaseEntry[]
-function Database:get_entries(workspace, datetime)
-  local now = self:now(datetime)
+function Database:get_entries(workspace, epoch)
+  local now = epoch or os.time()
   local items = {}
   for path, record in pairs(self.tbl.records) do
     if self.fs:starts_with(path, workspace) then
@@ -142,19 +142,6 @@ function Database:get_entries(workspace, datetime)
     end
   end
   return items
-end
-
--- TODO: remove this func
--- This is a func for testing
----@private
----@param datetime string?
----@return integer
-function Database:now(datetime)
-  if not datetime then
-    return os.time()
-  end
-  local tz_fix = datetime:gsub("+(%d%d):(%d%d)$", "+%1%2")
-  return require("frecency.tests.util").time_piece(tz_fix)
 end
 
 ---@async

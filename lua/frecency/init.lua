@@ -107,13 +107,13 @@ function Frecency:validate_database(force)
 end
 
 ---@param bufnr integer
----@param datetime? string ISO8601 format string
-function Frecency:register(bufnr, datetime)
+---@param epoch? integer
+function Frecency:register(bufnr, epoch)
   local path = vim.api.nvim_buf_get_name(bufnr)
   if self.buf_registered[bufnr] or not self.fs:is_valid_path(path) then
     return
   end
-  self.database:update(path, datetime)
+  self.database:update(path, epoch)
   self.buf_registered[bufnr] = true
 end
 
