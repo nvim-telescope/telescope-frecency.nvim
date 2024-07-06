@@ -1,12 +1,12 @@
 local log = require "plenary.log"
 
----@class FrecencyDatabaseRecord
+---@class FrecencyDatabaseRecordValue
 ---@field count integer
 ---@field timestamps integer[]
 
 ---@class FrecencyDatabaseRawTable
 ---@field version string
----@field records table<string,FrecencyDatabaseRecord>
+---@field records table<string,FrecencyDatabaseRecordValue>
 
 ---@class FrecencyDatabaseTable: FrecencyDatabaseRawTable
 ---@field private is_ready boolean

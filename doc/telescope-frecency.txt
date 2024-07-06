@@ -9,6 +9,7 @@ Requirements		|telescope-frecency-requirements|
 Installation		|telescope-frecency-installation|
 Usage			|telescope-frecency-usage|
 Command			|telescope-frecency-command|
+Function		|telescope-frecency-function|
 Configuration		|telescope-frecency-configuration|
 Database		|telescope-frecency-database|
 Highlight Groups	|telescope-frecency-highlight-groups|
@@ -182,6 +183,23 @@ at least, it matches against exact the same as you input.
 │ `ABC`          │ matches `ABC`           │ no match              │
 └──────────────┴───────────────────────┴───────────────────────┘
 
+		      *telescope-frecency-combining-results-outside-this-plugin*
+				   *telescope-frecency-live-grep-within-results*
+------------------------------------------------------------------------------
+Combining results outside this plugin
+
+You can use frecency entries even outside this plugin with
+|telescope-frecency-function-query|. For example, you can search any input
+string within filenames in frecency results.
+>lua
+    vim.keymap.set("n", "<Leader>tg", function()
+      local frecency = require("telescope").extensions.frecency
+      require("telescope.builtin").live_grep {
+	-- HACK: `search_dirs` can accept files to grep nevertheless its name
+	search_dirs = frecency.query {},
+      }
+    end, { desc = "Live Grep Frecency" })
+
 
 ==============================================================================
 COMMAND						    *telescope-frecency-command*
@@ -212,6 +230,83 @@ You can remove stale entries from the database manually. When `!` is suffixed
 
 When you set `false` to |telescope-frecency-configuration-db_safe_mode|, the
 prompts are never shown even if you call without the bang.
+
+
+==============================================================================
+FUNCTION					   *telescope-frecency-function*
+
+All functions are exported via `require("telescope").extensions.frecency.*`.
+>lua
+    -- open frecency picker
+    require("telescope").extensions.frecency.frecency {}
+<
+					  *telescope-frecency-function-frecency*
+frecency() ~
+
+Open the frecency picker. See |telescope-frecency-usage| for examples.
+
+					  *telescope-frecency-function-complete*
+complete() ~
+
+This is used for completing workspace filters in telescope's prompt. Internal
+use only.
+
+					     *telescope-frecency-function-query*
+query() ~
+
+Get entries from DB. This is used for combining frecency results outside this
+plugin. See |telescope-frecency-combining-results-outside-this-plugin|.
+>lua
+    local frecency = require("telescope").extensions.frecency
+    local entries = frecency.query {}
+    -- example results
+    [
+      "/path/to/any/file1.txt",
+      "/more/path/to/any/file2.txt",
+      ……
+    ]
+
+    -- With record = true, it returns other info for each entry.
+    local records = frecency.query { record = true }
+    -- example results
+    [
+      {
+        count = 203,
+        path = "/path/to/any/file1.txt",
+        score = 4872,
+        timestamps = { 1719206250, 1719207356, …… },
+      },
+      ……
+    ]
+
+Options:			     *telescope-frecency-function-query-options*
+			   *telescope-frecency-function-query-options-direction*
+  - `direction`	type: `"asc"|"desc"`
+		default: `"desc"`
+		This specifies the order direction for results.
+			       *telescope-frecency-function-query-options-limit*
+  - `limit`	type: `integer`
+		default: `100`
+		This limits the number of results.
+			       *telescope-frecency-function-query-options-order*
+  - `order`	type: `"count"|"path"|"score"|"timestamps"`
+		default: `"score"`
+		This is used to sort results with their properties. With
+		`"count"`, `"score"` and `"timestamps"`, when candidates have the
+		same value, they will be sorted by `"path"` always ascendingly.
+		With `"path"`, the order direction differs by the value of
+		`direction`.
+			      *telescope-frecency-function-query-options-record*
+  - `record`	type: `boolean`
+		default: `false`
+		If `false`, it returns results containing filenames with
+		absolute paths. If `true`, it contains tables with this
+		properties below.
+
+		`count`: Count that the file has been opened.
+		`path`: Absolute path for the file.
+		`score`: Recency score to be used in frecency picker.
+		`timestamps`: UNIX timestamps that the file has been opened at.
 
 
 ==============================================================================

@@ -4,6 +4,7 @@
 ---@class FrecencyInstance
 ---@field complete fun(findstart: 1|0, base: string): integer|''|string[]
 ---@field delete fun(path: string): nil
+---@field query fun(opts?: FrecencyQueryOpts): FrecencyQueryEntry[]|string[]
 ---@field register fun(bufnr: integer, datetime: string?): nil
 ---@field start fun(opts: FrecencyPickerOptions?): nil
 ---@field validate_database fun(force: boolean?): nil
@@ -31,6 +32,7 @@ return require("telescope").register_extension {
   exports = {
     frecency = frecency.start,
     complete = frecency.complete,
+    query = frecency.query,
   },
 
   ---When this func is called, Frecency instance is NOT created but only

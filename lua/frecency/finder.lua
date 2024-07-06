@@ -76,9 +76,9 @@ Finder.new = function(database, entry_maker, fs, need_scandir, path, recency, st
   return self
 end
 
----@param datetime? string
+---@param epoch? integer
 ---@return nil
-function Finder:start(datetime)
+function Finder:start(epoch)
   local ok
   if config.workspace_scan_cmd ~= "LUA" and self.need_scan_dir then
     ---@type string[][]
@@ -95,7 +95,7 @@ function Finder:start(datetime)
   async.void(function()
     -- NOTE: return to the main loop to show the main window
     async.util.scheduler()
-    for _, file in ipairs(self:get_results(self.path, datetime)) do
+    for _, file in ipairs(self:get_results(self.path, epoch)) do
       file.path = os_util.normalize_sep(file.path)
       local entry = self.entry_maker(file)
       self.tx.send(entry)
@@ -255,12 +255,12 @@ function Finder:process_channel(process_result, entries, rx, start_index)
 end
 
 ---@param workspace? string
----@param datetime? string
+---@param epoch? integer
 ---@return FrecencyFile[]
-function Finder:get_results(workspace, datetime)
+function Finder:get_results(workspace, epoch)
   log.debug { workspace = workspace or "NONE" }
   local start_fetch = os.clock()
-  local files = self.database:get_entries(workspace, datetime)
+  local files = self.database:get_entries(workspace, epoch)
   log.debug(("it takes %f seconds in fetching entries"):format(os.clock() - start_fetch))
   local start_results = os.clock()
   local elapsed_recency = 0

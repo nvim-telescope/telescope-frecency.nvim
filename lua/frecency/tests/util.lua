@@ -47,16 +47,8 @@ local function time_piece(iso8601)
   return epoch
 end
 
----@param source table<string,{ count: integer, timestamps: string[] }>
-local function v1_table(source)
-  local records = {}
-  for path, record in pairs(source) do
-    local timestamps = {}
-    for _, iso8601 in ipairs(record.timestamps) do
-      table.insert(timestamps, time_piece(iso8601))
-    end
-    records[path] = { count = record.count, timestamps = timestamps }
-  end
+---@param records table<string, FrecencyDatabaseRecordValue>
+local function v1_table(records)
   return { version = "v1", records = records }
 end
 
