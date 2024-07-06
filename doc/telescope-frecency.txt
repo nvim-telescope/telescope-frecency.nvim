@@ -307,6 +307,13 @@ Options:			     *telescope-frecency-function-query-options*
 		`path`: Absolute path for the file.
 		`score`: Recency score to be used in frecency picker.
 		`timestamps`: UNIX timestamps that the file has been opened at.
+			   *telescope-frecency-function-query-options-workspace*
+  - `workspace`	type: `string?`
+		default: `nil`
+		This applies |telescope-frecency-introduction-workspace-filter|
+		into query results. You can limit candidates to ones that
+		exist below the directory specified this value. See also
+		|telescope-frecency-usage|.
 
 
 ==============================================================================
