@@ -584,8 +584,8 @@ Type: `"LUA"|string[]|nil`
 With the default value: `nil`, it uses these ways below to make entries for
 workspace files. It tries in order until it works successfully.
 
-1. `fdfind -Htf --exclude .git`
-2. `fd -Htf --exclude .git`
+1. `fdfind -Htf -E .git`
+2. `fd -Htf -E .git`
 3. `rg -.g '!.git' --files`
 4. Native Lua code (old way)
 
