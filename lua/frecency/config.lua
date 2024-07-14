@@ -52,42 +52,6 @@ local Config = {}
 
 ---@return FrecencyConfig
 Config.new = function()
-  local default_values = {
-    auto_validate = true,
-    db_root = vim.fn.stdpath "state",
-    db_safe_mode = true,
-    db_validate_threshold = 10,
-    debug = false,
-    default_workspace = nil,
-    disable_devicons = false,
-    filter_delimiter = ":",
-    hide_current_buffer = false,
-    ignore_patterns = os_util.is_windows and { [[*.git\*]], [[*\tmp\*]], "term://*" }
-        or { "*.git/*", "*/tmp/*", "term://*" },
-    matcher = "default",
-    max_timestamps = 10,
-    recency_values = {
-      { age = 240,    value = 100 }, -- past 4 hours
-      { age = 1440,   value = 80 },  -- past day
-      { age = 4320,   value = 60 },  -- past 3 days
-      { age = 10080,  value = 40 },  -- past week
-      { age = 43200,  value = 20 },  -- past month
-      { age = 129600, value = 10 },  -- past 90 days
-    },
-    ---@param recency integer
-    ---@param fzy_score number
-    ---@return number
-    scoring_function = function(recency, fzy_score)
-      local score = (10 / (recency == 0 and 1 or recency)) - 1 / fzy_score
-      -- HACK: -1 means FILTERED, so return a bit smaller one.
-      return score == -1 and -1.000001 or score
-    end,
-    show_filter_column = true,
-    show_scores = false,
-    show_unindexed = true,
-    workspace_scan_cmd = nil,
-    workspaces = {},
-  }
   ---@type table<string, boolean>
   local keys = {
     recency_values = true,
@@ -113,7 +77,7 @@ Config.new = function()
   }
   return setmetatable({
     ext_config = {},
-    values = default_values,
+    values = Config.default_values,
   }, {
     __index = function(self, key)
       if key == "values" then
@@ -126,6 +90,45 @@ Config.new = function()
   })
 end
 
+---@type FrecencyRawConfig
+Config.default_values = {
+  auto_validate = true,
+  db_root = vim.fn.stdpath "state" --[[@as string]],
+  db_safe_mode = true,
+  db_validate_threshold = 10,
+  debug = false,
+  default_workspace = nil,
+  disable_devicons = false,
+  filter_delimiter = ":",
+  hide_current_buffer = false,
+  ignore_patterns = os_util.is_windows and { [[*.git\*]], [[*\tmp\*]], "term://*" }
+    or { "*.git/*", "*/tmp/*", "term://*" },
+  ignore_regexes = {},
+  matcher = "default",
+  max_timestamps = 10,
+  recency_values = {
+    { age = 240, value = 100 }, -- past 4 hours
+    { age = 1440, value = 80 }, -- past day
+    { age = 4320, value = 60 }, -- past 3 days
+    { age = 10080, value = 40 }, -- past week
+    { age = 43200, value = 20 }, -- past month
+    { age = 129600, value = 10 }, -- past 90 days
+  },
+  ---@param recency integer
+  ---@param fzy_score number
+  ---@return number
+  scoring_function = function(recency, fzy_score)
+    local score = (10 / (recency == 0 and 1 or recency)) - 1 / fzy_score
+    -- HACK: -1 means FILTERED, so return a bit smaller one.
+    return score == -1 and -1.000001 or score
+  end,
+  show_filter_column = true,
+  show_scores = false,
+  show_unindexed = true,
+  workspace_scan_cmd = nil,
+  workspaces = {},
+}
+
 local config = Config.new()
 
 ---@return FrecencyRawConfig
@@ -136,7 +139,7 @@ end
 ---@param ext_config any
 ---@return nil
 Config.setup = function(ext_config)
-  local opts = vim.tbl_extend("force", config.values, ext_config or {})
+  local opts = vim.tbl_extend("force", Config.default_values, ext_config or {})
   vim.validate {
     recency_values = { opts.recency_values, "t" },
     auto_validate = { opts.auto_validate, "b" },
