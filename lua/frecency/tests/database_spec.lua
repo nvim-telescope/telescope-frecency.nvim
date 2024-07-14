@@ -16,7 +16,7 @@ local function make_epoch(datetime)
 end
 
 local function with_database(f)
-  local fs = FS.new { ignore_patterns = {} }
+  local fs = FS.new {}
   local dir, close = util.tmpdir()
   dir:joinpath("file_frecency.bin"):touch()
   return function()
