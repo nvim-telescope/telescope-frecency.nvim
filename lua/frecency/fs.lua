@@ -17,14 +17,13 @@ local FS = {}
 ---@param fs_config? FrecencyFSConfig
 ---@return FrecencyFS
 FS.new = function(fs_config)
-  local self = setmetatable(
+  local self= setmetatable(
     { config = vim.tbl_extend("force", { scan_depth = 100 }, fs_config or {}), os_homedir = assert(uv.os_homedir()) },
     { __index = FS }
   )
   ---@param pattern string
   self.ignore_regexes = vim.tbl_map(function(pattern)
-    local escaped = pattern:gsub("[%-%.%+%[%]%(%)%$%^%%%?%*]", "%%%1")
-    local regex = escaped:gsub("%%%*", ".*"):gsub("%%%?", ".")
+    local regex = vim.pesc(pattern):gsub("%%%*", ".*"):gsub("%%%?", ".")
     return "^" .. regex .. "$"
   end, config.ignore_patterns)
   return self
