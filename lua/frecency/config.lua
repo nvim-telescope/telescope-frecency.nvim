@@ -13,6 +13,7 @@ local os_util = require "frecency.os_util"
 ---@field filter_delimiter? string default: ":"
 ---@field hide_current_buffer? boolean default: false
 ---@field ignore_patterns? string[] default: { "*.git/*", "*/tmp/*", "term://*" }
+---@field ignore_register? fun(bufnr: integer): boolean
 ---@field matcher? "default"|"fuzzy" default: "default"
 ---@field scoring_function? fun(recency: integer, fzy_score: number): number default: see lua/frecency/config.lua
 ---@field max_timestamps? integer default: 10
@@ -40,6 +41,7 @@ local Config = {}
 ---@field filter_delimiter string default: ":"
 ---@field hide_current_buffer boolean default: false
 ---@field ignore_patterns string[] default: { "*.git/*", "*/tmp/*", "term://*" }
+---@field ignore_register? fun(bufnr: integer): boolean default: nil
 ---@field matcher "default"|"fuzzy" default: "default"
 ---@field scoring_function fun(recency: integer, fzy_score: number): number default: see lua/frecency/config.lua
 ---@field max_timestamps integer default: 10
@@ -65,6 +67,7 @@ Config.new = function()
     filter_delimiter = true,
     hide_current_buffer = true,
     ignore_patterns = true,
+    ignore_register = true,
     matcher = true,
     max_timestamps = true,
     path_display = true,

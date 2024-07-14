@@ -113,6 +113,9 @@ end
 ---@param bufnr integer
 ---@param epoch? integer
 function Frecency:register(bufnr, epoch)
+  if config.ignore_register and config.ignore_register(bufnr) then
+    return
+  end
   local path = vim.api.nvim_buf_get_name(bufnr)
   if self.buf_registered[bufnr] or not self.fs:is_valid_path(path) then
     return
