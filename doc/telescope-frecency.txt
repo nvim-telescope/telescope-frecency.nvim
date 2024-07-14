@@ -443,8 +443,8 @@ Default:
   for Windows: `{ [[*.git\*]], [[*\tmp\*]], "term://*" }`
 Type: `string`
 
-Patterns in this table control which files are indexed (and subsequently which
-you'll see in the finder results).
+Glob patterns in this table control which files are indexed (and subsequently
+which you'll see in the finder results).
 
 			      *telescope-frecency-configuration-ignore_register*
 ignore_register ~
@@ -613,6 +613,11 @@ workspace files. It tries in order until it works successfully.
 
 If you like another commands, set them to this option, like
 `workspace_scan_cmd = { "find", ".", "-type", "f" }`.
+
+NOTE: When the plugin uses “4. Native Lua code”, it uses
+|telescope-frecency-configuration-ignore_patterns| to ignore candidates from
+listed entries. With other ways, such as `rg` and `fd`, it does not use the option
+because of performance consideration.
 
 				   *telescope-frecency-configuration-workspaces*
 workspaces ~
