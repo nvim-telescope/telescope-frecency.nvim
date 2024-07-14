@@ -139,7 +139,7 @@ imported.
 USAGE						      *telescope-frecency-usage*
 >vim
     :Telescope frecency
-    " Use a specifix workspace tag:
+    " Use a specific workspace tag:
     :Telescope frecency workspace=CWD
     " You can use with telescope's options
     :Telescope frecency workspace=CWD path_display={"shorten"} theme=ivy
@@ -149,7 +149,7 @@ or to map to a key:
     vim.keymap.set("n", "<Leader>tf", function()
       require("telescope").extensions.frecency.frecency {}
     end)
-    -- Use a specifix workspace tag:
+    -- Use a specific workspace tag:
     vim.keymap.set("n", "<Leader>tw", function()
       require("telescope").extensions.frecency.frecency {
 	workspace = "CWD",
@@ -293,9 +293,9 @@ Options:			     *telescope-frecency-function-query-options*
 		`Type: `"count"|"path"|"score"|"timestamps"`
 		This is used to sort results with their properties. With
 		`"count"`, `"score"` and `"timestamps"`, when candidates have the
-		same value, they will be sorted by `"path"` always ascendingly.
-		With `"path"`, the order direction differs by the value of
-		`direction`.
+		same value, they will be sorted by `"path"` always in ascending
+		order. With `"path"`, the order direction differs by the value
+		of `direction`.
 			      *telescope-frecency-function-query-options-record*
   - `record`	Default: `false
 		Type: `boolean`
@@ -599,7 +599,7 @@ Default: `{}`
 Type: `table<string, string>`
 
 This table contains mappings of `workspace_tag` → `workspace_directory`. The key
-corresponds to the `:tag_name` used to select the filter in queies. The value
+corresponds to the `:tag_name` used to select the filter in queries. The value
 corresponds to the top level directory by which results will be filtered.
 >lua
     -- example configuration
