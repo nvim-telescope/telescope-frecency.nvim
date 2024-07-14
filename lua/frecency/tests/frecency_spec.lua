@@ -232,6 +232,29 @@ describe("frecency", function()
         end)
       end)
     end)
+
+    describe("when ignore_register is set", function()
+      with_files({ "hoge1.txt", "hoge2.txt" }, {
+        ignore_register = function(bufnr)
+          local _, bufname = pcall(vim.api.nvim_buf_get_name, bufnr)
+          local should_ignore = not not (bufname and bufname:find "hoge2%.txt$")
+          log.debug { bufnr = bufnr, bufname = bufname, should_ignore = should_ignore }
+          return should_ignore
+        end,
+      }, function(frecency, finder, dir)
+        local register = make_register(frecency, dir)
+        local epoch1 = make_epoch "2023-07-29T00:00:00+09:00"
+        register("hoge1.txt", epoch1)
+        local epoch2 = make_epoch "2023-07-29T01:00:00+09:00"
+        register("hoge2.txt", epoch2)
+        it("ignores the file the func returns true", function()
+          local results = finder:get_results(nil, make_epoch "2023-07-29T02:00:00+09:00")
+          assert.are.same({
+            { count = 1, path = filepath(dir, "hoge1.txt"), score = 10, timestamps = { epoch1 } },
+          }, results)
+        end)
+      end)
+    end)
   end)
 
   describe("benchmark", function()
