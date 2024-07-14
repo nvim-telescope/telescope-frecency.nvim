@@ -23,8 +23,7 @@ FS.new = function(fs_config)
   )
   ---@param pattern string
   self.ignore_regexes = vim.tbl_map(function(pattern)
-    local escaped = pattern:gsub("[%-%.%+%[%]%(%)%$%^%%%?%*]", "%%%1")
-    local regex = escaped:gsub("%%%*", ".*"):gsub("%%%?", ".")
+    local regex = vim.pesc(pattern):gsub("%%%*", ".*"):gsub("%%%?", ".")
     return "^" .. regex .. "$"
   end, config.ignore_patterns)
   return self
