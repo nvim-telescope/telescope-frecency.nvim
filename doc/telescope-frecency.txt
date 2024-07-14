@@ -446,6 +446,28 @@ Type: `string`
 Patterns in this table control which files are indexed (and subsequently which
 you'll see in the finder results).
 
+			      *telescope-frecency-configuration-ignore_register*
+ignore_register ~
+
+Default: `nil`
+Type: `fun(bufnr: integer): boolean`
+
+In opening buffers, it registers the filename and timestamps into DB to
+calculate frecency scores later. `ignore_register` can take a buffer number
+and you can control whether the file should be registered or not.
+
+For example, you can ignore |'nobuflisted'| buffers to register with this below.
+>lua
+    telescope.setup {
+      extensions = {
+	frecency = {
+	  ignore_register = function(bufnr)
+	    return not vim.bo[bufnr].buflisted
+	  end,
+	}
+      },
+    }
+<
 				      *telescope-frecency-configuration-matcher*
 matcher ~
 
