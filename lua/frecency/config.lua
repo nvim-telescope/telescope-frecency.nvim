@@ -103,7 +103,6 @@ Config.default_values = {
   hide_current_buffer = false,
   ignore_patterns = os_util.is_windows and { [[*.git\*]], [[*\tmp\*]], "term://*" }
     or { "*.git/*", "*/tmp/*", "term://*" },
-  ignore_regexes = {},
   matcher = "default",
   max_timestamps = 10,
   recency_values = {
