@@ -414,7 +414,7 @@ This plugin uses `plenary.log` to log debugging messages. You should set this to
     # Launch Neovim with DEBUG_PLENARY=1 and set `debug = true` and you can
     # see debug messages.
     env DEBUG_PLENARY=1 nvim
-
+<
 			    *telescope-frecency-configuration-default_workspace*
 default_workspace ~
 
