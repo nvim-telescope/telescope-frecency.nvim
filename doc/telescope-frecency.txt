@@ -350,6 +350,17 @@ lua-ls. https://github.com/LuaLS/lua-language-server
       },
     }
 <
+			       *telescope-frecency-configuration-config.setup()*
+You can change this configuration after loading plugins by `config.setup()`.
+>lua
+    require("frecency.config").setup {
+      auto_validate = true,
+      ignore_patterns = { "*/.git", "*/.git/*", "*/.DS_Store" },
+    }
+<
+This function always resets the config to default values, and applies supplied
+ones. So you should set the whole configs for calling this function.
+
 			        *telescope-frecency-configuration-auto_validate*
 auto_validate ~
 
@@ -441,10 +452,13 @@ ignore_patterns ~
 Default:
   for non-Windows: `{ "*.git/*", "*/tmp/*", "term://*" }`
   for Windows: `{ [[*.git\*]], [[*\tmp\*]], "term://*" }`
-Type: `string`
+Type: `string[]`
 
 Glob patterns in this table control which files are indexed (and subsequently
 which you'll see in the finder results).
+
+NOTE: In registering, |telescope-frecency-configuration-ignore_register| is
+applied before this patterns
 
 			      *telescope-frecency-configuration-ignore_register*
 ignore_register ~
@@ -468,6 +482,9 @@ For example, you can ignore |'nobuflisted'| buffers to register with this below.
       },
     }
 <
+NOTE: In registering, |telescope-frecency-configuration-ignore_patterns| is also
+applied in addition to this function.
+
 				      *telescope-frecency-configuration-matcher*
 matcher ~
 
