@@ -5,6 +5,7 @@ local Picker = require "frecency.picker"
 local Recency = require "frecency.recency"
 local config = require "frecency.config"
 local log = require "frecency.log"
+local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 
 ---@class Frecency
 ---@field private buf_registered table<integer, boolean> flag to indicate the buffer is registered to the database.
@@ -33,7 +34,9 @@ function Frecency:setup()
   vim.defer_fn(function()
     self:assert_db_entries()
     if config.auto_validate then
-      self:validate_database()
+      async.void(function()
+        self:validate_database()
+      end)()
     end
   end, 0)
 end
@@ -69,16 +72,7 @@ function Frecency:complete(findstart, base)
   return self.picker:complete(findstart, base)
 end
 
----@private
----@return nil
-function Frecency:assert_db_entries()
-  if not self.database:has_entry() then
-    self.database:insert_files(vim.v.oldfiles)
-    self:notify("Imported %d entries from oldfiles.", #vim.v.oldfiles)
-  end
-end
-
----@private
+---@async
 ---@param force? boolean
 ---@return nil
 function Frecency:validate_database(force)
@@ -108,6 +102,15 @@ function Frecency:validate_database(force)
       self:notify "validation aborted"
     end
   end)
+end
+
+---@private
+---@return nil
+function Frecency:assert_db_entries()
+  if not self.database:has_entry() then
+    self.database:insert_files(vim.v.oldfiles)
+    self:notify("Imported %d entries from oldfiles.", #vim.v.oldfiles)
+  end
 end
 
 ---@param bufnr integer

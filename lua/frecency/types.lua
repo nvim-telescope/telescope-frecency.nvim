@@ -12,6 +12,7 @@
 ---@field make_relative fun(self: FrecencyPlenaryPath, cwd: string): string
 ---@field parent fun(self: FrecencyPlenaryPath): FrecencyPlenaryPath
 ---@field path { sep: string }
+---@field rename fun(self: FrecencyPlenaryPath, opts: { new_name: string }): nil
 ---@field rm fun(self: FrecencyPlenaryPath, opts?: { recursive: boolean }): nil
 ---@field touch fun(self: FrecencyPlenaryPath, opts?: { parents: boolean }): nil
 
@@ -93,6 +94,18 @@ function FrecencyPlenaryAsyncUv.fs_stat(path) end
 function FrecencyPlenaryAsyncUv.fs_open(path, flags, mode) end
 
 ---@async
+---@param path string
+---@return string? err
+---@return integer? fs
+function FrecencyPlenaryAsyncUv.fs_scandir(path) end
+
+---@param fs integer
+---@return string? err
+---@return string? name
+---@return string? type
+function FrecencyPlenaryAsyncUv.fs_scandir_next(fs) end
+
+---@async
 ---@param fd integer
 ---@param size integer
 ---@param offset? integer
@@ -118,6 +131,11 @@ function FrecencyPlenaryAsyncUv.fs_unlink(path) end
 ---@param fd integer
 ---@return string? err
 function FrecencyPlenaryAsyncUv.fs_close(fd) end
+
+---@async
+---@param async_fns (async fun(...): ...)[]
+---@return table
+function FrecencyPlenaryAsyncUtil.join(async_fns) end
 
 ---@async
 ---@param ms integer

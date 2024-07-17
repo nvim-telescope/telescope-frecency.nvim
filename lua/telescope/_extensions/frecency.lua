@@ -7,7 +7,7 @@
 ---@field query fun(opts?: FrecencyQueryOpts): FrecencyQueryEntry[]|string[]
 ---@field register fun(bufnr: integer, datetime: string?): nil
 ---@field start fun(opts: FrecencyPickerOptions?): nil
----@field validate_database fun(force: boolean?): nil
+---@field validate_database async fun(force: boolean?): nil
 local frecency = setmetatable({}, {
   ---@param self FrecencyInstance
   ---@param key "complete"|"delete"|"register"|"start"|"validate_database"
@@ -47,7 +47,7 @@ return require("telescope").register_extension {
 
     ---@param cmd_info { bang: boolean }
     vim.api.nvim_create_user_command("FrecencyValidate", function(cmd_info)
-      frecency.validate_database(cmd_info.bang)
+      require("plenary.async").void(frecency.validate_database)(cmd_info.bang)
     end, { bang = true, desc = "Clean up DB for telescope-frecency" })
 
     vim.api.nvim_create_user_command("FrecencyDelete", function(info)

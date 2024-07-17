@@ -5,6 +5,7 @@ local watcher = require "frecency.watcher"
 local log = require "frecency.log"
 local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 local Path = require "plenary.path" --[[@as FrecencyPlenaryPath]]
+local uv = vim.uv or vim.loop
 
 ---@class FrecencyDatabaseEntry
 ---@field ages number[]
@@ -86,15 +87,59 @@ function Database:insert_files(paths)
   self.tx.send "save"
 end
 
+---@async
 ---@return string[]
 function Database:unlinked_entries()
-  local paths = {}
-  for file in pairs(self.tbl.records) do
-    if not self.fs:is_valid_path(file) then
-      table.insert(paths, file)
+  ---@type table<string, table<string, boolean>>
+  local readdir_cache = {}
+
+  ---@async
+  ---@param path string
+  local function file_exists(path)
+    local p = Path:new(path)
+    local parent_dir = p:parent().filename
+    local basename = path:sub(#parent_dir + #Path.path.sep + 1)
+    if not readdir_cache[parent_dir] then
+      -- TODO: use uv.fs_opendir for truely asynchronous implementation.
+      -- But async.uv.fs_opendir doesn't exist.
+      local err, fs = async.uv.fs_scandir(parent_dir)
+      if err then
+        log.debug("not found dir: " .. parent_dir)
+        readdir_cache[parent_dir] = {}
+      else
+        assert(fs)
+        ---@type table<string, boolean>
+        local entries = {}
+        while true do
+          local name, type = uv.fs_scandir_next(fs)
+          if name and type then
+            if type == "file" then
+              entries[name] = true
+            end
+          else
+            break
+          end
+        end
+        readdir_cache[parent_dir] = entries
+      end
     end
+    if not readdir_cache[parent_dir][basename] then
+      log.debug("not found file: " .. path)
+    end
+    return not not readdir_cache[parent_dir][basename]
   end
-  return paths
+
+  ---@type string[]
+  local result = {}
+  async.util.join(vim.tbl_map(function(path)
+    return function()
+      if self.fs:is_ignored(path) or not file_exists(path) then
+        table.insert(result, path)
+      end
+    end
+  end, vim.tbl_keys(self.tbl.records)))
+
+  return result
 end
 
 ---@param paths string[]
