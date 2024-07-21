@@ -96,6 +96,12 @@ function FrecencyPlenaryAsyncUv.fs_open(path, flags, mode) end
 ---@async
 ---@param path string
 ---@return string? err
+---@return string? path
+function FrecencyPlenaryAsyncUv.fs_realpath(path) end
+
+---@async
+---@param path string
+---@return string? err
 ---@return integer? fs
 function FrecencyPlenaryAsyncUv.fs_scandir(path) end
 

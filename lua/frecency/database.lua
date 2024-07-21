@@ -96,35 +96,38 @@ function Database:unlinked_entries()
   ---@async
   ---@param path string
   local function file_exists(path)
-    local p = Path:new(path)
+    local err, real = async.uv.fs_realpath(path)
+    if err then
+      log.debug("not found realpath:", path)
+      return false
+    end
+    assert(real)
+    local p = Path:new(real)
     local parent_dir = p:parent().filename
-    local basename = path:sub(#parent_dir + #Path.path.sep + 1)
+    local basename = real:sub(#parent_dir + #Path.path.sep + 1)
     if not readdir_cache[parent_dir] then
       -- TODO: use uv.fs_opendir for truely asynchronous implementation.
       -- But async.uv.fs_opendir doesn't exist.
-      local err, fs = async.uv.fs_scandir(parent_dir)
-      if err then
-        log.debug("not found dir: " .. parent_dir)
-        readdir_cache[parent_dir] = {}
-      else
-        assert(fs)
-        ---@type table<string, boolean>
-        local entries = {}
-        while true do
-          local name, type = uv.fs_scandir_next(fs)
-          if name and type then
-            if type == "file" then
-              entries[name] = true
-            end
-          else
-            break
+      local fs
+      err, fs = async.uv.fs_scandir(parent_dir)
+      assert(not err, err)
+      assert(fs)
+      ---@type table<string, boolean>
+      local entries = {}
+      while true do
+        local name, type = uv.fs_scandir_next(fs)
+        if name and type then
+          if type == "file" then
+            entries[name] = true
           end
+        else
+          break
         end
-        readdir_cache[parent_dir] = entries
       end
+      readdir_cache[parent_dir] = entries
     end
     if not readdir_cache[parent_dir][basename] then
-      log.debug("not found file: " .. path)
+      log.debug("not found file:", real)
     end
     return not not readdir_cache[parent_dir][basename]
   end
