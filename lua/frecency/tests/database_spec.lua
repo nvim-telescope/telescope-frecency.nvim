@@ -5,15 +5,7 @@ local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 local util = require "frecency.tests.util"
 async.tests.add_to_env()
 
----@param datetime string?
----@return integer
-local function make_epoch(datetime)
-  if not datetime then
-    return os.time()
-  end
-  local tz_fix = datetime:gsub("+(%d%d):(%d%d)$", "+%1%2")
-  return util.time_piece(tz_fix)
-end
+local make_epoch = util.make_epoch
 
 local function with_database(f)
   local fs = FS.new {}

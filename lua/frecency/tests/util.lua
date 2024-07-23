@@ -1,4 +1,9 @@
+---@diagnostic disable: invisible, undefined-field
+local Frecency = require "frecency"
+local Picker = require "frecency.picker"
+local config = require "frecency.config"
 local uv = vim.uv or vim.loop
+local log = require "plenary.log"
 local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 local Path = require "plenary.path"
 local Job = require "plenary.job"
@@ -7,7 +12,18 @@ local wait = require "frecency.tests.wait"
 ---@return FrecencyPlenaryPath
 ---@return fun(): nil close swwp all entries
 local function tmpdir()
-  local dir = Path:new(Path:new(assert(uv.fs_mkdtemp "tests_XXXXXX")):absolute())
+  local ci = uv.os_getenv "CI"
+  local dir
+  if ci then
+    dir = Path:new(assert(uv.fs_mkdtemp "tests_XXXXXX"))
+  else
+    local tmp = assert(uv.os_tmpdir())
+    -- HACK: plenary.path resolves paths later, so here it resolves in advance.
+    if uv.os_uname().sysname == "Darwin" then
+      tmp = tmp:gsub("^/var", "/private/var")
+    end
+    dir = Path:new(assert(uv.fs_mkdtemp(Path:new(tmp, "tests_XXXXXX").filename)))
+  end
   return dir, function()
     dir:rm { recursive = true }
   end
@@ -37,6 +53,8 @@ local AsyncJob = async.wrap(function(cmd, callback)
 end, 2)
 
 -- NOTE: vim.fn.strptime cannot be used in Lua loop
+---@param iso8601 string
+---@return integer?
 local function time_piece(iso8601)
   local epoch
   wait(function()
@@ -47,9 +65,123 @@ local function time_piece(iso8601)
   return epoch
 end
 
+---@param datetime string?
+---@return integer
+local function make_epoch(datetime)
+  if not datetime then
+    return os.time()
+  end
+  local tz_fix = datetime:gsub("+(%d%d):(%d%d)$", "+%1%2")
+  return time_piece(tz_fix) or 0
+end
+
 ---@param records table<string, FrecencyDatabaseRecordValue>
 local function v1_table(records)
   return { version = "v1", records = records }
 end
 
-return { make_tree = make_tree, tmpdir = tmpdir, v1_table = v1_table, time_piece = time_piece }
+---@param files string[]
+---@param cb_or_config table|fun(frecency: Frecency, finder: FrecencyFinder, dir: FrecencyPlenaryPath): nil
+---@param callback? fun(frecency: Frecency, finder: FrecencyFinder, dir: FrecencyPlenaryPath): nil
+---@return nil
+local function with_files(files, cb_or_config, callback)
+  local dir, close = make_tree(files)
+  local cfg
+  if type(cb_or_config) == "table" then
+    cfg = vim.tbl_extend("force", { debug = true, db_root = dir.filename }, cb_or_config)
+  else
+    cfg = { debug = true, db_root = dir.filename }
+    callback = cb_or_config
+  end
+  assert(callback)
+  log.debug(cfg)
+  config.setup(cfg)
+  local frecency = Frecency.new()
+  frecency.database.tbl:wait_ready()
+  frecency.picker =
+    Picker.new(frecency.database, frecency.entry_maker, frecency.fs, frecency.recency, { editing_bufnr = 0 })
+  local finder = frecency.picker:finder {}
+  callback(frecency, finder, dir)
+  close()
+end
+
+local function filepath(dir, file)
+  return dir:joinpath(file):absolute()
+end
+
+---@param frecency Frecency
+---@param dir FrecencyPlenaryPath
+---@return fun(file: string, epoch: integer, reset: boolean?, wipeout?: boolean): nil reset: boolean?): nil
+local function make_register(frecency, dir)
+  return function(file, epoch, reset, wipeout)
+    local path = filepath(dir, file)
+    vim.cmd.edit(path)
+    local bufnr = assert(vim.fn.bufnr(path))
+    if reset then
+      frecency.buf_registered[bufnr] = nil
+    end
+    frecency:register(bufnr, epoch)
+    -- HACK: This is needed because almost the same filenames use the same
+    -- buffer.
+    if wipeout then
+      vim.cmd.bwipeout()
+    end
+  end
+end
+
+---@param frecency Frecency
+---@param dir FrecencyPlenaryPath
+---@param callback fun(register: fun(file: string, epoch?: integer): nil): nil
+---@return nil
+local function with_fake_register(frecency, dir, callback)
+  local bufnr = 0
+  local buffers = {}
+  local original_nvim_buf_get_name = vim.api.nvim_buf_get_name
+  ---@diagnostic disable-next-line: redefined-local, duplicate-set-field
+  vim.api.nvim_buf_get_name = function(bufnr)
+    return buffers[bufnr]
+  end
+  ---@param file string
+  ---@param epoch integer
+  local function register(file, epoch)
+    local path = filepath(dir, file)
+    Path.new(path):touch()
+    bufnr = bufnr + 1
+    buffers[bufnr] = path
+    frecency:register(bufnr, epoch)
+  end
+  callback(register)
+  vim.api.nvim_buf_get_name = original_nvim_buf_get_name
+end
+
+---@param choice "y"|"n"
+---@param callback fun(called: fun(): integer): nil
+---@return nil
+local function with_fake_vim_ui_select(choice, callback)
+  local original_vim_ui_select = vim.ui.select
+  local count = 0
+  local function called()
+    return count
+  end
+  ---@diagnostic disable-next-line: duplicate-set-field
+  vim.ui.select = function(_, opts, on_choice)
+    count = count + 1
+    log.info(opts.prompt)
+    log.info(opts.format_item(choice))
+    on_choice(choice)
+  end
+  callback(called)
+  vim.ui.select = original_vim_ui_select
+end
+
+return {
+  filepath = filepath,
+  make_epoch = make_epoch,
+  make_register = make_register,
+  make_tree = make_tree,
+  tmpdir = tmpdir,
+  v1_table = v1_table,
+  with_fake_register = with_fake_register,
+  with_fake_vim_ui_select = with_fake_vim_ui_select,
+  with_files = with_files,
+}
