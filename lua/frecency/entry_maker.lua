@@ -119,7 +119,12 @@ function EntryMaker:items(entry, workspace, workspace_tag, formatter)
   end
   if self.web_devicons.is_enabled then
     local basename = utils.path_tail(entry.name)
-    table.insert(items, { self.web_devicons:get_icon(basename, utils.file_extension(basename), { default = true }) })
+    local icon, icon_highlight =
+      self.web_devicons:get_icon(basename, utils.file_extension(basename), { default = false })
+    if not icon then
+      icon, icon_highlight = self.web_devicons:get_icon(basename, nil, { default = true })
+    end
+    table.insert(items, { icon, icon_highlight })
   end
   if config.show_filter_column and workspace and workspace_tag then
     local filtered = self:should_show_tail(workspace_tag) and utils.path_tail(workspace) .. Path.path.sep
