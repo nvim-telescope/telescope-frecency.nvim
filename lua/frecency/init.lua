@@ -5,6 +5,7 @@ local Picker = require "frecency.picker"
 local Recency = require "frecency.recency"
 local config = require "frecency.config"
 local log = require "frecency.log"
+local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 
 ---@class Frecency
 ---@field private buf_registered table<integer, boolean> flag to indicate the buffer is registered to the database.
@@ -33,7 +34,9 @@ function Frecency:setup()
   vim.defer_fn(function()
     self:assert_db_entries()
     if config.auto_validate then
-      self:validate_database()
+      async.void(function()
+        self:validate_database()
+      end)
     end
   end, 0)
 end
@@ -69,16 +72,7 @@ function Frecency:complete(findstart, base)
   return self.picker:complete(findstart, base)
 end
 
----@private
----@return nil
-function Frecency:assert_db_entries()
-  if not self.database:has_entry() then
-    self.database:insert_files(vim.v.oldfiles)
-    self:notify("Imported %d entries from oldfiles.", #vim.v.oldfiles)
-  end
-end
-
----@private
+---@async
 ---@param force? boolean
 ---@return nil
 function Frecency:validate_database(force)
@@ -110,17 +104,31 @@ function Frecency:validate_database(force)
   end)
 end
 
+---@private
+---@return nil
+function Frecency:assert_db_entries()
+  if not self.database:has_entry() then
+    self.database:insert_files(vim.v.oldfiles)
+    self:notify("Imported %d entries from oldfiles.", #vim.v.oldfiles)
+  end
+end
+
+---@async
 ---@param bufnr integer
 ---@param epoch? integer
 function Frecency:register(bufnr, epoch)
-  if config.ignore_register and config.ignore_register(bufnr) then
+  if (config.ignore_register and config.ignore_register(bufnr)) or self.buf_registered[bufnr] then
     return
   end
   local path = vim.api.nvim_buf_get_name(bufnr)
-  if self.buf_registered[bufnr] or not self.fs:is_valid_path(path) then
+  if not self.fs:is_valid_path(path) then
     return
   end
-  self.database:update(path, epoch)
+  local err, realpath = async.uv.fs_realpath(path)
+  if err or not realpath then
+    return
+  end
+  self.database:update(realpath, epoch)
   self.buf_registered[bufnr] = true
 end
 

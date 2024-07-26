@@ -1,4 +1,5 @@
 local util = require "frecency.tests.util"
+local async = require "plenary.async"
 
 local filepath = util.filepath
 local make_epoch = util.make_epoch
@@ -49,7 +50,9 @@ describe("frecency", function()
             register("hoge5.txt", epoch5)
             dir:joinpath("hoge1.txt"):rm()
             dir:joinpath("hoge2.txt"):rm()
-            frecency:validate_database()
+            async.util.block_on(function()
+              frecency:validate_database()
+            end)
 
             it("removes no entries", function()
               local results = finder:get_results(nil, make_epoch "2023-07-29T02:00:00+09:00")
@@ -90,7 +93,9 @@ describe("frecency", function()
               dir:joinpath("hoge3.txt"):rm()
 
               with_fake_vim_ui_select("y", function(called)
-                frecency:validate_database()
+                async.util.block_on(function()
+                  frecency:validate_database()
+                end)
 
                 it("called vim.ui.select()", function()
                   assert.are.same(1, called())
@@ -132,7 +137,9 @@ describe("frecency", function()
               dir:joinpath("hoge3.txt"):rm()
 
               with_fake_vim_ui_select("n", function(called)
-                frecency:validate_database()
+                async.util.block_on(function()
+                  frecency:validate_database()
+                end)
 
                 it("called vim.ui.select()", function()
                   assert.are.same(1, called())
@@ -169,7 +176,9 @@ describe("frecency", function()
           dir:joinpath("hoge1.txt"):rm()
 
           with_fake_vim_ui_select("y", function(called)
-            frecency:validate_database(true)
+            async.util.block_on(function()
+              frecency:validate_database(true)
+            end)
 
             it("called vim.ui.select()", function()
               assert.are.same(1, called())
@@ -195,7 +204,9 @@ describe("frecency", function()
           dir:joinpath("hoge1.txt"):rm()
 
           with_fake_vim_ui_select("y", function(called)
-            frecency:validate_database(true)
+            async.util.block_on(function()
+              frecency:validate_database(true)
+            end)
 
             it("did not call vim.ui.select()", function()
               assert.are.same(0, called())
@@ -226,7 +237,9 @@ describe("frecency", function()
         register("Hoge2.txt", epoch3)
 
         with_fake_vim_ui_select("y", function(called)
-          frecency:validate_database(true)
+          async.util.block_on(function()
+            frecency:validate_database(true)
+          end)
 
           it("calls vim.ui.select()", function()
             assert.are.same(1, called())

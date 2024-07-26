@@ -120,7 +120,9 @@ local function make_register(frecency, dir)
     if reset then
       frecency.buf_registered[bufnr] = nil
     end
-    frecency:register(bufnr, epoch)
+    async.util.block_on(function()
+      frecency:register(bufnr, epoch)
+    end)
     -- HACK: This is needed because almost the same filenames use the same
     -- buffer.
     if wipeout then
@@ -148,7 +150,9 @@ local function with_fake_register(frecency, dir, callback)
     Path.new(path):touch()
     bufnr = bufnr + 1
     buffers[bufnr] = path
-    frecency:register(bufnr, epoch)
+    async.util.block_on(function()
+      frecency:register(bufnr, epoch)
+    end)
   end
   callback(register)
   vim.api.nvim_buf_get_name = original_nvim_buf_get_name

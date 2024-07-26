@@ -86,15 +86,17 @@ function Database:insert_files(paths)
   self.tx.send "save"
 end
 
+---@async
 ---@return string[]
 function Database:unlinked_entries()
-  local paths = {}
-  for file in pairs(self.tbl.records) do
-    if not self.fs:is_valid_path(file) then
-      table.insert(paths, file)
+  return vim.tbl_flatten(async.util.join(vim.tbl_map(function(path)
+    return function()
+      local err, realpath = async.uv.fs_realpath(path)
+      if err or not realpath or realpath ~= path or self.fs:is_ignored(realpath) then
+        return path
+      end
     end
-  end
-  return paths
+  end, vim.tbl_keys(self.tbl.records))))
 end
 
 ---@param paths string[]

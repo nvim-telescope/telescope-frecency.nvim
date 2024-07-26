@@ -17,7 +17,7 @@ local FS = {}
 ---@param fs_config? FrecencyFSConfig
 ---@return FrecencyFS
 FS.new = function(fs_config)
-  local self= setmetatable(
+  local self = setmetatable(
     { config = vim.tbl_extend("force", { scan_depth = 100 }, fs_config or {}), os_homedir = assert(uv.os_homedir()) },
     { __index = FS }
   )
@@ -27,6 +27,17 @@ FS.new = function(fs_config)
     return "^" .. regex .. "$"
   end, config.ignore_patterns)
   return self
+end
+
+---@param path string
+---@return boolean
+function FS:is_ignored(path)
+  for _, regex in ipairs(self.ignore_regexes) do
+    if path:find(regex) then
+      return true
+    end
+  end
+  return false
 end
 
 ---@param path? string
@@ -79,18 +90,6 @@ function FS:starts_with(path, base)
     with_sep[base] = base .. (base:sub(#base) == Path.path.sep and "" or Path.path.sep)
   end
   return path:find(with_sep[base], 1, true) == 1
-end
-
----@private
----@param path string
----@return boolean
-function FS:is_ignored(path)
-  for _, regex in ipairs(self.ignore_regexes) do
-    if path:find(regex) then
-      return true
-    end
-  end
-  return false
 end
 
 ---@private
