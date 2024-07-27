@@ -98,8 +98,7 @@ local function with_files(files, cb_or_config, callback)
   config.setup(cfg)
   local frecency = Frecency.new()
   frecency.database.tbl:wait_ready()
-  frecency.picker =
-    Picker.new(frecency.database, frecency.entry_maker, frecency.fs, frecency.recency, { editing_bufnr = 0 })
+  frecency.picker = Picker.new(frecency.database, frecency.entry_maker, frecency.recency, { editing_bufnr = 0 })
   local finder = frecency.picker:finder {}
   callback(frecency, finder, dir)
   close()

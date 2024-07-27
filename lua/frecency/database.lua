@@ -1,6 +1,7 @@
 local Table = require "frecency.database.table"
 local FileLock = require "frecency.file_lock"
 local config = require "frecency.config"
+local fs = require "frecency.fs"
 local watcher = require "frecency.watcher"
 local log = require "frecency.log"
 local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
@@ -17,17 +18,14 @@ local Path = require "plenary.path" --[[@as FrecencyPlenaryPath]]
 ---@field tx FrecencyPlenaryAsyncControlChannelTx
 ---@field private file_lock FrecencyFileLock
 ---@field private filename string
----@field private fs FrecencyFS
 ---@field private tbl FrecencyDatabaseTable
 ---@field private version "v1"
 local Database = {}
 
----@param fs FrecencyFS
 ---@return FrecencyDatabase
-Database.new = function(fs)
+Database.new = function()
   local version = "v1"
   local self = setmetatable({
-    fs = fs,
     tbl = Table.new(version),
     version = version,
   }, { __index = Database })
@@ -92,7 +90,7 @@ function Database:unlinked_entries()
   return vim.tbl_flatten(async.util.join(vim.tbl_map(function(path)
     return function()
       local err, realpath = async.uv.fs_realpath(path)
-      if err or not realpath or realpath ~= path or self.fs:is_ignored(realpath) then
+      if err or not realpath or realpath ~= path or fs.is_ignored(realpath) then
         return path
       end
     end
@@ -132,7 +130,7 @@ function Database:get_entries(workspace, epoch)
   local now = epoch or os.time()
   local items = {}
   for path, record in pairs(self.tbl.records) do
-    if self.fs:starts_with(path, workspace) then
+    if fs.starts_with(path, workspace) then
       table.insert(items, {
         path = path,
         count = record.count,

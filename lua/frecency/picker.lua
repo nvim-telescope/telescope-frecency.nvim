@@ -1,6 +1,7 @@
 local State = require "frecency.state"
 local Finder = require "frecency.finder"
 local config = require "frecency.config"
+local fs = require "frecency.fs"
 local fuzzy_sorter = require "frecency.fuzzy_sorter"
 local substr_sorter = require "frecency.substr_sorter"
 local log = require "frecency.log"
@@ -15,7 +16,6 @@ local uv = vim.loop or vim.uv
 ---@field private config FrecencyPickerConfig
 ---@field private database FrecencyDatabase
 ---@field private entry_maker FrecencyEntryMaker
----@field private fs FrecencyFS
 ---@field private lsp_workspaces string[]
 ---@field private namespace integer
 ---@field private recency FrecencyRecency
@@ -38,16 +38,14 @@ local Picker = {}
 
 ---@param database FrecencyDatabase
 ---@param entry_maker FrecencyEntryMaker
----@param fs FrecencyFS
 ---@param recency FrecencyRecency
 ---@param picker_config FrecencyPickerConfig
 ---@return FrecencyPicker
-Picker.new = function(database, entry_maker, fs, recency, picker_config)
+Picker.new = function(database, entry_maker, recency, picker_config)
   local self = setmetatable({
     config = picker_config,
     database = database,
     entry_maker = entry_maker,
-    fs = fs,
     lsp_workspaces = {},
     namespace = vim.api.nvim_create_namespace "frecency",
     recency = recency,
@@ -80,7 +78,6 @@ function Picker:finder(opts, workspace, workspace_tag)
   return Finder.new(
     self.database,
     entry_maker,
-    self.fs,
     need_scandir,
     workspace,
     self.recency,
@@ -159,8 +156,8 @@ end
 function Picker:default_path_display(opts, path)
   local filename = Path:new(path):make_relative(opts.cwd)
   if not self.workspace then
-    if vim.startswith(filename, self.fs.os_homedir) then
-      filename = "~" .. Path.path.sep .. self.fs:relative_from_home(filename)
+    if vim.startswith(filename, fs.os_homedir) then
+      filename = "~" .. Path.path.sep .. fs.relative_from_home(filename)
     elseif filename ~= path then
       filename = "." .. Path.path.sep .. filename
     end
@@ -269,7 +266,7 @@ function Picker:filepath_formatter(picker_opts)
     for k, v in pairs(picker_opts) do
       opts[k] = v
     end
-    opts.cwd = workspace or self.fs.os_homedir
+    opts.cwd = workspace or fs.os_homedir
 
     return function(filename)
       return utils.transform_path(opts, filename)

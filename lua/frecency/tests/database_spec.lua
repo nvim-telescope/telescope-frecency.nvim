@@ -1,4 +1,3 @@
-local FS = require "frecency.fs"
 local Database = require "frecency.database"
 local config = require "frecency.config"
 local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
@@ -8,12 +7,11 @@ async.tests.add_to_env()
 local make_epoch = util.make_epoch
 
 local function with_database(f)
-  local fs = FS.new {}
   local dir, close = util.tmpdir()
   dir:joinpath("file_frecency.bin"):touch()
   return function()
     config.setup { debug = true, db_root = dir.filename }
-    local database = Database.new(fs)
+    local database = Database.new()
     f(database)
     close()
   end

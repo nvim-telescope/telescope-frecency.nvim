@@ -5,34 +5,17 @@ local Path = require "plenary.path" --[[@as FrecencyPlenaryPath]]
 local scandir = require "plenary.scandir"
 local uv = vim.uv or vim.loop
 
----@class FrecencyFS
----@field os_homedir string
----@field private config FrecencyFSConfig
----@field private ignore_regexes string[]
-local FS = {}
+local M = {
+  os_homedir = assert(uv.os_homedir()),
+}
 
----@class FrecencyFSConfig
----@field scan_depth integer?
-
----@param fs_config? FrecencyFSConfig
----@return FrecencyFS
-FS.new = function(fs_config)
-  local self = setmetatable(
-    { config = vim.tbl_extend("force", { scan_depth = 100 }, fs_config or {}), os_homedir = assert(uv.os_homedir()) },
-    { __index = FS }
-  )
-  ---@param pattern string
-  self.ignore_regexes = vim.tbl_map(function(pattern)
-    local regex = vim.pesc(pattern):gsub("%%%*", ".*"):gsub("%%%?", ".")
-    return "^" .. regex .. "$"
-  end, config.ignore_patterns)
-  return self
-end
+-- TODO: make this configurable
+local SCAN_DEPTH = 100
 
 ---@param path string
 ---@return boolean
-function FS:is_ignored(path)
-  for _, regex in ipairs(self.ignore_regexes) do
+function M.is_ignored(path)
+  for _, regex in ipairs(config.ignore_regexes()) do
     if path:find(regex) then
       return true
     end
@@ -42,28 +25,28 @@ end
 
 ---@param path? string
 ---@return boolean
-function FS:is_valid_path(path)
-  return not not path and Path:new(path):is_file() and not self:is_ignored(path)
+function M.is_valid_path(path)
+  return not not path and Path:new(path):is_file() and not M.is_ignored(path)
 end
 
 ---@param path string
 ---@return function
-function FS:scan_dir(path)
+function M.scan_dir(path)
   log.debug { path = path }
-  local gitignore = self:make_gitignore(path)
+  local gitignore = M.make_gitignore(path)
   return coroutine.wrap(function()
     for name, type in
       vim.fs.dir(path, {
-        depth = self.config.scan_depth,
+        depth = SCAN_DEPTH,
         skip = function(dirname)
-          if self:is_ignored(os_util.join_path(path, dirname)) then
+          if M.is_ignored(os_util.join_path(path, dirname)) then
             return false
           end
         end,
       })
     do
       local fullpath = os_util.join_path(path, name)
-      if type == "file" and not self:is_ignored(fullpath) and gitignore({ path }, fullpath) then
+      if type == "file" and not M.is_ignored(fullpath) and gitignore({ path }, fullpath) then
         coroutine.yield(name)
       end
     end
@@ -72,8 +55,8 @@ end
 
 ---@param path string
 ---@return string
-function FS:relative_from_home(path)
-  return Path:new(path):make_relative(self.os_homedir)
+function M.relative_from_home(path)
+  return Path:new(path):make_relative(M.os_homedir)
 end
 
 ---@type table<string,string>
@@ -82,7 +65,7 @@ local with_sep = {}
 ---@param path string
 ---@param base? string
 ---@return boolean
-function FS:starts_with(path, base)
+function M.starts_with(path, base)
   if not base then
     return true
   end
@@ -95,10 +78,10 @@ end
 ---@private
 ---@param basepath string
 ---@return fun(base_paths: string[], entry: string): boolean
-function FS:make_gitignore(basepath)
+function M.make_gitignore(basepath)
   return scandir.__make_gitignore { basepath } or function(_, _)
     return true
   end
 end
 
-return FS
+return M

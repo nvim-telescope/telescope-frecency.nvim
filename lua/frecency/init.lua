@@ -1,9 +1,9 @@
 local Database = require "frecency.database"
 local EntryMaker = require "frecency.entry_maker"
-local FS = require "frecency.fs"
 local Picker = require "frecency.picker"
 local Recency = require "frecency.recency"
 local config = require "frecency.config"
+local fs = require "frecency.fs"
 local log = require "frecency.log"
 local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 
@@ -11,7 +11,6 @@ local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 ---@field private buf_registered table<integer, boolean> flag to indicate the buffer is registered to the database.
 ---@field private database FrecencyDatabase
 ---@field private entry_maker FrecencyEntryMaker
----@field private fs FrecencyFS
 ---@field private picker FrecencyPicker
 ---@field private recency FrecencyRecency
 local Frecency = {}
@@ -19,9 +18,8 @@ local Frecency = {}
 ---@return Frecency
 Frecency.new = function()
   local self = setmetatable({ buf_registered = {} }, { __index = Frecency }) --[[@as Frecency]]
-  self.fs = FS.new()
-  self.database = Database.new(self.fs)
-  self.entry_maker = EntryMaker.new(self.fs)
+  self.database = Database.new()
+  self.entry_maker = EntryMaker.new()
   self.recency = Recency.new()
   return self
 end
@@ -55,7 +53,7 @@ function Frecency:start(opts)
   if opts.hide_current_buffer or config.hide_current_buffer then
     ignore_filenames = { vim.api.nvim_buf_get_name(0) }
   end
-  self.picker = Picker.new(self.database, self.entry_maker, self.fs, self.recency, {
+  self.picker = Picker.new(self.database, self.entry_maker, self.recency, {
     editing_bufnr = vim.api.nvim_get_current_buf(),
     ignore_filenames = ignore_filenames,
     initial_workspace_tag = opts.workspace,
@@ -121,7 +119,7 @@ function Frecency:register(bufnr, epoch)
     return
   end
   local path = vim.api.nvim_buf_get_name(bufnr)
-  if not self.fs:is_valid_path(path) then
+  if not fs.is_valid_path(path) then
     return
   end
   local err, realpath = async.uv.fs_realpath(path)
