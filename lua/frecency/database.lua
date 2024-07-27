@@ -15,9 +15,8 @@ local Path = require "plenary.path" --[[@as FrecencyPlenaryPath]]
 ---@field timestamps integer[]
 
 ---@class FrecencyDatabase
----@field tx FrecencyPlenaryAsyncControlChannelTx
----@field private file_lock FrecencyFileLock
----@field private filename string
+---@field private _file_lock? FrecencyFileLock
+---@field private _tx? FrecencyPlenaryAsyncControlChannelTx
 ---@field private tbl FrecencyDatabaseTable
 ---@field private version "v1"
 local Database = {}
@@ -25,11 +24,12 @@ local Database = {}
 ---@return FrecencyDatabase
 Database.new = function()
   local version = "v1"
-  local self = setmetatable({
-    tbl = Table.new(version),
-    version = version,
-  }, { __index = Database })
-  self.filename = (function()
+  return setmetatable({ tbl = Table.new(version), version = version }, { __index = Database })
+end
+
+---@return nil
+function Database:start()
+  local filename = (function()
     -- NOTE: for backward compatibility
     -- If the user does not set db_root specifically, search DB in
     -- $XDG_DATA_HOME/nvim in addition to $XDG_STATE_HOME/nvim (default value).
@@ -43,12 +43,12 @@ Database.new = function()
     end
     return db.filename
   end)()
-  self.file_lock = FileLock.new(self.filename)
+  self._file_lock = FileLock.new(filename)
   local rx
-  self.tx, rx = async.control.channel.mpsc()
-  self.tx.send "load"
-  watcher.watch(self.filename, function()
-    self.tx.send "load"
+  self._tx, rx = async.control.channel.mpsc()
+  self:tx().send "load"
+  watcher.watch(filename, function()
+    self:tx().send "load"
   end)
   async.void(function()
     while true do
@@ -64,7 +64,6 @@ Database.new = function()
       log.debug("DB coroutine end:", mode)
     end
   end)()
-  return self
 end
 
 ---@return boolean
@@ -81,7 +80,7 @@ function Database:insert_files(paths)
   for _, path in ipairs(paths) do
     self.tbl.records[path] = { count = 1, timestamps = { 0 } }
   end
-  self.tx.send "save"
+  self:tx().send "save"
 end
 
 ---@async
@@ -102,7 +101,7 @@ function Database:remove_files(paths)
   for _, file in ipairs(paths) do
     self.tbl.records[file] = nil
   end
-  self.tx.send "save"
+  self:tx().send "save"
 end
 
 ---@param path string
@@ -120,7 +119,7 @@ function Database:update(path, epoch)
     record.timestamps = new_table
   end
   self.tbl.records[path] = record
-  self.tx.send "save"
+  self:tx().send "save"
 end
 
 ---@param workspace? string
@@ -148,13 +147,13 @@ end
 ---@return nil
 function Database:load()
   local start = os.clock()
-  local err, data = self.file_lock:with(function()
-    local err, stat = async.uv.fs_stat(self.filename)
+  local err, data = self:file_lock():with(function(target)
+    local err, stat = async.uv.fs_stat(target)
     if err then
       return nil
     end
     local fd
-    err, fd = async.uv.fs_open(self.filename, "r", tonumber("644", 8))
+    err, fd = async.uv.fs_open(target, "r", tonumber("644", 8))
     assert(not err, err)
     local data
     err, data = async.uv.fs_read(fd, stat.size)
@@ -173,9 +172,9 @@ end
 ---@return nil
 function Database:save()
   local start = os.clock()
-  local err = self.file_lock:with(function()
-    self:raw_save(self.tbl:raw())
-    local err, stat = async.uv.fs_stat(self.filename)
+  local err = self:file_lock():with(function(target)
+    self:raw_save(self.tbl:raw(), target)
+    local err, stat = async.uv.fs_stat(target)
     assert(not err, err)
     watcher.update(stat)
     return nil
@@ -185,11 +184,12 @@ function Database:save()
 end
 
 ---@async
+---@param target string
 ---@param tbl FrecencyDatabaseRawTable
-function Database:raw_save(tbl)
+function Database:raw_save(tbl, target)
   local f = assert(load("return " .. vim.inspect(tbl)))
   local data = string.dump(f)
-  local err, fd = async.uv.fs_open(self.filename, "w", tonumber("644", 8))
+  local err, fd = async.uv.fs_open(target, "w", tonumber("644", 8))
   assert(not err, err)
   assert(not async.uv.fs_write(fd, data))
   assert(not async.uv.fs_close(fd))
@@ -202,8 +202,26 @@ function Database:remove_entry(path)
     return false
   end
   self.tbl.records[path] = nil
-  self.tx.send "save"
+  self:tx().send "save"
   return true
+end
+
+---@private
+---@return FrecencyFileLock
+function Database:file_lock()
+  if not self._file_lock then
+    error "call Database:start() before this"
+  end
+  return self._file_lock
+end
+
+---@private
+---@return FrecencyPlenaryAsyncControlChannelTx
+function Database:tx()
+  if not self._tx then
+    error "call Database:start() before this"
+  end
+  return self._tx
 end
 
 return Database

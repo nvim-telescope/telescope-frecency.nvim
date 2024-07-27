@@ -4,23 +4,27 @@ local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 
 ---@class FrecencyFileLock
 ---@field base string
----@field config FrecencyFileLockConfig
----@field filename string
+---@field config FrecencyFileLockRawConfig
+---@field lock string
+---@field target string
 local FileLock = {}
 
 ---@class FrecencyFileLockConfig
+---@field retry? integer default: 5
+---@field unlink_retry? integer default: 5
+---@field interval? integer default: 500
+
+---@class FrecencyFileLockRawConfig
 ---@field retry integer default: 5
 ---@field unlink_retry integer default: 5
 ---@field interval integer default: 500
 
----@param path string
+---@param target string
 ---@param file_lock_config? FrecencyFileLockConfig
 ---@return FrecencyFileLock
-FileLock.new = function(path, file_lock_config)
+FileLock.new = function(target, file_lock_config)
   local config = vim.tbl_extend("force", { retry = 5, unlink_retry = 5, interval = 500 }, file_lock_config or {})
-  local self = setmetatable({ config = config }, { __index = FileLock })
-  self.filename = path .. ".lock"
-  return self
+  return setmetatable({ config = config, lock = target .. ".lock", target = target }, { __index = FileLock })
 end
 
 ---@async
@@ -31,21 +35,21 @@ function FileLock:get()
   local err, fd
   while true do
     count = count + 1
-    local dir = Path.new(self.filename):parent()
+    local dir = Path.new(self.lock):parent()
     if not dir:exists() then
       -- TODO: make this call be async
       log.debug(("file_lock get(): mkdir parent: %s"):format(dir.filename))
       ---@diagnostic disable-next-line: undefined-field
       dir:mkdir { parents = true }
     end
-    err, fd = async.uv.fs_open(self.filename, "wx", tonumber("600", 8))
+    err, fd = async.uv.fs_open(self.lock, "wx", tonumber("600", 8))
     if not err then
       break
     end
     async.util.sleep(self.config.interval)
     if count >= self.config.retry then
       log.debug(("file_lock get(): retry count reached. try to delete the lock file: %d"):format(count))
-      err = async.uv.fs_unlink(self.filename)
+      err = async.uv.fs_unlink(self.lock)
       if err then
         log.debug("file_lock get() failed: " .. err)
         unlink_count = unlink_count + 1
@@ -67,12 +71,12 @@ end
 ---@async
 ---@return string? err
 function FileLock:release()
-  local err = async.uv.fs_stat(self.filename)
+  local err = async.uv.fs_stat(self.lock)
   if err then
     log.debug("file_lock release() not found: " .. err)
     return "lock not found"
   end
-  err = async.uv.fs_unlink(self.filename)
+  err = async.uv.fs_unlink(self.lock)
   if err then
     log.debug("file_lock release() unlink failed: " .. err)
     return err
@@ -81,7 +85,7 @@ end
 
 ---@async
 ---@generic T
----@param f fun(): T
+---@param f fun(target: string): T
 ---@return string? err
 ---@return T
 function FileLock:with(f)
@@ -89,7 +93,7 @@ function FileLock:with(f)
   if err then
     return err, nil
   end
-  local ok, result_or_err = pcall(f)
+  local ok, result_or_err = pcall(f, self.target)
   err = self:release()
   if err then
     return err, nil

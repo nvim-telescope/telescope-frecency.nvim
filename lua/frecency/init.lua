@@ -30,6 +30,7 @@ function Frecency:setup()
   -- HACK: Wihout this wrapping, it spoils background color detection.
   -- See https://github.com/nvim-telescope/telescope-frecency.nvim/issues/210
   vim.defer_fn(function()
+    self.database:start()
     self:assert_db_entries()
     if config.auto_validate then
       async.void(function()

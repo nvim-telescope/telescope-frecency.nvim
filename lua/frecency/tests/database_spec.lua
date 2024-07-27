@@ -12,6 +12,7 @@ local function with_database(f)
   return function()
     config.setup { debug = true, db_root = dir.filename }
     local database = Database.new()
+    database:start()
     f(database)
     close()
   end
@@ -23,7 +24,8 @@ end
 ---@param epoch integer
 ---@return FrecencyEntry[]
 local function save_and_load(database, tbl, epoch)
-  database:raw_save(util.v1_table(tbl))
+  ---@diagnostic disable-next-line: invisible
+  database:raw_save(util.v1_table(tbl), database:file_lock().target)
   async.util.sleep(100)
   local entries = database:get_entries(nil, epoch)
   table.sort(entries, function(a, b)
