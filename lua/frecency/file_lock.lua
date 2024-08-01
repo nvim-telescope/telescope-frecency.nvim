@@ -23,6 +23,7 @@ local FileLock = {}
 ---@param file_lock_config? FrecencyFileLockConfig
 ---@return FrecencyFileLock
 FileLock.new = function(target, file_lock_config)
+  log.debug(("file_lock new(): %s"):format(target))
   local config = vim.tbl_extend("force", { retry = 5, unlink_retry = 5, interval = 500 }, file_lock_config or {})
   return setmetatable({ config = config, lock = target .. ".lock", target = target }, { __index = FileLock })
 end

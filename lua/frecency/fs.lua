@@ -2,6 +2,7 @@ local config = require "frecency.config"
 local os_util = require "frecency.os_util"
 local log = require "frecency.log"
 local Path = require "plenary.path" --[[@as FrecencyPlenaryPath]]
+local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 local scandir = require "plenary.scandir"
 local uv = vim.uv or vim.loop
 
@@ -73,6 +74,13 @@ function M.starts_with(path, base)
     with_sep[base] = base .. (base:sub(#base) == Path.path.sep and "" or Path.path.sep)
   end
   return path:find(with_sep[base], 1, true) == 1
+end
+
+---@async
+---@param path string
+---@return boolean
+function M.exists(path)
+  return not (async.uv.fs_stat(path))
 end
 
 ---@private

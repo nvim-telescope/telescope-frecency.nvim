@@ -27,17 +27,13 @@ end
 ---This is called when `:Telescope frecency` is called at the first time.
 ---@return nil
 function Frecency:setup()
-  -- HACK: Wihout this wrapping, it spoils background color detection.
-  -- See https://github.com/nvim-telescope/telescope-frecency.nvim/issues/210
-  vim.defer_fn(function()
+  async.void(function()
     self.database:start()
     self:assert_db_entries()
     if config.auto_validate then
-      async.void(function()
-        self:validate_database()
-      end)
+      self:validate_database()
     end
-  end, 0)
+  end)()
 end
 
 ---This can be calledBy `require("telescope").extensions.frecency.frecency`.
@@ -104,6 +100,7 @@ function Frecency:validate_database(force)
 end
 
 ---@private
+---@async
 ---@return nil
 function Frecency:assert_db_entries()
   if not self.database:has_entry() then
@@ -129,6 +126,7 @@ function Frecency:register(bufnr, epoch)
   end
   self.database:update(realpath, epoch)
   self.buf_registered[bufnr] = true
+  log.debug("registered:", bufnr, path)
 end
 
 ---@param path string

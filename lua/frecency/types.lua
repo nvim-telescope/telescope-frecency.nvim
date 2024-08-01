@@ -48,6 +48,11 @@ function FrecencyPlenaryAsync.run(f) end
 ---@class FrecencyPlenaryAsyncControlChannel
 ---@field mpsc fun(): FrecencyPlenaryAsyncControlChannelTx, FrecencyPlenaryAsyncControlChannelRx
 ---@field counter fun(): FrecencyPlenaryAsyncControlChannelTx, FrecencyPlenaryAsyncControlChannelRx
+local FrecencyPlenaryAsyncControlChannel
+
+---@return fun(...): nil tx
+---@return async fun(): ... rx
+function FrecencyPlenaryAsyncControlChannel.oneshot() end
 
 ---@class FrecencyPlenaryAsyncControlChannelTx
 ---@field send fun(entry?: any): nil
