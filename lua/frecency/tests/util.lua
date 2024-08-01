@@ -1,5 +1,5 @@
 ---@diagnostic disable: invisible, undefined-field
-local Frecency = require "frecency"
+local Frecency = require "frecency.klass"
 local Picker = require "frecency.picker"
 local config = require "frecency.config"
 local uv = vim.uv or vim.loop
