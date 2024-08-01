@@ -134,6 +134,9 @@ If no database is found when running Neovim with the plugin installed, a new
 one is created and entries from |shada| and |v:oldfiles| are automatically
 imported.
 
+NOTE: Even if you want to load |telescope.nvim| lazily, you should NOT load
+telescope-frecency.nvim lazily. See |telescope-frecency-function-setup|.
+
 
 ==============================================================================
 USAGE						      *telescope-frecency-usage*
@@ -314,6 +317,46 @@ Options:			     *telescope-frecency-function-query-options*
 		into query results. You can limit candidates to ones that
 		exist below the directory specified this value. See also
 		|telescope-frecency-usage|.
+
+					     *telescope-frecency-function-setup*
+setup() ~
+
+This will be called by |telescope.nvim| for its initialization. You can also
+call this to initialize this plugin separated from |telescope.nvim|'s
+initialization phase.
+
+This is useful when you want to load |telescope.nvim| lazily, but want to
+register opened files as soon as Neovim has started. Example configuration for
+|lazy.nvim| is below.
+>lua
+    {
+      "nvim-telescope/telescope-frecency.nvim",
+      main = "frecency",
+      ---@type FrecencyOpts
+      opts = {
+	  db_safe_mode = false,
+      },
+    },
+
+    {
+      "nvim-telescope/telescope.nvim",
+      -- `cmd` opts makes lazy.nvim load telescope.nvim lazily.
+      cmd = { "Telescope" },
+      config = function()
+	local telescope = require "telescope"
+	telescope.setup {
+	  extensions = {
+	    other_extension = {
+	      foo_bar = true,
+	    },
+	    -- Here you need no configuration opts for frecency because
+	    -- you've already done.
+	  }
+	}
+	-- This is still needed.
+	telescope.load_extension "frecency"
+      end,
+    },
 
 
 ==============================================================================
