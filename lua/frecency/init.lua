@@ -3,7 +3,7 @@
 ---setup() to be initialized.
 ---@class FrecencyInstance
 ---@field complete fun(findstart: 1|0, base: string): integer|''|string[]
----@field delete fun(path: string): nil
+---@field delete async fun(path: string): nil
 ---@field query fun(opts?: FrecencyQueryOpts): FrecencyQueryEntry[]|string[]
 ---@field register async fun(bufnr: integer, datetime: string?): nil
 ---@field start fun(opts: FrecencyPickerOptions?): nil
@@ -28,6 +28,10 @@ local frecency = setmetatable({}, {
   end,
 })
 
+local function async_call(f, ...)
+  require("plenary.async").void(f)(...)
+end
+
 local setup_done = false
 
 ---When this func is called, Frecency instance is NOT created but only
@@ -48,13 +52,13 @@ local function setup(ext_config)
 
   ---@param cmd_info { bang: boolean }
   vim.api.nvim_create_user_command("FrecencyValidate", function(cmd_info)
-    frecency.validate_database(cmd_info.bang)
+    async_call(frecency.validate_database, cmd_info.bang)
   end, { bang = true, desc = "Clean up DB for telescope-frecency" })
 
   vim.api.nvim_create_user_command("FrecencyDelete", function(info)
     local path_string = info.args == "" and "%:p" or info.args
     local path = vim.fn.expand(path_string) --[[@as string]]
-    frecency.delete(path)
+    async_call(frecency.delete, path)
   end, { nargs = "?", complete = "file", desc = "Delete entry from telescope-frecency" })
 
   local group = vim.api.nvim_create_augroup("TelescopeFrecency", {})
@@ -65,7 +69,7 @@ local function setup(ext_config)
     callback = function(args)
       local is_floatwin = vim.api.nvim_win_get_config(0).relative ~= ""
       if not is_floatwin then
-        frecency.register(args.buf)
+        async_call(frecency.register, args.buf)
       end
     end,
   })
