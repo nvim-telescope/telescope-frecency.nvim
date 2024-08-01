@@ -3,7 +3,7 @@
 vim.opt.runtimepath:append(vim.env.TELESCOPE_PATH)
 
 ---@diagnostic disable: invisible, undefined-field
-local Frecency = require "frecency"
+local Frecency = require "frecency.klass"
 local Picker = require "frecency.picker"
 local util = require "frecency.tests.util"
 local log = require "plenary.log"
