@@ -13,6 +13,7 @@ Function		|telescope-frecency-function|
 Configuration		|telescope-frecency-configuration|
 Database		|telescope-frecency-database|
 Highlight Groups	|telescope-frecency-highlight-groups|
+FAQ			|telescope-frecency-faq|
 Reference		|telescope-frecency-reference|
 
 
@@ -788,6 +789,35 @@ Default: link to |hl-WildMenu|
 
 This is used to highlight query filter such as `:CWD:`.
 
+
+==============================================================================
+FAQ							*telescope-frecency-faq*
+
+			     *telescope-frecency-faq-removenentriesfromdatabase*
+“remove n entries from database?” dialog appears in startup ~
+
+This dialog informs you that this plugin will delete entries because stale
+ones exist in DB.
+
+If you feel this annoying, you can disable it by config. See
+|telescope-frecency-configuration-db_safe_mode|,
+|telescope-frecency-configuration-auto_validate|.
+>lua
+    {
+      "nvim-telescope/telescope.nvim",
+      config = function()
+	local telescope = require "telescope"
+	telescope.setup {
+	  extensions = {
+	    frecency = {
+	      -- completely disable the dialog
+	      db_safe_mode = false,
+	    },
+	  },
+	}
+	telescope.load_extension "frecency"
+      end,
+    }
 
 ==============================================================================
 REFERENCE					  *telescope-frecency-reference*
