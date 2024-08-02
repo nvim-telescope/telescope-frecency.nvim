@@ -50,13 +50,18 @@ local function setup(ext_config)
   vim.api.nvim_set_hl(0, "TelescopeFrecencyScores", { link = "Number", default = true })
   vim.api.nvim_set_hl(0, "TelescopeQueryFilter", { link = "WildMenu", default = true })
 
-  ---@param cmd_info { bang: boolean }
+  ---@class FrecencyCommandInfo
+  ---@field args string
+  ---@field bang boolean
+
+  ---@param cmd_info FrecencyCommandInfo
   vim.api.nvim_create_user_command("FrecencyValidate", function(cmd_info)
     async_call(frecency.validate_database, cmd_info.bang)
   end, { bang = true, desc = "Clean up DB for telescope-frecency" })
 
-  vim.api.nvim_create_user_command("FrecencyDelete", function(info)
-    local path_string = info.args == "" and "%:p" or info.args
+  ---@param cmd_info FrecencyCommandInfo
+  vim.api.nvim_create_user_command("FrecencyDelete", function(cmd_info)
+    local path_string = cmd_info.args == "" and "%:p" or cmd_info.args
     local path = vim.fn.expand(path_string) --[[@as string]]
     async_call(frecency.delete, path)
   end, { nargs = "?", complete = "file", desc = "Delete entry from telescope-frecency" })
