@@ -5,7 +5,7 @@
 ---@field complete fun(findstart: 1|0, base: string): integer|''|string[]
 ---@field delete async fun(path: string): nil
 ---@field query fun(opts?: FrecencyQueryOpts): FrecencyQueryEntry[]|string[]
----@field register async fun(bufnr: integer, datetime: string?): nil
+---@field register fun(bufnr: integer, datetime: string?): nil
 ---@field start fun(opts: FrecencyPickerOptions?): nil
 ---@field validate_database async fun(force: boolean?): nil
 local frecency = setmetatable({}, {
@@ -74,7 +74,7 @@ local function setup(ext_config)
     callback = function(args)
       local is_floatwin = vim.api.nvim_win_get_config(0).relative ~= ""
       if not is_floatwin then
-        async_call(frecency.register, args.buf)
+        frecency.register(args.buf)
       end
     end,
   })

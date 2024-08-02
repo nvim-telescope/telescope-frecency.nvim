@@ -122,8 +122,9 @@ local function make_register(frecency, dir)
     if reset then
       frecency.buf_registered[bufnr] = nil
     end
-    async.util.block_on(function()
-      frecency:register(bufnr, epoch)
+    frecency:register(bufnr, epoch)
+    vim.wait(1000, function()
+      return not not frecency.buf_registered[bufnr]
     end)
     -- HACK: This is needed because almost the same filenames use the same
     -- buffer.

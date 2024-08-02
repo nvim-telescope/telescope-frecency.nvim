@@ -24,10 +24,15 @@ function M.is_ignored(path)
   return false
 end
 
+---@async
 ---@param path? string
 ---@return boolean
 function M.is_valid_path(path)
-  return not not path and Path:new(path):is_file() and not M.is_ignored(path)
+  if not path then
+    return false
+  end
+  local err, st = async.uv.fs_stat(path)
+  return not err and st.type == "file" and not M.is_ignored(path)
 end
 
 ---@param path string

@@ -27,13 +27,29 @@ end
 ---This is called when `:Telescope frecency` is called at the first time.
 ---@return nil
 function Frecency:setup()
-  async.void(function()
+  local done = false
+  ---@async
+  local function init()
     self.database:start()
     self:assert_db_entries()
     if config.auto_validate then
       self:validate_database()
     end
-  end)()
+    done = true
+  end
+
+  local is_async = not not coroutine.running()
+  if is_async then
+    init()
+  else
+    async.void(init)()
+    local ok, status = vim.wait(1000, function()
+      return done
+    end)
+    if not ok then
+      log.error("failed to setup:", status == -1 and "timed out" or "interrupted")
+    end
+  end
 end
 
 ---This can be calledBy `require("telescope").extensions.frecency.frecency`.
@@ -109,7 +125,6 @@ function Frecency:assert_db_entries()
   end
 end
 
----@async
 ---@param bufnr integer
 ---@param epoch? integer
 function Frecency:register(bufnr, epoch)
@@ -117,16 +132,18 @@ function Frecency:register(bufnr, epoch)
     return
   end
   local path = vim.api.nvim_buf_get_name(bufnr)
-  if not fs.is_valid_path(path) then
-    return
-  end
-  local err, realpath = async.uv.fs_realpath(path)
-  if err or not realpath then
-    return
-  end
-  self.database:update(realpath, epoch)
-  self.buf_registered[bufnr] = true
-  log.debug("registered:", bufnr, path)
+  async.void(function()
+    if not fs.is_valid_path(path) then
+      return
+    end
+    local err, realpath = async.uv.fs_realpath(path)
+    if err or not realpath then
+      return
+    end
+    self.database:update(realpath, epoch)
+    self.buf_registered[bufnr] = true
+    log.debug("registered:", bufnr, path)
+  end)()
 end
 
 ---@async
