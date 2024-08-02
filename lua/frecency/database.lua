@@ -1,5 +1,6 @@
 local Table = require "frecency.database.table"
 local FileLock = require "frecency.file_lock"
+local MigratorV2 = require "frecency.database.migrator_v2"
 local config = require "frecency.config"
 local fs = require "frecency.fs"
 local watcher = require "frecency.watcher"
@@ -14,7 +15,7 @@ local Path = require "plenary.path" --[[@as FrecencyPlenaryPath]]
 ---@field score number
 ---@field timestamps integer[]
 
----@alias FrecencyDatabaseVersion "v1"
+---@alias FrecencyDatabaseVersion "v1"|"v2"
 
 ---@class FrecencyDatabase
 ---@field private _file_lock FrecencyFileLock
@@ -45,6 +46,7 @@ end
 ---@return string
 function Database:filename()
   local file_v1 = "file_frecency.bin"
+  local file_v2 = "file_frecency_v2.bin"
 
   ---@async
   ---@return string
@@ -62,8 +64,24 @@ function Database:filename()
     return db
   end
 
+  ---@async
+  ---@return string
+  local function filename_v2()
+    local db = Path.new(config.db_root, file_v2).filename
+    if not fs.exists(db) then
+      local v1 = filename_v1()
+      if fs.exists(v1) then
+        local migrator = MigratorV2.new(v1, db)
+        migrator:migrate()
+      end
+    end
+    return db
+  end
+
   if self.version == "v1" then
     return filename_v1()
+  elseif self.version == "v2" then
+    return filename_v2()
   else
     error(("unknown version: %s"):format(self.version))
   end
