@@ -27,9 +27,10 @@ local Path = require "plenary.path" --[[@as FrecencyPlenaryPath]]
 ---@field private watcher_tx FrecencyPlenaryAsyncControlChannelTx
 local Database = {}
 
+---@param version? FrecencyDatabaseVersion
 ---@return FrecencyDatabase
-Database.new = function()
-  local version = "v1"
+Database.new = function(version)
+  version = version or "v2"
   local file_lock_tx, file_lock_rx = async.control.channel.oneshot()
   local watcher_tx, watcher_rx = async.control.channel.mpsc()
   return setmetatable({
