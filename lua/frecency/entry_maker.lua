@@ -1,19 +1,18 @@
 local WebDevicons = require "frecency.web_devicons"
 local config = require "frecency.config"
+local fs = require "frecency.fs"
 local Path = require "plenary.path" --[[@as FrecencyPlenaryPath]]
 local entry_display = require "telescope.pickers.entry_display" --[[@as FrecencyTelescopeEntryDisplay]]
 local utils = require "telescope.utils" --[[@as FrecencyTelescopeUtils]]
 
 ---@class FrecencyEntryMaker
----@field fs FrecencyFS
 ---@field loaded table<string,boolean>
 ---@field web_devicons WebDevicons
 local EntryMaker = {}
 
----@param fs FrecencyFS
 ---@return FrecencyEntryMaker
-EntryMaker.new = function(fs)
-  return setmetatable({ fs = fs, web_devicons = WebDevicons.new() }, { __index = EntryMaker })
+EntryMaker.new = function()
+  return setmetatable({ web_devicons = WebDevicons.new() }, { __index = EntryMaker })
 end
 
 ---@class FrecencyEntry
@@ -128,7 +127,7 @@ function EntryMaker:items(entry, workspace, workspace_tag, formatter)
   end
   if config.show_filter_column and workspace and workspace_tag then
     local filtered = self:should_show_tail(workspace_tag) and utils.path_tail(workspace) .. Path.path.sep
-      or self.fs:relative_from_home(workspace) .. Path.path.sep
+      or fs.relative_from_home(workspace) .. Path.path.sep
     table.insert(items, { filtered, "Directory" })
   end
   local formatted_name, path_style = formatter(entry.name)
@@ -153,7 +152,7 @@ end
 ---@return integer
 function EntryMaker:calculate_filter_column_width(workspace, workspace_tag)
   return self:should_show_tail(workspace_tag) and #(utils.path_tail(workspace)) + 1
-    or #(self.fs:relative_from_home(workspace)) + 1
+    or #(fs.relative_from_home(workspace)) + 1
 end
 
 ---@private

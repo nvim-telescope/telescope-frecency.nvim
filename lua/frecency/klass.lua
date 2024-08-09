@@ -1,16 +1,16 @@
 local Database = require "frecency.database"
 local EntryMaker = require "frecency.entry_maker"
-local FS = require "frecency.fs"
 local Picker = require "frecency.picker"
 local Recency = require "frecency.recency"
 local config = require "frecency.config"
+local fs = require "frecency.fs"
 local log = require "frecency.log"
+local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 
 ---@class Frecency
 ---@field private buf_registered table<integer, boolean> flag to indicate the buffer is registered to the database.
 ---@field private database FrecencyDatabase
 ---@field private entry_maker FrecencyEntryMaker
----@field private fs FrecencyFS
 ---@field private picker FrecencyPicker
 ---@field private recency FrecencyRecency
 local Frecency = {}
@@ -18,9 +18,8 @@ local Frecency = {}
 ---@return Frecency
 Frecency.new = function()
   local self = setmetatable({ buf_registered = {} }, { __index = Frecency }) --[[@as Frecency]]
-  self.fs = FS.new()
-  self.database = Database.new(self.fs)
-  self.entry_maker = EntryMaker.new(self.fs)
+  self.database = Database.new()
+  self.entry_maker = EntryMaker.new()
   self.recency = Recency.new()
   return self
 end
@@ -28,14 +27,29 @@ end
 ---This is called when `:Telescope frecency` is called at the first time.
 ---@return nil
 function Frecency:setup()
-  -- HACK: Wihout this wrapping, it spoils background color detection.
-  -- See https://github.com/nvim-telescope/telescope-frecency.nvim/issues/210
-  vim.defer_fn(function()
+  local done = false
+  ---@async
+  local function init()
+    self.database:start()
     self:assert_db_entries()
     if config.auto_validate then
       self:validate_database()
     end
-  end, 0)
+    done = true
+  end
+
+  local is_async = not not coroutine.running()
+  if is_async then
+    init()
+  else
+    async.void(init)()
+    local ok, status = vim.wait(1000, function()
+      return done
+    end)
+    if not ok then
+      log.error("failed to setup:", status == -1 and "timed out" or "interrupted")
+    end
+  end
 end
 
 ---This can be calledBy `require("telescope").extensions.frecency.frecency`.
@@ -52,7 +66,7 @@ function Frecency:start(opts)
   if opts.hide_current_buffer or config.hide_current_buffer then
     ignore_filenames = { vim.api.nvim_buf_get_name(0) }
   end
-  self.picker = Picker.new(self.database, self.entry_maker, self.fs, self.recency, {
+  self.picker = Picker.new(self.database, self.entry_maker, self.recency, {
     editing_bufnr = vim.api.nvim_get_current_buf(),
     ignore_filenames = ignore_filenames,
     initial_workspace_tag = opts.workspace,
@@ -69,16 +83,7 @@ function Frecency:complete(findstart, base)
   return self.picker:complete(findstart, base)
 end
 
----@private
----@return nil
-function Frecency:assert_db_entries()
-  if not self.database:has_entry() then
-    self.database:insert_files(vim.v.oldfiles)
-    self:notify("Imported %d entries from oldfiles.", #vim.v.oldfiles)
-  end
-end
-
----@private
+---@async
 ---@param force? boolean
 ---@return nil
 function Frecency:validate_database(force)
@@ -110,20 +115,38 @@ function Frecency:validate_database(force)
   end)
 end
 
+---@private
+---@async
+---@return nil
+function Frecency:assert_db_entries()
+  if not self.database:has_entry() then
+    self.database:insert_files(vim.v.oldfiles)
+    self:notify("Imported %d entries from oldfiles.", #vim.v.oldfiles)
+  end
+end
+
 ---@param bufnr integer
 ---@param epoch? integer
 function Frecency:register(bufnr, epoch)
-  if config.ignore_register and config.ignore_register(bufnr) then
+  if (config.ignore_register and config.ignore_register(bufnr)) or self.buf_registered[bufnr] then
     return
   end
   local path = vim.api.nvim_buf_get_name(bufnr)
-  if self.buf_registered[bufnr] or not self.fs:is_valid_path(path) then
-    return
-  end
-  self.database:update(path, epoch)
-  self.buf_registered[bufnr] = true
+  async.void(function()
+    if not fs.is_valid_path(path) then
+      return
+    end
+    local err, realpath = async.uv.fs_realpath(path)
+    if err or not realpath then
+      return
+    end
+    self.database:update(realpath, epoch)
+    self.buf_registered[bufnr] = true
+    log.debug("registered:", bufnr, path)
+  end)()
 end
 
+---@async
 ---@param path string
 ---@return nil
 function Frecency:delete(path)

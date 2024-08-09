@@ -41,7 +41,7 @@ a.describe("file_lock", function()
       with_dir(function(filename)
         local fl = FileLock.new(filename, { retry = 1, interval = 10 })
         a.it("gets successfully", function()
-          local err, fd = async.uv.fs_open(fl.filename, "wx", tonumber("600", 8))
+          local err, fd = async.uv.fs_open(fl.lock, "wx", tonumber("600", 8))
           assert.is.Nil(err)
           assert.is.Nil(async.uv.fs_close(fd))
           assert.is.Nil(fl:get())
@@ -131,7 +131,7 @@ a.describe("file_lock", function()
           assert.are.same(
             "lock not found",
             fl:with(function()
-              assert.is.Nil(async.uv.fs_unlink(fl.filename))
+              assert.is.Nil(async.uv.fs_unlink(fl.lock))
               return nil
             end)
           )

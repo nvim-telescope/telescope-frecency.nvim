@@ -26,6 +26,7 @@ local os_util = require "frecency.os_util"
 
 ---@class FrecencyConfig: FrecencyRawConfig
 ---@field ext_config FrecencyRawConfig
+---@field private cached_ignore_regexes? string[]
 ---@field private values FrecencyRawConfig
 local Config = {}
 
@@ -79,6 +80,7 @@ Config.new = function()
     workspaces = true,
   }
   return setmetatable({
+    cached_ignore_regexes = {},
     ext_config = {},
     values = Config.default_values,
   }, {
@@ -138,6 +140,17 @@ Config.get = function()
   return config.values
 end
 
+---@return string[]
+Config.ignore_regexes = function()
+  if not config.cached_ignore_regexes then
+    config.cached_ignore_regexes = vim.tbl_map(function(pattern)
+      local regex = vim.pesc(pattern):gsub("%%%*", ".*"):gsub("%%%?", ".")
+      return "^" .. regex .. "$"
+    end, config.ignore_patterns)
+  end
+  return config.cached_ignore_regexes
+end
+
 ---@param ext_config any
 ---@return nil
 Config.setup = function(ext_config)
@@ -174,6 +187,7 @@ Config.setup = function(ext_config)
     workspace_scan_cmd = { opts.workspace_scan_cmd, { "s", "t" }, true },
     workspaces = { opts.workspaces, "t" },
   }
+  config.cached_ignore_regexes = nil
   config.ext_config = ext_config
   config.values = opts
 end

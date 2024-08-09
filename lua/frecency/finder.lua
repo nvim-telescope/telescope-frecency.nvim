@@ -1,4 +1,5 @@
 local config = require "frecency.config"
+local fs = require "frecency.fs"
 local os_util = require "frecency.os_util"
 local log = require "frecency.log"
 local Job = require "plenary.job"
@@ -10,7 +11,6 @@ local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 ---@field entries FrecencyEntry[]
 ---@field scanned_entries FrecencyEntry[]
 ---@field entry_maker FrecencyEntryMakerInstance
----@field fs FrecencyFS
 ---@field path? string
 ---@field private database FrecencyDatabase
 ---@field private rx FrecencyPlenaryAsyncControlChannelRx
@@ -32,14 +32,13 @@ local Finder = {}
 
 ---@param database FrecencyDatabase
 ---@param entry_maker FrecencyEntryMakerInstance
----@param fs FrecencyFS
 ---@param need_scandir boolean
 ---@param path string?
 ---@param recency FrecencyRecency
 ---@param state FrecencyState
 ---@param finder_config? FrecencyFinderConfig
 ---@return FrecencyFinder
-Finder.new = function(database, entry_maker, fs, need_scandir, path, recency, state, finder_config)
+Finder.new = function(database, entry_maker, need_scandir, path, recency, state, finder_config)
   local tx, rx = async.control.channel.mpsc()
   local scan_tx, scan_rx = async.control.channel.mpsc()
   local self = setmetatable({
@@ -47,7 +46,6 @@ Finder.new = function(database, entry_maker, fs, need_scandir, path, recency, st
     closed = false,
     database = database,
     entry_maker = entry_maker,
-    fs = fs,
     path = path,
     recency = recency,
     state = state,
@@ -168,7 +166,7 @@ end
 ---@return nil
 function Finder:scan_dir_lua()
   local count = 0
-  for name in self.fs:scan_dir(self.path) do
+  for name in fs.scan_dir(self.path) do
     if self.closed then
       break
     end
