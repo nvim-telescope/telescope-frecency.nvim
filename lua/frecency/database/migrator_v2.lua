@@ -32,11 +32,17 @@ end
 ---@async
 ---@param filename string
 ---@param value FrecencyDatabaseRecordValue
+---@return nil
 function MigratorV2:update_entry(filename, value)
   local entry = self.v1.tbl.records[filename] or value
   local err, realpath = async.uv.fs_realpath(filename)
-  assert(not err, err)
-  assert(realpath)
+  if err or not realpath then
+    -- NOTE: this means the path does not exist.
+    return
+  elseif filename ~= realpath and self.v1.tbl.records[realpath] then
+    local original=self.v2.records[realpath] or { count=0,timestamps={}}
+  end
+  self.v2.tbl.records[realpath] = entry
 end
 
 return MigratorV2

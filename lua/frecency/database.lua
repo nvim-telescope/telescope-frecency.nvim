@@ -159,14 +159,22 @@ function Database:remove_files(paths)
   self.watcher_tx.send "save"
 end
 
----@async
 ---@param path string
 ---@param epoch? integer
 function Database:update(path, epoch)
   local record = self.tbl.records[path] or { count = 0, timestamps = {} }
+  self.tbl.records[path] = self:add_timestamp(record, epoch)
+  self.watcher_tx.send "save"
+end
+
+---@param record FrecencyDatabaseRecordValue
+---@param epoch? integer
+---@return FrecencyDatabaseRecordValue
+function Database:add_timestamp(record,epoch)
   record.count = record.count + 1
   local now = epoch or os.time()
   table.insert(record.timestamps, now)
+  table.sort(record.timestamps)
   if #record.timestamps > config.max_timestamps then
     local new_table = {}
     for i = #record.timestamps - config.max_timestamps + 1, #record.timestamps do
@@ -174,8 +182,7 @@ function Database:update(path, epoch)
     end
     record.timestamps = new_table
   end
-  self.tbl.records[path] = record
-  self.watcher_tx.send "save"
+  return record
 end
 
 ---@async
