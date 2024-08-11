@@ -63,7 +63,10 @@ local function setup(ext_config)
     group = group,
     ---@param args { buf: integer }
     callback = function(args)
-      local is_floatwin = vim.api.nvim_win_get_config(0).relative ~= ""
+      if vim.api.nvim_buf_get_name(args.buf) == "" then
+        return
+      end
+      local is_floatwin = vim.api.nvim_win_get_config(args.buf).relative ~= ""
       if not is_floatwin then
         frecency.register(args.buf)
       end
