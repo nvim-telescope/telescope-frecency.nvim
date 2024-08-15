@@ -294,24 +294,33 @@ function Finder:reflow_results()
     return
   end
   async.util.scheduler()
-  local bufnr = picker.results_bufnr
-  local win = picker.results_win
-  if not bufnr or not win or not vim.api.nvim_buf_is_valid(bufnr) or not vim.api.nvim_win_is_valid(win) then
-    return
-  end
-  picker:clear_extra_rows(bufnr)
-  if picker.sorting_strategy == "descending" then
-    local manager = picker.manager
-    if not manager then
+
+  local function reflow()
+    local bufnr = picker.results_bufnr
+    local win = picker.results_win
+    if not bufnr or not win or not vim.api.nvim_buf_is_valid(bufnr) or not vim.api.nvim_win_is_valid(win) then
       return
     end
-    local worst_line = picker:get_row(manager:num_results())
-    local wininfo = vim.fn.getwininfo(win)[1]
-    local bottom = vim.api.nvim_buf_line_count(bufnr)
-    if not self.reflowed or worst_line > wininfo.botline then
-      self.reflowed = true
-      vim.api.nvim_win_set_cursor(win, { bottom, 0 })
+    picker:clear_extra_rows(bufnr)
+    if picker.sorting_strategy == "descending" then
+      local manager = picker.manager
+      if not manager then
+        return
+      end
+      local worst_line = picker:get_row(manager:num_results())
+      local wininfo = vim.fn.getwininfo(win)[1]
+      local bottom = vim.api.nvim_buf_line_count(bufnr)
+      if not self.reflowed or worst_line > wininfo.botline then
+        self.reflowed = true
+        vim.api.nvim_win_set_cursor(win, { bottom, 0 })
+      end
     end
+  end
+
+  if vim.in_fast_event() then
+    reflow()
+  else
+    vim.schedule(reflow)
   end
 end
 
