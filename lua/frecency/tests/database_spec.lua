@@ -1,27 +1,18 @@
-local FS = require "frecency.fs"
 local Database = require "frecency.database"
 local config = require "frecency.config"
 local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 local util = require "frecency.tests.util"
 async.tests.add_to_env()
 
----@param datetime string?
----@return integer
-local function make_epoch(datetime)
-  if not datetime then
-    return os.time()
-  end
-  local tz_fix = datetime:gsub("+(%d%d):(%d%d)$", "+%1%2")
-  return util.time_piece(tz_fix)
-end
+local make_epoch = util.make_epoch
 
 local function with_database(f)
-  local fs = FS.new {}
   local dir, close = util.tmpdir()
   dir:joinpath("file_frecency.bin"):touch()
   return function()
     config.setup { debug = true, db_root = dir.filename }
-    local database = Database.new(fs)
+    local database = Database.new()
+    database:start()
     f(database)
     close()
   end
@@ -33,7 +24,8 @@ end
 ---@param epoch integer
 ---@return FrecencyEntry[]
 local function save_and_load(database, tbl, epoch)
-  database:raw_save(util.v1_table(tbl))
+  ---@diagnostic disable-next-line: invisible
+  database:raw_save(util.v1_table(tbl), database:file_lock().target)
   async.util.sleep(100)
   local entries = database:get_entries(nil, epoch)
   table.sort(entries, function(a, b)

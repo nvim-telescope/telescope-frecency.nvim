@@ -1,4 +1,5 @@
 local log = require "frecency.log"
+local async = require "plenary.async"
 
 ---@class FrecencyDatabaseRecordValue
 ---@field count integer
@@ -18,14 +19,12 @@ Table.new = function(version)
   return setmetatable({ is_ready = false, version = version }, { __index = Table.__index })
 end
 
+---@async
+---@param key string
 function Table:__index(key)
   if key == "records" and not rawget(self, "is_ready") then
-    local start = os.clock()
-    log.debug "waiting start"
     Table.wait_ready(self)
-    log.debug(("waiting until DB become clean takes %f seconds"):format(os.clock() - start))
   end
-  log.debug(("is_ready: %s, key: %s, value: %s"):format(rawget(self, "is_ready"), key, rawget(self, key)))
   return vim.F.if_nil(rawget(self, key), Table[key])
 end
 
@@ -45,11 +44,16 @@ function Table:set(raw_table)
 end
 
 ---This is for internal or testing use only.
+---@async
 ---@return nil
 function Table:wait_ready()
-  vim.wait(2000, function()
-    return rawget(self, "is_ready")
-  end)
+  local start = os.clock()
+  local t = 0.2
+  while not rawget(self, "is_ready") do
+    async.util.sleep(t)
+    t = t * 2
+  end
+  log.debug(("wait_ready() takes %f seconds"):format(os.clock() - start))
 end
 
 return Table

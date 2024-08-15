@@ -1,6 +1,7 @@
 local Table = require "frecency.database.table"
 local FileLock = require "frecency.file_lock"
 local config = require "frecency.config"
+local fs = require "frecency.fs"
 local watcher = require "frecency.watcher"
 local log = require "frecency.log"
 local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
@@ -13,48 +14,73 @@ local Path = require "plenary.path" --[[@as FrecencyPlenaryPath]]
 ---@field score number
 ---@field timestamps integer[]
 
+---@alias FrecencyDatabaseVersion "v1"
+
 ---@class FrecencyDatabase
----@field tx FrecencyPlenaryAsyncControlChannelTx
----@field private file_lock FrecencyFileLock
----@field private filename string
----@field private fs FrecencyFS
+---@field private _file_lock FrecencyFileLock
+---@field private file_lock_rx async fun(): ...
+---@field private file_lock_tx fun(...): nil
 ---@field private tbl FrecencyDatabaseTable
----@field private version "v1"
+---@field private version FrecencyDatabaseVersion
+---@field private watcher_rx FrecencyPlenaryAsyncControlChannelRx
+---@field private watcher_tx FrecencyPlenaryAsyncControlChannelTx
 local Database = {}
 
----@param fs FrecencyFS
 ---@return FrecencyDatabase
-Database.new = function(fs)
+Database.new = function()
   local version = "v1"
-  local self = setmetatable({
-    fs = fs,
+  local file_lock_tx, file_lock_rx = async.control.channel.oneshot()
+  local watcher_tx, watcher_rx = async.control.channel.mpsc()
+  return setmetatable({
+    file_lock_rx = file_lock_rx,
+    file_lock_tx = file_lock_tx,
     tbl = Table.new(version),
     version = version,
+    watcher_rx = watcher_rx,
+    watcher_tx = watcher_tx,
   }, { __index = Database })
-  self.filename = (function()
+end
+
+---@async
+---@return string
+function Database:filename()
+  local file_v1 = "file_frecency.bin"
+
+  ---@async
+  ---@return string
+  local function filename_v1()
     -- NOTE: for backward compatibility
     -- If the user does not set db_root specifically, search DB in
     -- $XDG_DATA_HOME/nvim in addition to $XDG_STATE_HOME/nvim (default value).
-    local file = "file_frecency.bin"
-    local db = Path.new(config.db_root, file)
-    if not config.ext_config.db_root and not db:exists() then
-      local old_location = Path.new(vim.fn.stdpath "data", file)
-      if old_location:exists() then
-        return old_location.filename
+    local db = Path.new(config.db_root, file_v1).filename
+    if not config.ext_config.db_root and not fs.exists(db) then
+      local old_location = Path.new(vim.fn.stdpath "data", file_v1).filename
+      if fs.exists(old_location) then
+        return old_location
       end
     end
-    return db.filename
-  end)()
-  self.file_lock = FileLock.new(self.filename)
-  local rx
-  self.tx, rx = async.control.channel.mpsc()
-  self.tx.send "load"
-  watcher.watch(self.filename, function()
-    self.tx.send "load"
+    return db
+  end
+
+  if self.version == "v1" then
+    return filename_v1()
+  else
+    error(("unknown version: %s"):format(self.version))
+  end
+end
+
+---@async
+---@return nil
+function Database:start()
+  local target = self:filename()
+  self.file_lock_tx(FileLock.new(target))
+  self.watcher_tx.send "load"
+  watcher.watch(target, function()
+    self.watcher_tx.send "load"
   end)
   async.void(function()
     while true do
-      local mode = rx.recv()
+      local mode = self.watcher_rx.recv()
       log.debug("DB coroutine start:", mode)
       if mode == "load" then
         self:load()
@@ -66,14 +92,15 @@ Database.new = function(fs)
       log.debug("DB coroutine end:", mode)
     end
   end)()
-  return self
 end
 
+---@async
 ---@return boolean
 function Database:has_entry()
   return not vim.tbl_isempty(self.tbl.records)
 end
 
+---@async
 ---@param paths string[]
 ---@return nil
 function Database:insert_files(paths)
@@ -83,28 +110,32 @@ function Database:insert_files(paths)
   for _, path in ipairs(paths) do
     self.tbl.records[path] = { count = 1, timestamps = { 0 } }
   end
-  self.tx.send "save"
+  self.watcher_tx.send "save"
 end
 
+---@async
 ---@return string[]
 function Database:unlinked_entries()
-  local paths = {}
-  for file in pairs(self.tbl.records) do
-    if not self.fs:is_valid_path(file) then
-      table.insert(paths, file)
+  return vim.tbl_flatten(async.util.join(vim.tbl_map(function(path)
+    return function()
+      local err, realpath = async.uv.fs_realpath(path)
+      if err or not realpath or realpath ~= path or fs.is_ignored(realpath) then
+        return path
+      end
     end
-  end
-  return paths
+  end, vim.tbl_keys(self.tbl.records))))
 end
 
+---@async
 ---@param paths string[]
 function Database:remove_files(paths)
   for _, file in ipairs(paths) do
     self.tbl.records[file] = nil
   end
-  self.tx.send "save"
+  self.watcher_tx.send "save"
 end
 
+---@async
 ---@param path string
 ---@param epoch? integer
 function Database:update(path, epoch)
@@ -120,9 +151,10 @@ function Database:update(path, epoch)
     record.timestamps = new_table
   end
   self.tbl.records[path] = record
-  self.tx.send "save"
+  self.watcher_tx.send "save"
 end
 
+---@async
 ---@param workspace? string
 ---@param epoch? integer
 ---@return FrecencyDatabaseEntry[]
@@ -130,7 +162,7 @@ function Database:get_entries(workspace, epoch)
   local now = epoch or os.time()
   local items = {}
   for path, record in pairs(self.tbl.records) do
-    if self.fs:starts_with(path, workspace) then
+    if fs.starts_with(path, workspace) then
       table.insert(items, {
         path = path,
         count = record.count,
@@ -148,13 +180,13 @@ end
 ---@return nil
 function Database:load()
   local start = os.clock()
-  local err, data = self.file_lock:with(function()
-    local err, stat = async.uv.fs_stat(self.filename)
+  local err, data = self:file_lock():with(function(target)
+    local err, stat = async.uv.fs_stat(target)
     if err then
       return nil
     end
     local fd
-    err, fd = async.uv.fs_open(self.filename, "r", tonumber("644", 8))
+    err, fd = async.uv.fs_open(target, "r", tonumber("644", 8))
     assert(not err, err)
     local data
     err, data = async.uv.fs_read(fd, stat.size)
@@ -173,9 +205,9 @@ end
 ---@return nil
 function Database:save()
   local start = os.clock()
-  local err = self.file_lock:with(function()
-    self:raw_save(self.tbl:raw())
-    local err, stat = async.uv.fs_stat(self.filename)
+  local err = self:file_lock():with(function(target)
+    self:raw_save(self.tbl:raw(), target)
+    local err, stat = async.uv.fs_stat(target)
     assert(not err, err)
     watcher.update(stat)
     return nil
@@ -185,16 +217,18 @@ function Database:save()
 end
 
 ---@async
+---@param target string
 ---@param tbl FrecencyDatabaseRawTable
-function Database:raw_save(tbl)
+function Database:raw_save(tbl, target)
   local f = assert(load("return " .. vim.inspect(tbl)))
   local data = string.dump(f)
-  local err, fd = async.uv.fs_open(self.filename, "w", tonumber("644", 8))
+  local err, fd = async.uv.fs_open(target, "w", tonumber("644", 8))
   assert(not err, err)
   assert(not async.uv.fs_write(fd, data))
   assert(not async.uv.fs_close(fd))
 end
 
+---@async
 ---@param path string
 ---@return boolean
 function Database:remove_entry(path)
@@ -202,8 +236,18 @@ function Database:remove_entry(path)
     return false
   end
   self.tbl.records[path] = nil
-  self.tx.send "save"
+  self.watcher_tx.send "save"
   return true
+end
+
+---@private
+---@async
+---@return FrecencyFileLock
+function Database:file_lock()
+  if not self._file_lock then
+    self._file_lock = self.file_lock_rx()
+  end
+  return self._file_lock
 end
 
 return Database

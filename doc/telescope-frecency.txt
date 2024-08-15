@@ -326,14 +326,15 @@ This will be called by |telescope.nvim| for its initialization. You can also
 call this to initialize this plugin separated from |telescope.nvim|'s
 initialization phase.
 
-This is useful when you want to load |telescope.nvim| lazily, but want to
+This is useful when you want to load |telescope.nvim| lazily and want to
 register opened files as soon as Neovim has started. Example configuration for
 |lazy.nvim| is below.
 >lua
     {
       "nvim-telescope/telescope-frecency.nvim",
       main = "frecency",
-      ---@type FrecencyOpts
+      -- `opts` property calls the plugin's setup() function.
+      -- In this case, this calls frecency.setup().
       opts = {
 	  db_safe_mode = false,
       },
@@ -358,7 +359,10 @@ register opened files as soon as Neovim has started. Example configuration for
 	telescope.load_extension "frecency"
       end,
     },
-
+<
+This function does nothing when it is called for the second times and later.
+If you want to set another configuration, use
+|telescope-frecency-configuration-config.setup()|.
 
 ==============================================================================
 CONFIGURATION				      *telescope-frecency-configuration*

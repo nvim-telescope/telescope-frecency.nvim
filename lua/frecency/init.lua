@@ -3,11 +3,11 @@
 ---setup() to be initialized.
 ---@class FrecencyInstance
 ---@field complete fun(findstart: 1|0, base: string): integer|''|string[]
----@field delete fun(path: string): nil
+---@field delete async fun(path: string): nil
 ---@field query fun(opts?: FrecencyQueryOpts): FrecencyQueryEntry[]|string[]
 ---@field register fun(bufnr: integer, datetime: string?): nil
 ---@field start fun(opts: FrecencyPickerOptions?): nil
----@field validate_database fun(force: boolean?): nil
+---@field validate_database async fun(force: boolean?): nil
 local frecency = setmetatable({}, {
   ---@param self FrecencyInstance
   ---@param key "complete"|"delete"|"register"|"start"|"validate_database"
@@ -28,6 +28,10 @@ local frecency = setmetatable({}, {
   end,
 })
 
+local function async_call(f, ...)
+  require("plenary.async").void(f)(...)
+end
+
 local setup_done = false
 
 ---When this func is called, Frecency instance is NOT created but only
@@ -46,15 +50,20 @@ local function setup(ext_config)
   vim.api.nvim_set_hl(0, "TelescopeFrecencyScores", { link = "Number", default = true })
   vim.api.nvim_set_hl(0, "TelescopeQueryFilter", { link = "WildMenu", default = true })
 
-  ---@param cmd_info { bang: boolean }
+  ---@class FrecencyCommandInfo
+  ---@field args string
+  ---@field bang boolean
+
+  ---@param cmd_info FrecencyCommandInfo
   vim.api.nvim_create_user_command("FrecencyValidate", function(cmd_info)
-    frecency.validate_database(cmd_info.bang)
+    async_call(frecency.validate_database, cmd_info.bang)
   end, { bang = true, desc = "Clean up DB for telescope-frecency" })
 
-  vim.api.nvim_create_user_command("FrecencyDelete", function(info)
-    local path_string = info.args == "" and "%:p" or info.args
+  ---@param cmd_info FrecencyCommandInfo
+  vim.api.nvim_create_user_command("FrecencyDelete", function(cmd_info)
+    local path_string = cmd_info.args == "" and "%:p" or cmd_info.args
     local path = vim.fn.expand(path_string) --[[@as string]]
-    frecency.delete(path)
+    async_call(frecency.delete, path)
   end, { nargs = "?", complete = "file", desc = "Delete entry from telescope-frecency" })
 
   local group = vim.api.nvim_create_augroup("TelescopeFrecency", {})
