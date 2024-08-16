@@ -47,7 +47,7 @@ function Frecency:setup()
       return done
     end)
     if not ok then
-      log.error("failed to setup:", status == -1 and "timed out" or "interrupted")
+      error("failed to setup:" .. (status == -1 and "timed out" or "interrupted"))
     end
   end
 end
