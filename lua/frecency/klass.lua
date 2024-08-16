@@ -125,25 +125,21 @@ function Frecency:assert_db_entries()
   end
 end
 
+---@async
 ---@param bufnr integer
+---@param path string
 ---@param epoch? integer
-function Frecency:register(bufnr, epoch)
-  if (config.ignore_register and config.ignore_register(bufnr)) or self.buf_registered[bufnr] then
+function Frecency:register(bufnr, path, epoch)
+  if self.buf_registered[bufnr] or not fs.is_valid_path(path) then
     return
   end
-  local path = vim.api.nvim_buf_get_name(bufnr)
-  async.void(function()
-    if not fs.is_valid_path(path) then
-      return
-    end
-    local err, realpath = async.uv.fs_realpath(path)
-    if err or not realpath then
-      return
-    end
-    self.database:update(realpath, epoch)
-    self.buf_registered[bufnr] = true
-    log.debug("registered:", bufnr, path)
-  end)()
+  local err, realpath = async.uv.fs_realpath(path)
+  if err or not realpath then
+    return
+  end
+  self.database:update(realpath, epoch)
+  self.buf_registered[bufnr] = true
+  log.debug("registered:", bufnr, path)
 end
 
 ---@async
