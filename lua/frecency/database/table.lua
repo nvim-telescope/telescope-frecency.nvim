@@ -1,5 +1,6 @@
 local log = require "frecency.log"
-local async = require "plenary.async"
+local lazy_require = require "frecency.lazy_require"
+local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 
 ---@class FrecencyDatabaseRecordValue
 ---@field count integer

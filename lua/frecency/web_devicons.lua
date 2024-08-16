@@ -1,4 +1,5 @@
-return {
+---@class FrecencyWebDevicons
+local M = {
   ---@param name string?
   ---@param ext string?
   ---@param opts table?
@@ -9,3 +10,5 @@ return {
     return ok and web_devicons.get_icon(name, ext, opts) or "", ""
   end,
 }
+
+return M

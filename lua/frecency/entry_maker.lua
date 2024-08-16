@@ -1,9 +1,10 @@
 local web_devicons = require "frecency.web_devicons"
 local config = require "frecency.config"
 local fs = require "frecency.fs"
-local Path = require "plenary.path" --[[@as FrecencyPlenaryPath]]
-local entry_display = require "telescope.pickers.entry_display" --[[@as FrecencyTelescopeEntryDisplay]]
-local utils = require "telescope.utils" --[[@as FrecencyTelescopeUtils]]
+local Path = require "plenary.path"
+local lazy_require = require "frecency.lazy_require"
+local entry_display = lazy_require "telescope.pickers.entry_display" --[[@as FrecencyTelescopeEntryDisplay]]
+local utils = lazy_require "telescope.utils" --[[@as FrecencyTelescopeUtils]]
 
 ---@class FrecencyEntryMaker
 ---@field loaded table<string,boolean>

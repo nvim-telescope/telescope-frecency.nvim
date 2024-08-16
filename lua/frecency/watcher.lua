@@ -1,19 +1,20 @@
 local log = require "frecency.log"
-local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
+local lazy_require = require "frecency.lazy_require"
+local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 local uv = vim.loop or vim.uv
 
----@class FrecencyNativeWatcherMtime
+---@class FrecencyWatcherMtime
 ---@field sec integer
 ---@field nsec integer
 local Mtime = {}
 
 ---@param mtime FsStatMtime
----@return FrecencyNativeWatcherMtime
+---@return FrecencyWatcherMtime
 Mtime.new = function(mtime)
   return setmetatable({ sec = mtime.sec, nsec = mtime.nsec }, Mtime)
 end
 
----@param other FrecencyNativeWatcherMtime
+---@param other FrecencyWatcherMtime
 ---@return boolean
 function Mtime:__eq(other)
   return self.sec == other.sec and self.nsec == other.nsec
@@ -24,13 +25,13 @@ function Mtime:__tostring()
   return string.format("%d.%d", self.sec, self.nsec)
 end
 
----@class FrecencyNativeWatcher
+---@class FrecencyWatcher
 ---@field handler UvFsEventHandle
 ---@field path string
----@field mtime FrecencyNativeWatcherMtime
+---@field mtime FrecencyWatcherMtime
 local Watcher = {}
 
----@return FrecencyNativeWatcher
+---@return FrecencyWatcher
 Watcher.new = function()
   return setmetatable({ path = "", mtime = Mtime.new { sec = 0, nsec = 0 } }, { __index = Watcher })
 end

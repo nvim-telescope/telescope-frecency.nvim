@@ -5,7 +5,8 @@ local Recency = require "frecency.recency"
 local config = require "frecency.config"
 local fs = require "frecency.fs"
 local log = require "frecency.log"
-local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
+local lazy_require = require "frecency.lazy_require"
+local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 
 ---@class Frecency
 ---@field private buf_registered table<integer, boolean> flag to indicate the buffer is registered to the database.

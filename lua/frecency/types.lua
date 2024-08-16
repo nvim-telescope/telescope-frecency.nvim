@@ -2,6 +2,20 @@
 
 -- NOTE: types are borrowed from plenary.nvim
 
+---@class FrecencyPlenaryJob
+---@field new fun(self: FrecencyPlenaryJob, opts: FrecencyPlenaryJobOpts): FrecencyPlenaryJob
+---@field start fun(self: FrecencyPlenaryJob): nil
+---@field handle uv_process_t
+
+---@class FrecencyPlenaryJobOpts
+---@field cwd? string
+---@field command? string
+---@field args? string[]
+---@field on_stdout? FrecencyPlenaryJobCallback
+---@field on_stderr? FrecencyPlenaryJobCallback
+
+---@alias FrecencyPlenaryJobCallback fun(error: string, data: string, self?: FrecencyPlenaryJob)
+
 ---@class FrecencyPlenaryPath
 ---@field new fun(self: FrecencyPlenaryPath|string, path?: string): FrecencyPlenaryPath
 ---@field absolute fun(): string

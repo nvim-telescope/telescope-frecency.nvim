@@ -4,8 +4,9 @@ local config = require "frecency.config"
 local fs = require "frecency.fs"
 local watcher = require "frecency.watcher"
 local log = require "frecency.log"
-local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
-local Path = require "plenary.path" --[[@as FrecencyPlenaryPath]]
+local lazy_require = require "frecency.lazy_require"
+local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
+local Path = lazy_require "plenary.path" --[[@as FrecencyPlenaryPath]]
 
 ---@class FrecencyDatabaseEntry
 ---@field ages number[]

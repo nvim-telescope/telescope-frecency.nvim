@@ -5,11 +5,12 @@ local fs = require "frecency.fs"
 local fuzzy_sorter = require "frecency.fuzzy_sorter"
 local substr_sorter = require "frecency.substr_sorter"
 local log = require "frecency.log"
-local Path = require "plenary.path" --[[@as FrecencyPlenaryPath]]
-local actions = require "telescope.actions"
-local config_values = require("telescope.config").values
-local pickers = require "telescope.pickers"
-local utils = require "telescope.utils" --[[@as FrecencyTelescopeUtils]]
+local lazy_require = require "frecency.lazy_require"
+local Path = lazy_require "plenary.path" --[[@as FrecencyPlenaryPath]]
+local actions = lazy_require "telescope.actions"
+local telescope_config = lazy_require "telescope.config"
+local pickers = lazy_require "telescope.pickers"
+local utils = lazy_require "telescope.utils" --[[@as FrecencyTelescopeUtils]]
 local uv = vim.loop or vim.uv
 
 ---@class FrecencyPicker
@@ -93,7 +94,7 @@ function Picker:start(opts)
     path_display = function(picker_opts, path)
       return self:default_path_display(picker_opts, path)
     end,
-  }, config_values, opts or {}) --[[@as FrecencyPickerOptions]]
+  }, telescope_config.values, opts or {}) --[[@as FrecencyPickerOptions]]
   self.workspace = self:get_workspace(opts.cwd, self.config.initial_workspace_tag or config.default_workspace)
   log.debug { workspace = self.workspace }
 
@@ -102,7 +103,7 @@ function Picker:start(opts)
   local picker = pickers.new(opts, {
     prompt_title = "Frecency",
     finder = finder,
-    previewer = config_values.file_previewer(opts),
+    previewer = telescope_config.values.file_previewer(opts),
     sorter = config.matcher == "default" and substr_sorter() or fuzzy_sorter(opts),
     on_input_filter_cb = self:on_input_filter_cb(opts),
     attach_mappings = function(prompt_bufnr)
