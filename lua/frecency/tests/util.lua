@@ -7,7 +7,7 @@ local log = require "plenary.log"
 local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 local Path = require "plenary.path"
 local Job = require "plenary.job"
-local wait = require "frecency.tests.wait"
+local wait = require "frecency.wait"
 
 ---@return FrecencyPlenaryPath
 ---@return fun(): nil close swwp all entries

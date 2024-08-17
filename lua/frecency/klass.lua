@@ -5,6 +5,7 @@ local Recency = require "frecency.recency"
 local config = require "frecency.config"
 local fs = require "frecency.fs"
 local log = require "frecency.log"
+local wait = require "frecency.wait"
 local lazy_require = require "frecency.lazy_require"
 local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 
@@ -28,7 +29,6 @@ end
 ---This is called when `:Telescope frecency` is called at the first time.
 ---@return nil
 function Frecency:setup()
-  local done = false
   ---@async
   local function init()
     self.database:start()
@@ -36,20 +36,13 @@ function Frecency:setup()
     if config.auto_validate then
       self:validate_database()
     end
-    done = true
   end
 
   local is_async = not not coroutine.running()
   if is_async then
     init()
   else
-    async.void(init)()
-    local ok, status = vim.wait(1000, function()
-      return done
-    end)
-    if not ok then
-      error("failed to setup:" .. (status == -1 and "timed out" or "interrupted"))
-    end
+    wait(init)
   end
 end
 
