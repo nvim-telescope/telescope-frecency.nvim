@@ -1,3 +1,4 @@
+local Timer = require "frecency.timer"
 local config = require "frecency.config"
 local fs = require "frecency.fs"
 local os_util = require "frecency.os_util"
@@ -258,25 +259,21 @@ end
 ---@return FrecencyFile[]
 function Finder:get_results(workspace, epoch)
   log.debug { workspace = workspace or "NONE" }
-  local start_fetch = os.clock()
+  local timer_fetch = Timer.new "fetching entries"
   local files = self.database:get_entries(workspace, epoch)
-  log.debug(("it takes %f seconds in fetching entries"):format(os.clock() - start_fetch))
-  local start_results = os.clock()
-  local elapsed_recency = 0
+  timer_fetch:finish()
+  local timer_results = Timer.new "making results"
   for _, file in ipairs(files) do
-    local start_recency = os.clock()
     file.score = file.ages and self.recency:calculate(file.count, file.ages) or 0
     file.ages = nil
-    elapsed_recency = elapsed_recency + (os.clock() - start_recency)
   end
-  log.debug(("it takes %f seconds in calculating recency"):format(elapsed_recency))
-  log.debug(("it takes %f seconds in making results"):format(os.clock() - start_results))
+  timer_results:finish()
 
-  local start_sort = os.clock()
+  local timer_sort = Timer.new "sorting"
   table.sort(files, function(a, b)
     return a.score > b.score or (a.score == b.score and a.path > b.path)
   end)
-  log.debug(("it takes %f seconds in sorting"):format(os.clock() - start_sort))
+  timer_sort:finish()
   return files
 end
 
