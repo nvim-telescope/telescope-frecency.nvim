@@ -4,6 +4,8 @@ local log = lazy_require "plenary.log"
 
 return setmetatable({}, {
   __index = function(_, key)
-    return config.debug and log[key] or function() end
+    return config.debug and vim.schedule_wrap(function(...)
+      log[key](...)
+    end) or function() end
   end,
 })
