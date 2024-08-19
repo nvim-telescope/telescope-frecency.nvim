@@ -118,15 +118,17 @@ end
 function Database:unlinked_entries()
   -- HACK: async.util.join() does not work with empty table. So when the table
   -- has no entries, return early.
-  local async_fns = vim.tbl_map(function(path)
-    return function()
-      local err, realpath = async.uv.fs_realpath(path)
-      if err or not realpath or realpath ~= path or fs.is_ignored(realpath) then
-        return path
+  -- TODO: This is fixed in https://github.com/nvim-lua/plenary.nvim/pull/616
+  local paths = vim.tbl_keys(self.tbl.records)
+  return #paths == 0 and {}
+    or vim.tbl_flatten(async.util.join(vim.tbl_map(function(path)
+      return function()
+        local err, realpath = async.uv.fs_realpath(path)
+        if err or not realpath or realpath ~= path or fs.is_ignored(realpath) then
+          return path
+        end
       end
-    end
-  end, vim.tbl_keys(self.tbl.records))
-  return #async_fns > 0 and vim.tbl_flatten(async.util.join(async_fns)) or {}
+    end, paths)))
 end
 
 ---@async
