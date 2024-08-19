@@ -1,5 +1,4 @@
 local Timer = require "frecency.timer"
-local log = require "frecency.log"
 local lazy_require = require "frecency.lazy_require"
 local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 

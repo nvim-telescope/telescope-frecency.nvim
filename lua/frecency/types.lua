@@ -5,7 +5,7 @@
 ---@class FrecencyPlenaryJob
 ---@field new fun(self: FrecencyPlenaryJob, opts: FrecencyPlenaryJobOpts): FrecencyPlenaryJob
 ---@field start fun(self: FrecencyPlenaryJob): nil
----@field handle uv_process_t
+---@field handle VimSystemObj uv_process_t
 
 ---@class FrecencyPlenaryJobOpts
 ---@field cwd? string
