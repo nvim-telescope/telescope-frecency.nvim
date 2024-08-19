@@ -2,7 +2,7 @@
 -- https://github.com/nvim-lua/plenary.nvim/blob/663246936325062427597964d81d30eaa42ab1e4/lua/plenary/test_harness.lua#L86-L86
 vim.opt.runtimepath:append(vim.env.TELESCOPE_PATH)
 
-local Timer = require "frecency.Timer"
+local Timer = require "frecency.timer"
 local util = require "frecency.tests.util"
 local log = require "plenary.log"
 
