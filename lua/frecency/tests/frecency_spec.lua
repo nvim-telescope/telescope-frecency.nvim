@@ -195,7 +195,7 @@ describe("frecency", function()
           timer:finish()
 
           it("returns appropriate latency (<1.0 second)", function()
-            assert.are.is_true(elapsed < 1.0)
+            assert.are.is_true(timer.elapsed < 1.0)
           end)
 
           it("returns valid response", function()
