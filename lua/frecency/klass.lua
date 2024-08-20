@@ -43,7 +43,7 @@ function Frecency:setup()
     init()
   else
     async.void(init)()
-    local ok, status = vim.wait(1000, function()
+    local ok, status = vim.wait(10000, function()
       return done
     end)
     if not ok then
@@ -99,6 +99,9 @@ function Frecency:validate_database(force)
     remove_entries()
     return
   end
+  -- HACK: This is needed because the default implementaion of vim.ui.select()
+  -- uses vim.fn.* function and it makes E5560 error.
+  async.util.scheduler()
   vim.ui.select({ "y", "n" }, {
     prompt = self:message("remove %d entries from database?", #unlinked),
     ---@param item "y"|"n"
