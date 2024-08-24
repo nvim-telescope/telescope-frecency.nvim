@@ -2,6 +2,7 @@ local Timer = require "frecency.timer"
 local config = require "frecency.config"
 local fs = require "frecency.fs"
 local os_util = require "frecency.os_util"
+local recency = require "frecency.recency"
 local log = require "frecency.log"
 local lazy_require = require "frecency.lazy_require"
 local Job = lazy_require "plenary.job" --[[@as FrecencyPlenaryJob]]
@@ -23,7 +24,6 @@ local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 ---@field private need_scan_dir boolean
 ---@field private seen table<string, boolean>
 ---@field private process VimSystemObj?
----@field private recency FrecencyRecency
 ---@field private state FrecencyState
 local Finder = {}
 
@@ -36,11 +36,10 @@ local Finder = {}
 ---@param entry_maker FrecencyEntryMakerInstance
 ---@param need_scandir boolean
 ---@param path string?
----@param recency FrecencyRecency
 ---@param state FrecencyState
 ---@param finder_config? FrecencyFinderConfig
 ---@return FrecencyFinder
-Finder.new = function(database, entry_maker, need_scandir, path, recency, state, finder_config)
+Finder.new = function(database, entry_maker, need_scandir, path, state, finder_config)
   local tx, rx = async.control.channel.mpsc()
   local scan_tx, scan_rx = async.control.channel.mpsc()
   local self = setmetatable({
@@ -49,7 +48,6 @@ Finder.new = function(database, entry_maker, need_scandir, path, recency, state,
     database = database,
     entry_maker = entry_maker,
     path = path,
-    recency = recency,
     state = state,
 
     seen = {},
@@ -264,7 +262,7 @@ function Finder:get_results(workspace, epoch)
   timer_fetch:finish()
   local timer_results = Timer.new "making results"
   for _, file in ipairs(files) do
-    file.score = file.ages and self.recency:calculate(file.count, file.ages) or 0
+    file.score = file.ages and recency.calculate(file.count, file.ages) or 0
     file.ages = nil
   end
   timer_results:finish()

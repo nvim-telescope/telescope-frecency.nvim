@@ -1,11 +1,10 @@
 local Database = require "frecency.database"
-local EntryMaker = require "frecency.entry_maker"
 local Picker = require "frecency.picker"
-local Recency = require "frecency.recency"
 local Timer = require "frecency.timer"
 local config = require "frecency.config"
 local fs = require "frecency.fs"
 local log = require "frecency.log"
+local recency = require "frecency.recency"
 local wait = require "frecency.wait"
 local lazy_require = require "frecency.lazy_require"
 local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
@@ -13,17 +12,13 @@ local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 ---@class Frecency
 ---@field private buf_registered table<integer, boolean> flag to indicate the buffer is registered to the database.
 ---@field private database FrecencyDatabase
----@field private entry_maker FrecencyEntryMaker
 ---@field private picker FrecencyPicker
----@field private recency FrecencyRecency
 local Frecency = {}
 
 ---@return Frecency
 Frecency.new = function()
   local self = setmetatable({ buf_registered = {} }, { __index = Frecency }) --[[@as Frecency]]
   self.database = Database.new()
-  self.entry_maker = EntryMaker.new()
-  self.recency = Recency.new()
   return self
 end
 
@@ -63,7 +58,7 @@ function Frecency:start(opts)
   if opts.hide_current_buffer or config.hide_current_buffer then
     ignore_filenames = { vim.api.nvim_buf_get_name(0) }
   end
-  self.picker = Picker.new(self.database, self.entry_maker, self.recency, {
+  self.picker = Picker.new(self.database, {
     editing_bufnr = vim.api.nvim_get_current_buf(),
     ignore_filenames = ignore_filenames,
     initial_workspace_tag = opts.workspace,
@@ -184,7 +179,7 @@ function Frecency:query(opts, epoch)
     return {
       count = entry.count,
       path = entry.path,
-      score = entry.ages and self.recency:calculate(entry.count, entry.ages) or 0,
+      score = entry.ages and recency.calculate(entry.count, entry.ages) or 0,
       timestamps = entry.timestamps,
     }
   end, self.database:get_entries(opts.workspace, epoch))

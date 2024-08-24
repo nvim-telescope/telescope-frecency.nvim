@@ -1,3 +1,4 @@
+local EntryMaker = require "frecency.entry_maker"
 local State = require "frecency.state"
 local Finder = require "frecency.finder"
 local config = require "frecency.config"
@@ -19,7 +20,6 @@ local uv = vim.loop or vim.uv
 ---@field private entry_maker FrecencyEntryMaker
 ---@field private lsp_workspaces string[]
 ---@field private namespace integer
----@field private recency FrecencyRecency
 ---@field private state FrecencyState
 ---@field private workspace string?
 ---@field private workspace_tag_regex string
@@ -38,18 +38,15 @@ local Picker = {}
 ---@field score number
 
 ---@param database FrecencyDatabase
----@param entry_maker FrecencyEntryMaker
----@param recency FrecencyRecency
 ---@param picker_config FrecencyPickerConfig
 ---@return FrecencyPicker
-Picker.new = function(database, entry_maker, recency, picker_config)
+Picker.new = function(database, picker_config)
   local self = setmetatable({
     config = picker_config,
     database = database,
-    entry_maker = entry_maker,
+    entry_maker = EntryMaker.new(),
     lsp_workspaces = {},
     namespace = vim.api.nvim_create_namespace "frecency",
-    recency = recency,
   }, { __index = Picker })
   local d = config.filter_delimiter
   self.workspace_tag_regex = "^%s*" .. d .. "(%S+)" .. d
@@ -81,7 +78,6 @@ function Picker:finder(opts, workspace, workspace_tag)
     entry_maker,
     need_scandir,
     workspace,
-    self.recency,
     self.state,
     { ignore_filenames = self.config.ignore_filenames }
   )

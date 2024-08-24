@@ -1,5 +1,4 @@
-local Recency = require "frecency.recency"
-local recency = Recency.new()
+local recency = require "frecency.recency"
 
 describe("frecency.recency", function()
   for _, c in ipairs {
@@ -13,7 +12,7 @@ describe("frecency.recency", function()
   } do
     local dumped = vim.inspect(c.ages, { indent = "", newline = "" })
     it(("%d, %s => %d"):format(c.count, dumped, c.score), function()
-      assert.are.same(c.score, recency:calculate(c.count, c.ages))
+      assert.are.same(c.score, recency.calculate(c.count, c.ages))
     end)
   end
 end)
