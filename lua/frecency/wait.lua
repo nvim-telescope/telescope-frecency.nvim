@@ -1,4 +1,4 @@
-local async = require("plenary.async")
+local async = require "plenary.async"
 
 ---@class FrecencyWait
 ---@field config FrecencyWaitConfig
@@ -22,7 +22,7 @@ end
 ---@async
 ---@private
 Wait.f = function()
-  error("implement me")
+  error "implement me"
 end
 
 ---@return boolean ok
@@ -47,8 +47,8 @@ return function(f, opts)
   if ok then
     return
   elseif status == -1 then
-    error("callback never returnes during the time")
+    error "callback never returnes during the time"
   elseif status == -2 then
-    error("callback is interrupted during the time")
+    error "callback is interrupted during the time"
   end
 end
