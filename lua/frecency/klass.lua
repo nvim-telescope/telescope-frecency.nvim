@@ -1,10 +1,10 @@
 local Database = require "frecency.database"
 local Picker = require "frecency.picker"
-local Timer = require "frecency.timer"
 local config = require "frecency.config"
 local fs = require "frecency.fs"
 local log = require "frecency.log"
 local recency = require "frecency.recency"
+local timer = require "frecency.timer"
 local wait = require "frecency.wait"
 local lazy_require = require "frecency.lazy_require"
 local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
@@ -27,13 +27,13 @@ end
 function Frecency:setup()
   ---@async
   local function init()
-    local timer = Timer.new "init()"
+    timer.track "init() start"
     self.database:start()
     self:assert_db_entries()
     if config.auto_validate then
       self:validate_database()
     end
-    timer:finish()
+    timer.track "init() finish"
   end
 
   local is_async = not not coroutine.running()
@@ -48,7 +48,7 @@ end
 ---@param opts? FrecencyPickerOptions
 ---@return nil
 function Frecency:start(opts)
-  local timer = Timer.new "start()"
+  timer.track "start() start"
   log.debug "Frecency:start"
   opts = opts or {}
   if opts.cwd then
@@ -64,7 +64,7 @@ function Frecency:start(opts)
     initial_workspace_tag = opts.workspace,
   })
   self.picker:start(vim.tbl_extend("force", config.get(), opts))
-  timer:finish()
+  timer.track "start() finish"
 end
 
 ---This can be calledBy `require("telescope").extensions.frecency.complete`.
