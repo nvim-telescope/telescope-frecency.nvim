@@ -1,26 +1,24 @@
 local config = require "frecency.config"
 local log = require "frecency.log"
-local uv = vim.uv or vim.loop
 
 ---@class FrecencyTimer
----@field elapsed number
----@field start integer
----@field title string
-local Timer = {}
+---@field has_lazy boolean?
+local M = {}
 
----@param title string
----@return FrecencyTimer
-Timer.new = function(title)
-  return setmetatable({ start = uv.hrtime(), title = title }, { __index = Timer })
-end
-
+---@param event string
 ---@return nil
-function Timer:finish()
+function M.track(event)
   if not config.debug then
     return
+  elseif M.has_lazy == nil then
+    M.has_lazy = (pcall(require, "lazy.stats"))
+    if not M.has_lazy then
+      log.debug "frecency.timer needs lazy.nvim"
+    end
   end
-  self.elapsed = (uv.hrtime() - self.start) / 1000000000
-  log.debug(("[%s] takes %.3f seconds"):format(self.title, self.elapsed))
+  if M.has_lazy then
+    require("lazy.stats").track("[telescope-frecency] " .. event)
+  end
 end
 
-return Timer
+return M

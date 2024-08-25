@@ -1,6 +1,6 @@
 local Table = require "frecency.database.table"
 local FileLock = require "frecency.file_lock"
-local Timer = require "frecency.timer"
+local timer = require "frecency.timer"
 local config = require "frecency.config"
 local fs = require "frecency.fs"
 local watcher = require "frecency.watcher"
@@ -186,7 +186,7 @@ end
 ---@async
 ---@return nil
 function Database:load()
-  local timer = Timer.new "load()"
+  timer.track "load() start"
   local err, data = self:file_lock():with(function(target)
     local err, stat = async.uv.fs_stat(target)
     if err then
@@ -205,13 +205,13 @@ function Database:load()
   assert(not err, err)
   local tbl = vim.F.npcall(loadstring(data or ""))
   self.tbl:set(tbl)
-  timer:finish()
+  timer.track "load() finish"
 end
 
 ---@async
 ---@return nil
 function Database:save()
-  local timer = Timer.new "save()"
+  timer.track "save() start"
   local err = self:file_lock():with(function(target)
     self:raw_save(self.tbl:raw(), target)
     local err, stat = async.uv.fs_stat(target)
@@ -220,7 +220,7 @@ function Database:save()
     return nil
   end)
   assert(not err, err)
-  timer:finish()
+  timer.track "save() finish"
 end
 
 ---@async

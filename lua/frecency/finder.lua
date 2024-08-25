@@ -1,9 +1,9 @@
-local Timer = require "frecency.timer"
 local config = require "frecency.config"
 local fs = require "frecency.fs"
 local os_util = require "frecency.os_util"
 local recency = require "frecency.recency"
 local log = require "frecency.log"
+local timer = require "frecency.timer"
 local lazy_require = require "frecency.lazy_require"
 local Job = lazy_require "plenary.job" --[[@as FrecencyPlenaryJob]]
 local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
@@ -257,21 +257,19 @@ end
 ---@return FrecencyFile[]
 function Finder:get_results(workspace, epoch)
   log.debug { workspace = workspace or "NONE" }
-  local timer_fetch = Timer.new "fetching entries"
+  timer.track "fetching start"
   local files = self.database:get_entries(workspace, epoch)
-  timer_fetch:finish()
-  local timer_results = Timer.new "making results"
+  timer.track "fetching finish"
   for _, file in ipairs(files) do
     file.score = file.ages and recency.calculate(file.count, file.ages) or 0
     file.ages = nil
   end
-  timer_results:finish()
+  timer.track "making results"
 
-  local timer_sort = Timer.new "sorting"
   table.sort(files, function(a, b)
     return a.score > b.score or (a.score == b.score and a.path > b.path)
   end)
-  timer_sort:finish()
+  timer.track "sorting finish"
   return files
 end
 

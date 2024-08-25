@@ -1,4 +1,4 @@
-local Timer = require "frecency.timer"
+local timer = require "frecency.timer"
 local lazy_require = require "frecency.lazy_require"
 local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 
@@ -48,13 +48,13 @@ end
 ---@async
 ---@return nil
 function Table:wait_ready()
-  local timer = Timer.new "wait_ready()"
+  timer.track "wait_ready() start"
   local t = 0.2
   while not rawget(self, "is_ready") do
     async.util.sleep(t)
     t = t * 2
   end
-  timer:finish()
+  timer.track "wait_ready() finish"
 end
 
 return Table
