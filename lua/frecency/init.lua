@@ -44,8 +44,9 @@ local function setup(ext_config)
   end
 
   local config = require "frecency.config"
-
   config.setup(ext_config)
+  local timer = require "frecency.timer"
+  timer.track "setup() start"
 
   vim.api.nvim_set_hl(0, "TelescopeBufferLoaded", { link = "String", default = true })
   vim.api.nvim_set_hl(0, "TelescopePathSeparator", { link = "Directory", default = true })
@@ -86,6 +87,7 @@ local function setup(ext_config)
   })
 
   setup_done = true
+  timer.track "setup() finish"
 end
 
 return {
