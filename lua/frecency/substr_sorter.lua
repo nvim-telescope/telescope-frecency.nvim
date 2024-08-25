@@ -1,8 +1,9 @@
 -- TODO: use this module until telescope's release include this below.
 -- https://github.com/nvim-telescope/telescope.nvim/pull/2950
 
-local sorters = require "telescope.sorters"
-local util = require "telescope.utils"
+local lazy_require = require "frecency.lazy_require"
+local sorters = lazy_require "telescope.sorters"
+local util = lazy_require "telescope.utils"
 
 local substr_highlighter = function(make_display)
   return function(_, prompt, display)

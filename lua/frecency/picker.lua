@@ -1,3 +1,4 @@
+local EntryMaker = require "frecency.entry_maker"
 local State = require "frecency.state"
 local Finder = require "frecency.finder"
 local config = require "frecency.config"
@@ -5,11 +6,12 @@ local fs = require "frecency.fs"
 local fuzzy_sorter = require "frecency.fuzzy_sorter"
 local substr_sorter = require "frecency.substr_sorter"
 local log = require "frecency.log"
-local Path = require "plenary.path" --[[@as FrecencyPlenaryPath]]
-local actions = require "telescope.actions"
-local config_values = require("telescope.config").values
-local pickers = require "telescope.pickers"
-local utils = require "telescope.utils" --[[@as FrecencyTelescopeUtils]]
+local lazy_require = require "frecency.lazy_require"
+local Path = lazy_require "plenary.path" --[[@as FrecencyPlenaryPath]]
+local actions = lazy_require "telescope.actions"
+local telescope_config = lazy_require "telescope.config"
+local pickers = lazy_require "telescope.pickers"
+local utils = lazy_require "telescope.utils" --[[@as FrecencyTelescopeUtils]]
 local uv = vim.loop or vim.uv
 
 ---@class FrecencyPicker
@@ -18,7 +20,6 @@ local uv = vim.loop or vim.uv
 ---@field private entry_maker FrecencyEntryMaker
 ---@field private lsp_workspaces string[]
 ---@field private namespace integer
----@field private recency FrecencyRecency
 ---@field private state FrecencyState
 ---@field private workspace string?
 ---@field private workspace_tag_regex string
@@ -37,18 +38,15 @@ local Picker = {}
 ---@field score number
 
 ---@param database FrecencyDatabase
----@param entry_maker FrecencyEntryMaker
----@param recency FrecencyRecency
 ---@param picker_config FrecencyPickerConfig
 ---@return FrecencyPicker
-Picker.new = function(database, entry_maker, recency, picker_config)
+Picker.new = function(database, picker_config)
   local self = setmetatable({
     config = picker_config,
     database = database,
-    entry_maker = entry_maker,
+    entry_maker = EntryMaker.new(),
     lsp_workspaces = {},
     namespace = vim.api.nvim_create_namespace "frecency",
-    recency = recency,
   }, { __index = Picker })
   local d = config.filter_delimiter
   self.workspace_tag_regex = "^%s*" .. d .. "(%S+)" .. d
@@ -80,7 +78,6 @@ function Picker:finder(opts, workspace, workspace_tag)
     entry_maker,
     need_scandir,
     workspace,
-    self.recency,
     self.state,
     { ignore_filenames = self.config.ignore_filenames }
   )
@@ -93,7 +90,7 @@ function Picker:start(opts)
     path_display = function(picker_opts, path)
       return self:default_path_display(picker_opts, path)
     end,
-  }, config_values, opts or {}) --[[@as FrecencyPickerOptions]]
+  }, telescope_config.values, opts or {}) --[[@as FrecencyPickerOptions]]
   self.workspace = self:get_workspace(opts.cwd, self.config.initial_workspace_tag or config.default_workspace)
   log.debug { workspace = self.workspace }
 
@@ -102,7 +99,7 @@ function Picker:start(opts)
   local picker = pickers.new(opts, {
     prompt_title = "Frecency",
     finder = finder,
-    previewer = config_values.file_previewer(opts),
+    previewer = telescope_config.values.file_previewer(opts),
     sorter = config.matcher == "default" and substr_sorter() or fuzzy_sorter(opts),
     on_input_filter_cb = self:on_input_filter_cb(opts),
     attach_mappings = function(prompt_bufnr)

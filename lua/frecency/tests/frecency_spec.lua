@@ -2,6 +2,7 @@
 -- https://github.com/nvim-lua/plenary.nvim/blob/663246936325062427597964d81d30eaa42ab1e4/lua/plenary/test_harness.lua#L86-L86
 vim.opt.runtimepath:append(vim.env.TELESCOPE_PATH)
 
+local Timer = require "frecency.timer"
 local util = require "frecency.tests.util"
 local log = require "plenary.log"
 
@@ -183,7 +184,7 @@ describe("frecency", function()
             register(file, make_epoch "2023-07-29T00:00:00+09:00")
             log.new({}, true)
           end
-          local start = os.clock()
+          local timer = Timer.new "all results"
           local results = vim.tbl_map(function(result)
             result.timestamps = nil
             return result
@@ -191,11 +192,10 @@ describe("frecency", function()
           table.sort(results, function(a, b)
             return a.path < b.path
           end)
-          local elapsed = os.clock() - start
-          log.info(("it takes %f seconds in fetching all results"):format(elapsed))
+          timer:finish()
 
           it("returns appropriate latency (<1.0 second)", function()
-            assert.are.is_true(elapsed < 1.0)
+            assert.are.is_true(timer.elapsed < 1.0)
           end)
 
           it("returns valid response", function()

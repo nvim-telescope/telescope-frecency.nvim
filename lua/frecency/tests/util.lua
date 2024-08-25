@@ -7,7 +7,7 @@ local log = require "plenary.log"
 local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 local Path = require "plenary.path"
 local Job = require "plenary.job"
-local wait = require "frecency.tests.wait"
+local wait = require "frecency.wait"
 
 ---@return FrecencyPlenaryPath
 ---@return fun(): nil close swwp all entries
@@ -101,7 +101,7 @@ local function with_files(files, cb_or_config, callback)
     frecency.database:start()
     frecency.database.tbl:wait_ready()
   end)
-  frecency.picker = Picker.new(frecency.database, frecency.entry_maker, frecency.recency, { editing_bufnr = 0 })
+  frecency.picker = Picker.new(frecency.database, { editing_bufnr = 0 })
   local finder = frecency.picker:finder {}
   callback(frecency, finder, dir)
   close()
@@ -116,16 +116,28 @@ end
 ---@return fun(file: string, epoch: integer, reset: boolean?, wipeout?: boolean): nil reset: boolean?): nil
 local function make_register(frecency, dir)
   return function(file, epoch, reset, wipeout)
+    -- NOTE: this function does the same thing as BufWinEnter autocmd.
+    ---@param bufnr integer
+    local function register(bufnr)
+      if vim.api.nvim_buf_get_name(bufnr) == "" then
+        return
+      end
+      local is_floatwin = vim.api.nvim_win_get_config(0).relative ~= ""
+      if is_floatwin or (config.ignore_register and config.ignore_register(bufnr)) then
+        return
+      end
+      async.util.block_on(function()
+        frecency:register(bufnr, vim.api.nvim_buf_get_name(bufnr), epoch)
+      end)
+    end
+
     local path = filepath(dir, file)
     vim.cmd.edit(path)
     local bufnr = assert(vim.fn.bufnr(path))
     if reset then
       frecency.buf_registered[bufnr] = nil
     end
-    frecency:register(bufnr, epoch)
-    vim.wait(1000, function()
-      return not not frecency.buf_registered[bufnr]
-    end)
+    register(bufnr)
     -- HACK: This is needed because almost the same filenames use the same
     -- buffer.
     if wipeout then
@@ -154,7 +166,7 @@ local function with_fake_register(frecency, dir, callback)
     bufnr = bufnr + 1
     buffers[bufnr] = path
     async.util.block_on(function()
-      frecency:register(bufnr, epoch)
+      frecency:register(bufnr, path, epoch)
     end)
   end
   callback(register)

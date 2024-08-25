@@ -1,18 +1,18 @@
-local WebDevicons = require "frecency.web_devicons"
+local web_devicons = require "frecency.web_devicons"
 local config = require "frecency.config"
 local fs = require "frecency.fs"
-local Path = require "plenary.path" --[[@as FrecencyPlenaryPath]]
-local entry_display = require "telescope.pickers.entry_display" --[[@as FrecencyTelescopeEntryDisplay]]
-local utils = require "telescope.utils" --[[@as FrecencyTelescopeUtils]]
+local Path = require "plenary.path"
+local lazy_require = require "frecency.lazy_require"
+local entry_display = lazy_require "telescope.pickers.entry_display" --[[@as FrecencyTelescopeEntryDisplay]]
+local utils = lazy_require "telescope.utils" --[[@as FrecencyTelescopeUtils]]
 
 ---@class FrecencyEntryMaker
 ---@field loaded table<string,boolean>
----@field web_devicons WebDevicons
 local EntryMaker = {}
 
 ---@return FrecencyEntryMaker
 EntryMaker.new = function()
-  return setmetatable({ web_devicons = WebDevicons.new() }, { __index = EntryMaker })
+  return setmetatable({}, { __index = EntryMaker })
 end
 
 ---@class FrecencyEntry
@@ -86,7 +86,7 @@ function EntryMaker:width_items(workspace, workspace_tag)
       table.insert(width_items, { width = 6 }) -- fuzzy score
     end
   end
-  if self.web_devicons.is_enabled then
+  if not config.disable_devicons then
     table.insert(width_items, { width = 2 })
   end
   if config.show_filter_column and workspace and workspace_tag then
@@ -116,12 +116,11 @@ function EntryMaker:items(entry, workspace, workspace_tag, formatter)
       table.insert(items, { score, "TelescopeFrecencyScores" })
     end
   end
-  if self.web_devicons.is_enabled then
+  if not config.disable_devicons then
     local basename = utils.path_tail(entry.name)
-    local icon, icon_highlight =
-      self.web_devicons:get_icon(basename, utils.file_extension(basename), { default = false })
+    local icon, icon_highlight = web_devicons.get_icon(basename, utils.file_extension(basename), { default = false })
     if not icon then
-      icon, icon_highlight = self.web_devicons:get_icon(basename, nil, { default = true })
+      icon, icon_highlight = web_devicons.get_icon(basename, nil, { default = true })
     end
     table.insert(items, { icon, icon_highlight })
   end

@@ -5,7 +5,7 @@
 ---@field complete fun(findstart: 1|0, base: string): integer|''|string[]
 ---@field delete async fun(path: string): nil
 ---@field query fun(opts?: FrecencyQueryOpts): FrecencyQueryEntry[]|string[]
----@field register fun(bufnr: integer, datetime: string?): nil
+---@field register async fun(bufnr: integer, datetime: string?): nil
 ---@field start fun(opts: FrecencyPickerOptions?): nil
 ---@field validate_database async fun(force: boolean?): nil
 local frecency = setmetatable({}, {
@@ -43,7 +43,9 @@ local function setup(ext_config)
     return
   end
 
-  require("frecency.config").setup(ext_config)
+  local config = require "frecency.config"
+
+  config.setup(ext_config)
 
   vim.api.nvim_set_hl(0, "TelescopeBufferLoaded", { link = "String", default = true })
   vim.api.nvim_set_hl(0, "TelescopePathSeparator", { link = "Directory", default = true })
@@ -76,9 +78,10 @@ local function setup(ext_config)
         return
       end
       local is_floatwin = vim.api.nvim_win_get_config(0).relative ~= ""
-      if not is_floatwin then
-        frecency.register(args.buf)
+      if is_floatwin or (config.ignore_register and config.ignore_register(args.buf)) then
+        return
       end
+      async_call(frecency.register, args.buf, vim.api.nvim_buf_get_name(args.buf))
     end,
   })
 

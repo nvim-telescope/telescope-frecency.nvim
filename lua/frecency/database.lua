@@ -1,11 +1,13 @@
 local Table = require "frecency.database.table"
 local FileLock = require "frecency.file_lock"
+local Timer = require "frecency.timer"
 local config = require "frecency.config"
 local fs = require "frecency.fs"
 local watcher = require "frecency.watcher"
 local log = require "frecency.log"
-local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
-local Path = require "plenary.path" --[[@as FrecencyPlenaryPath]]
+local lazy_require = require "frecency.lazy_require"
+local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
+local Path = lazy_require "plenary.path" --[[@as FrecencyPlenaryPath]]
 
 ---@class FrecencyDatabaseEntry
 ---@field ages number[]
@@ -184,7 +186,7 @@ end
 ---@async
 ---@return nil
 function Database:load()
-  local start = os.clock()
+  local timer = Timer.new "load()"
   local err, data = self:file_lock():with(function(target)
     local err, stat = async.uv.fs_stat(target)
     if err then
@@ -203,13 +205,13 @@ function Database:load()
   assert(not err, err)
   local tbl = vim.F.npcall(loadstring(data or ""))
   self.tbl:set(tbl)
-  log.debug(("load() takes %f seconds"):format(os.clock() - start))
+  timer:finish()
 end
 
 ---@async
 ---@return nil
 function Database:save()
-  local start = os.clock()
+  local timer = Timer.new "save()"
   local err = self:file_lock():with(function(target)
     self:raw_save(self.tbl:raw(), target)
     local err, stat = async.uv.fs_stat(target)
@@ -218,7 +220,7 @@ function Database:save()
     return nil
   end)
   assert(not err, err)
-  log.debug(("save() takes %f seconds"):format(os.clock() - start))
+  timer:finish()
 end
 
 ---@async

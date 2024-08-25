@@ -1,54 +1,46 @@
 local Database = require "frecency.database"
-local EntryMaker = require "frecency.entry_maker"
 local Picker = require "frecency.picker"
-local Recency = require "frecency.recency"
+local Timer = require "frecency.timer"
 local config = require "frecency.config"
 local fs = require "frecency.fs"
 local log = require "frecency.log"
-local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
+local recency = require "frecency.recency"
+local wait = require "frecency.wait"
+local lazy_require = require "frecency.lazy_require"
+local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 
 ---@class Frecency
 ---@field private buf_registered table<integer, boolean> flag to indicate the buffer is registered to the database.
 ---@field private database FrecencyDatabase
----@field private entry_maker FrecencyEntryMaker
 ---@field private picker FrecencyPicker
----@field private recency FrecencyRecency
 local Frecency = {}
 
 ---@return Frecency
 Frecency.new = function()
   local self = setmetatable({ buf_registered = {} }, { __index = Frecency }) --[[@as Frecency]]
   self.database = Database.new()
-  self.entry_maker = EntryMaker.new()
-  self.recency = Recency.new()
   return self
 end
 
 ---This is called when `:Telescope frecency` is called at the first time.
 ---@return nil
 function Frecency:setup()
-  local done = false
   ---@async
   local function init()
+    local timer = Timer.new "init()"
     self.database:start()
     self:assert_db_entries()
     if config.auto_validate then
       self:validate_database()
     end
-    done = true
+    timer:finish()
   end
 
   local is_async = not not coroutine.running()
   if is_async then
     init()
   else
-    async.void(init)()
-    local ok, status = vim.wait(10000, function()
-      return done
-    end)
-    if not ok then
-      error("failed to setup:" .. (status == -1 and "timed out" or "interrupted"))
-    end
+    wait(init)
   end
 end
 
@@ -56,7 +48,7 @@ end
 ---@param opts? FrecencyPickerOptions
 ---@return nil
 function Frecency:start(opts)
-  local start = os.clock()
+  local timer = Timer.new "start()"
   log.debug "Frecency:start"
   opts = opts or {}
   if opts.cwd then
@@ -66,13 +58,13 @@ function Frecency:start(opts)
   if opts.hide_current_buffer or config.hide_current_buffer then
     ignore_filenames = { vim.api.nvim_buf_get_name(0) }
   end
-  self.picker = Picker.new(self.database, self.entry_maker, self.recency, {
+  self.picker = Picker.new(self.database, {
     editing_bufnr = vim.api.nvim_get_current_buf(),
     ignore_filenames = ignore_filenames,
     initial_workspace_tag = opts.workspace,
   })
   self.picker:start(vim.tbl_extend("force", config.get(), opts))
-  log.debug(("Frecency:start picker:start takes %f seconds"):format(os.clock() - start))
+  timer:finish()
 end
 
 ---This can be calledBy `require("telescope").extensions.frecency.complete`.
@@ -128,25 +120,21 @@ function Frecency:assert_db_entries()
   end
 end
 
+---@async
 ---@param bufnr integer
+---@param path string
 ---@param epoch? integer
-function Frecency:register(bufnr, epoch)
-  if (config.ignore_register and config.ignore_register(bufnr)) or self.buf_registered[bufnr] then
+function Frecency:register(bufnr, path, epoch)
+  if self.buf_registered[bufnr] or not fs.is_valid_path(path) then
     return
   end
-  local path = vim.api.nvim_buf_get_name(bufnr)
-  async.void(function()
-    if not fs.is_valid_path(path) then
-      return
-    end
-    local err, realpath = async.uv.fs_realpath(path)
-    if err or not realpath then
-      return
-    end
-    self.database:update(realpath, epoch)
-    self.buf_registered[bufnr] = true
-    log.debug("registered:", bufnr, path)
-  end)()
+  local err, realpath = async.uv.fs_realpath(path)
+  if err or not realpath then
+    return
+  end
+  self.database:update(realpath, epoch)
+  self.buf_registered[bufnr] = true
+  log.debug("registered:", bufnr, path)
 end
 
 ---@async
@@ -191,7 +179,7 @@ function Frecency:query(opts, epoch)
     return {
       count = entry.count,
       path = entry.path,
-      score = entry.ages and self.recency:calculate(entry.count, entry.ages) or 0,
+      score = entry.ages and recency.calculate(entry.count, entry.ages) or 0,
       timestamps = entry.timestamps,
     }
   end, self.database:get_entries(opts.workspace, epoch))

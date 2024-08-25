@@ -1,5 +1,6 @@
 local config = require "frecency.config"
-local sorters = require "telescope.sorters"
+local lazy_require = require "frecency.lazy_require"
+local sorters = lazy_require "telescope.sorters"
 
 ---@param opts any options for get_fzy_sorter()
 return function(opts)
