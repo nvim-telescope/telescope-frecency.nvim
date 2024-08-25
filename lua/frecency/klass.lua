@@ -9,15 +9,23 @@ local wait = require "frecency.wait"
 local lazy_require = require "frecency.lazy_require"
 local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 
+---@enum FrecencyStatus
+local STATUS = {
+  NEW = 0,
+  SETUP_CALLED = 1,
+  SETUP_FINISHED = 2,
+}
+
 ---@class Frecency
 ---@field private buf_registered table<integer, boolean> flag to indicate the buffer is registered to the database.
 ---@field private database FrecencyDatabase
 ---@field private picker FrecencyPicker
+---@field private status FrecencyStatus
 local Frecency = {}
 
 ---@return Frecency
 Frecency.new = function()
-  local self = setmetatable({ buf_registered = {} }, { __index = Frecency }) --[[@as Frecency]]
+  local self = setmetatable({ buf_registered = {}, status = STATUS.NEW }, { __index = Frecency }) --[[@as Frecency]]
   self.database = Database.new()
   return self
 end
@@ -25,6 +33,11 @@ end
 ---This is called when `:Telescope frecency` is called at the first time.
 ---@return nil
 function Frecency:setup()
+  if self.status >= STATUS.SETUP_CALLED then
+    return
+  end
+  self.status = STATUS.SETUP_CALLED
+
   ---@async
   local function init()
     timer.track "init() start"
@@ -34,6 +47,7 @@ function Frecency:setup()
       self:validate_database()
     end
     timer.track "init() finish"
+    self.status = STATUS.SETUP_FINISHED
   end
 
   local is_async = not not coroutine.running()
