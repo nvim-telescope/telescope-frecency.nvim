@@ -30,6 +30,12 @@ Frecency.new = function()
   return self
 end
 
+---@async
+---@return nil
+function Frecency:bootstrap()
+  self.database:start()
+end
+
 ---This is called when `:Telescope frecency` is called at the first time.
 ---@return nil
 function Frecency:setup()

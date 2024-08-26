@@ -2,6 +2,7 @@
 ---When methods are called at the first time, it calls the constructor and
 ---setup() to be initialized.
 ---@class FrecencyInstance
+---@field bootstrap async fun(): nil
 ---@field complete fun(findstart: 1|0, base: string): integer|''|string[]
 ---@field delete async fun(path: string): nil
 ---@field query fun(opts?: FrecencyQueryOpts): FrecencyQueryEntry[]|string[]
@@ -85,6 +86,10 @@ local function setup(ext_config)
       async_call(frecency.register, args.buf, vim.api.nvim_buf_get_name(args.buf))
     end,
   })
+
+  if config.bootstrap then
+    async_call(frecency.bootstrap)
+  end
 
   setup_done = true
   timer.track "setup() finish"
