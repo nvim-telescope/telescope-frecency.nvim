@@ -74,6 +74,7 @@ end
 ---@async
 ---@return nil
 function Database:start()
+  timer.track "Database:start() start"
   local target = self:filename()
   self.file_lock_tx(FileLock.new(target))
   self.watcher_tx.send "load"
@@ -94,6 +95,7 @@ function Database:start()
       log.debug("DB coroutine end:", mode)
     end
   end)()
+  timer.track "Database:start() finish"
 end
 
 ---@async
