@@ -1,3 +1,6 @@
+---@type FrecencyDatabase?
+local database
+
 ---This object is intended to be used as a singleton, and is lazily loaded.
 ---When methods are called at the first time, it calls the constructor and
 ---setup() to be initialized.
@@ -21,7 +24,7 @@ local frecency = setmetatable({}, {
 
     return function(...)
       if not instance() then
-        rawset(self, "instance", require("frecency.klass").new())
+        rawset(self, "instance", require("frecency.klass").new(database))
         instance():setup()
       end
       return instance()[key](instance(), ...)
@@ -88,7 +91,10 @@ local function setup(ext_config)
   })
 
   if config.bootstrap then
-    async_call(frecency.bootstrap)
+    database = require("frecency.database").new()
+    async_call(function()
+      database:start()
+    end)
   end
 
   setup_done = true

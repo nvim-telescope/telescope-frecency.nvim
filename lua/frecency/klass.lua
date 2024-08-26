@@ -23,10 +23,11 @@ local STATUS = {
 ---@field private status FrecencyStatus
 local Frecency = {}
 
+---@param database? FrecencyDatabase
 ---@return Frecency
-Frecency.new = function()
+Frecency.new = function(database)
   local self = setmetatable({ buf_registered = {}, status = STATUS.NEW }, { __index = Frecency }) --[[@as Frecency]]
-  self.database = Database.new()
+  self.database = database or Database.new()
   return self
 end
 
