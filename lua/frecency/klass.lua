@@ -44,17 +44,28 @@ function Frecency:setup()
     return
   end
   self.status = STATUS.SETUP_CALLED
+  timer.track "frecency.setup() start"
 
   ---@async
-  local function init()
-    timer.track "init() start"
-    self.database:start()
+  local function db_init()
     self:assert_db_entries()
     if config.auto_validate then
       self:validate_database()
     end
-    timer.track "init() finish"
+    timer.track "frecency.setup() finish"
     self.status = STATUS.SETUP_FINISHED
+  end
+
+  if config.bootstrap then
+    timer.track "bootstrap"
+    async.void(db_init)()
+    return
+  end
+
+  ---@async
+  local function init()
+    self.database:start()
+    db_init()
   end
 
   local is_async = not not coroutine.running()
@@ -100,8 +111,11 @@ end
 ---@param force? boolean
 ---@return nil
 function Frecency:validate_database(force)
+  timer.track "validate_database() start"
   local unlinked = self.database:unlinked_entries()
+  timer.track "validate_database() calculate unlinked"
   if #unlinked == 0 or (not force and #unlinked < config.db_validate_threshold) then
+    timer.track "validate_database() finish: no unlinked"
     return
   end
   local function remove_entries()
@@ -110,6 +124,7 @@ function Frecency:validate_database(force)
   end
   if not config.db_safe_mode then
     remove_entries()
+    timer.track "validate_database() finish: removed"
     return
   end
   -- HACK: This is needed because the default implementaion of vim.ui.select()
