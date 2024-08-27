@@ -36,4 +36,21 @@ function M.track(event)
   end
 end
 
+---@return string
+function M.pp()
+  local times = require("lazy.stats")._stats.times
+  local result = vim.tbl_map(function(k)
+    return { event = k, t = times[k] }
+  end, vim.tbl_keys(times))
+  table.sort(result, function(a, b)
+    return a.t < b.t
+  end)
+  return table.concat(
+    vim.tbl_map(function(r)
+      return ("%8.3f : %s"):format(r.t, r.event)
+    end, result),
+    "\n"
+  )
+end
+
 return M
