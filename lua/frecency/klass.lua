@@ -23,8 +23,9 @@ Frecency.new = function()
 end
 
 ---This is called when `:Telescope frecency` is called at the first time.
+---@param is_async boolean
 ---@return nil
-function Frecency:setup()
+function Frecency:setup(is_async)
   ---@async
   local function init()
     timer.track "init() start"
@@ -36,7 +37,6 @@ function Frecency:setup()
     timer.track "init() finish"
   end
 
-  local is_async = not not coroutine.running()
   if is_async then
     init()
   else
