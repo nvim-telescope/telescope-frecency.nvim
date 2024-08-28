@@ -38,8 +38,9 @@ function Frecency:bootstrap()
 end
 
 ---This is called when `:Telescope frecency` is called at the first time.
+---@param is_async boolean
 ---@return nil
-function Frecency:setup()
+function Frecency:setup(is_async)
   if self.status >= STATUS.SETUP_CALLED then
     return
   end
@@ -47,7 +48,8 @@ function Frecency:setup()
   timer.track "frecency.setup() start"
 
   ---@async
-  local function db_init()
+  local function init()
+    self.database:start()
     self:assert_db_entries()
     if config.auto_validate then
       self:validate_database()
@@ -56,19 +58,6 @@ function Frecency:setup()
     self.status = STATUS.SETUP_FINISHED
   end
 
-  if config.bootstrap then
-    timer.track "bootstrap"
-    async.void(db_init)()
-    return
-  end
-
-  ---@async
-  local function init()
-    self.database:start()
-    db_init()
-  end
-
-  local is_async = not not coroutine.running()
   if is_async then
     init()
   else
