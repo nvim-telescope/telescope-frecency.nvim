@@ -4,7 +4,7 @@ local os_util = require "frecency.os_util"
 ---@class FrecencyOpts
 ---@field recency_values? { age: integer, value: integer }[] default: see lua/frecency/config.lua
 ---@field auto_validate? boolean default: true
----@field bootstrap? boolean default: false
+---@field bootstrap? boolean default: true
 ---@field db_root? string default: vim.fn.stdpath "state"
 ---@field db_safe_mode? boolean default: true
 ---@field db_validate_threshold? integer default: 10
@@ -34,7 +34,7 @@ local Config = {}
 ---@class FrecencyRawConfig
 ---@field recency_values { age: integer, value: integer }[] default: see lua/frecency/config.lua
 ---@field auto_validate boolean default: true
----@field bootstrap boolean default: false
+---@field bootstrap boolean default: true
 ---@field db_root string default: vim.fn.stdpath "state"
 ---@field db_safe_mode boolean default: true
 ---@field db_validate_threshold integer default: 10
@@ -101,7 +101,7 @@ end
 ---@type FrecencyRawConfig
 Config.default_values = {
   auto_validate = true,
-  bootstrap = false,
+  bootstrap = true,
   db_root = vim.fn.stdpath "state" --[[@as string]],
   db_safe_mode = true,
   db_validate_threshold = 10,

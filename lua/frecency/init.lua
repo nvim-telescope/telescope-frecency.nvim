@@ -90,7 +90,7 @@ local function setup(ext_config)
     end,
   })
 
-  if config.bootstrap then
+  if config.bootstrap and vim.v.vim_did_enter == 0 then
     database = require("frecency.database").new()
     async_call(function()
       database:start()
