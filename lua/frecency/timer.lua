@@ -18,21 +18,11 @@ function M.track(event)
   end
   if M.has_lazy then
     local stats = require "lazy.stats"
-    ---@param n integer
-    ---@return string
-    local function make_key(n)
-      return ("[telescope-frecency] %s: %d"):format(event, n)
+    local function make_key(num)
+      local key = num and ("[telescope-frecency] %s: %d"):format(event, num) or "[telescope-frecency] " .. event
+      return stats._stats.times[key] and make_key((num or 1) + 1) or key
     end
-    local key
-    local num = 0
-    while true do
-      key = make_key(num)
-      if not stats._stats.times[key] then
-        break
-      end
-      num = num + 1
-    end
-    stats.track(key)
+    stats.track(make_key())
   end
 end
 
