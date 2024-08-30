@@ -60,9 +60,16 @@ function Frecency:setup(is_async)
 
   if is_async then
     init()
-  else
-    wait(init)
+    return
   end
+
+  local ok, status = wait(init)
+  if ok then
+    return
+  end
+  -- NOTE: This means init() has failed. Try again.
+  self.status = STATUS.NEW
+  self:error(status == -1 and "init() never returns during the time" or "init() is interrupted during the time")
 end
 
 ---This can be calledBy `require("telescope").extensions.frecency.frecency`.

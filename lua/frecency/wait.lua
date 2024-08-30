@@ -40,15 +40,8 @@ end
 
 ---@param f FrecencyWaitCallback
 ---@param opts FrecencyWaitConfig?
----@return nil
+---@return boolean ok
+---@return nil|-1|-2 status
 return function(f, opts)
-  local wait = Wait.new(f, opts)
-  local ok, status = wait:run()
-  if ok then
-    return
-  elseif status == -1 then
-    error "callback never returnes during the time"
-  elseif status == -2 then
-    error "callback is interrupted during the time"
-  end
+  return Wait.new(f, opts):run()
 end
