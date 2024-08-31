@@ -1,7 +1,11 @@
+---@type FrecencyDatabase?
+local database
+
 ---This object is intended to be used as a singleton, and is lazily loaded.
 ---When methods are called at the first time, it calls the constructor and
 ---setup() to be initialized.
 ---@class FrecencyInstance
+---@field bootstrap async fun(): nil
 ---@field complete fun(findstart: 1|0, base: string): integer|''|string[]
 ---@field delete async fun(path: string): nil
 ---@field query fun(opts?: FrecencyQueryOpts): FrecencyQueryEntry[]|string[]
@@ -20,7 +24,7 @@ local frecency = setmetatable({}, {
 
     return function(...)
       if not instance() then
-        rawset(self, "instance", require("frecency.klass").new())
+        rawset(self, "instance", require("frecency.klass").new(database))
         local is_async = key == "delete" or key == "validate_database" or key == "register"
         instance():setup(is_async)
       end
@@ -45,8 +49,9 @@ local function setup(ext_config)
   end
 
   local config = require "frecency.config"
-
   config.setup(ext_config)
+  local timer = require "frecency.timer"
+  timer.track "setup() start"
 
   vim.api.nvim_set_hl(0, "TelescopeBufferLoaded", { link = "String", default = true })
   vim.api.nvim_set_hl(0, "TelescopePathSeparator", { link = "Directory", default = true })
@@ -86,7 +91,15 @@ local function setup(ext_config)
     end,
   })
 
+  if config.bootstrap and vim.v.vim_did_enter == 0 then
+    database = require("frecency.database").new()
+    async_call(function()
+      database:start()
+    end)
+  end
+
   setup_done = true
+  timer.track "setup() finish"
 end
 
 return {

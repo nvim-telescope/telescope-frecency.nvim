@@ -22,6 +22,7 @@ local Path = lazy_require "plenary.path" --[[@as FrecencyPlenaryPath]]
 ---@field private _file_lock FrecencyFileLock
 ---@field private file_lock_rx async fun(): ...
 ---@field private file_lock_tx fun(...): nil
+---@field private is_started boolean
 ---@field private tbl FrecencyDatabaseTable
 ---@field private version FrecencyDatabaseVersion
 ---@field private watcher_rx FrecencyPlenaryAsyncControlChannelRx
@@ -36,6 +37,7 @@ Database.new = function()
   return setmetatable({
     file_lock_rx = file_lock_rx,
     file_lock_tx = file_lock_tx,
+    is_started = false,
     tbl = Table.new(version),
     version = version,
     watcher_rx = watcher_rx,
@@ -74,6 +76,11 @@ end
 ---@async
 ---@return nil
 function Database:start()
+  timer.track "Database:start() start"
+  if self.is_started then
+    return
+  end
+  self.is_started = true
   local target = self:filename()
   self.file_lock_tx(FileLock.new(target))
   self.watcher_tx.send "load"
@@ -94,6 +101,7 @@ function Database:start()
       log.debug("DB coroutine end:", mode)
     end
   end)()
+  timer.track "Database:start() finish"
 end
 
 ---@async

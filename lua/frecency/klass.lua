@@ -9,16 +9,25 @@ local wait = require "frecency.wait"
 local lazy_require = require "frecency.lazy_require"
 local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 
+---@enum FrecencyStatus
+local STATUS = {
+  NEW = 0,
+  SETUP_CALLED = 1,
+  SETUP_FINISHED = 2,
+}
+
 ---@class Frecency
 ---@field private buf_registered table<integer, boolean> flag to indicate the buffer is registered to the database.
 ---@field private database FrecencyDatabase
 ---@field private picker FrecencyPicker
+---@field private status FrecencyStatus
 local Frecency = {}
 
+---@param database? FrecencyDatabase
 ---@return Frecency
-Frecency.new = function()
-  local self = setmetatable({ buf_registered = {} }, { __index = Frecency }) --[[@as Frecency]]
-  self.database = Database.new()
+Frecency.new = function(database)
+  local self = setmetatable({ buf_registered = {}, status = STATUS.NEW }, { __index = Frecency }) --[[@as Frecency]]
+  self.database = database or Database.new()
   return self
 end
 
@@ -26,22 +35,35 @@ end
 ---@param is_async boolean
 ---@return nil
 function Frecency:setup(is_async)
+  if self.status >= STATUS.SETUP_CALLED then
+    return
+  end
+  self.status = STATUS.SETUP_CALLED
+  timer.track "frecency.setup() start"
+
   ---@async
   local function init()
-    timer.track "init() start"
     self.database:start()
     self:assert_db_entries()
     if config.auto_validate then
       self:validate_database()
     end
-    timer.track "init() finish"
+    timer.track "frecency.setup() finish"
+    self.status = STATUS.SETUP_FINISHED
   end
 
   if is_async then
     init()
-  else
-    wait(init)
+    return
   end
+
+  local ok, status = wait(init)
+  if ok then
+    return
+  end
+  -- NOTE: This means init() has failed. Try again.
+  self.status = STATUS.NEW
+  self:error(status == -1 and "init() never returns during the time" or "init() is interrupted during the time")
 end
 
 ---This can be calledBy `require("telescope").extensions.frecency.frecency`.
@@ -79,8 +101,11 @@ end
 ---@param force? boolean
 ---@return nil
 function Frecency:validate_database(force)
+  timer.track "validate_database() start"
   local unlinked = self.database:unlinked_entries()
+  timer.track "validate_database() calculate unlinked"
   if #unlinked == 0 or (not force and #unlinked < config.db_validate_threshold) then
+    timer.track "validate_database() finish: no unlinked"
     return
   end
   local function remove_entries()
@@ -89,6 +114,7 @@ function Frecency:validate_database(force)
   end
   if not config.db_safe_mode then
     remove_entries()
+    timer.track "validate_database() finish: removed"
     return
   end
   -- HACK: This is needed because the default implementaion of vim.ui.select()
