@@ -5,7 +5,6 @@ local database
 ---When methods are called at the first time, it calls the constructor and
 ---setup() to be initialized.
 ---@class FrecencyInstance
----@field bootstrap async fun(): nil
 ---@field complete fun(findstart: 1|0, base: string): integer|''|string[]
 ---@field delete async fun(path: string): nil
 ---@field query fun(opts?: FrecencyQueryOpts): FrecencyQueryEntry[]|string[]
