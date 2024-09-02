@@ -121,7 +121,7 @@ function Frecency:validate_database(force)
   -- uses vim.fn.* function and it makes E5560 error.
   async.util.scheduler()
   vim.ui.select({ "y", "n" }, {
-    prompt = self:message("remove %d entries from database?", #unlinked),
+    prompt = "\n" .. self:message("remove %d entries from database?", #unlinked),
     ---@param item "y"|"n"
     ---@return string
     format_item = function(item)
