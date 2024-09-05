@@ -417,6 +417,16 @@ Type: `boolean`
 If `true`, it removes stale entries count over than
 |telescope-frecency-configuration-db_validate_threshold|.
 
+				    *telescope-frecency-configuration-bootstrap*
+bootstrap ~
+
+Default: `true`
+Type: `boolean`
+
+If `true` and you set this plugin to be loaded non-lazily, it initializes DB in
+Neovim startup (before |VimEnter|). This initialization logic works
+asynchronously and does not block Neovim's starting process.
+
 				      *telescope-frecency-configuration-db_root*
 db_root ~
 
