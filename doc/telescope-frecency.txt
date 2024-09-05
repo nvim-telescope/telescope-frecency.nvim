@@ -332,7 +332,6 @@ register opened files as soon as Neovim has started. Example configuration for
 >lua
     {
       "nvim-telescope/telescope-frecency.nvim",
-      main = "frecency",
       -- `opts` property calls the plugin's setup() function.
       -- In this case, this calls frecency.setup().
       opts = {
