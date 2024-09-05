@@ -24,9 +24,10 @@ local frecency = setmetatable({}, {
     return function(...)
       if not instance() then
         rawset(self, "instance", require("frecency.klass").new(database))
-        local is_async = key == "delete" or key == "validate_database" or key == "register"
-        instance():setup(is_async)
       end
+      local is_async = key == "delete" or key == "register" or key == "validate_database"
+      local need_cleanup = key == "delete" or key == "start"
+      instance():setup(is_async, need_cleanup)
       return instance()[key](instance(), ...)
     end
   end,

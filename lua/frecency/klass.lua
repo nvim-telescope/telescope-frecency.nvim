@@ -13,7 +13,8 @@ local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 local STATUS = {
   NEW = 0,
   SETUP_CALLED = 1,
-  SETUP_FINISHED = 2,
+  DB_STARTED = 2,
+  CLEANUP_FINISHED = 3,
 }
 
 ---@class Frecency
@@ -33,23 +34,32 @@ end
 
 ---This is called when `:Telescope frecency` is called at the first time.
 ---@param is_async boolean
+---@param need_cleanup boolean
 ---@return nil
-function Frecency:setup(is_async)
-  if self.status >= STATUS.SETUP_CALLED then
+function Frecency:setup(is_async, need_cleanup)
+  if self.status == STATUS.CLEANUP_FINISHED then
     return
+  elseif self.status == STATUS.NEW then
+    self.status = STATUS.SETUP_CALLED
   end
-  self.status = STATUS.SETUP_CALLED
   timer.track "frecency.setup() start"
 
   ---@async
   local function init()
-    self.database:start()
-    self:assert_db_entries()
-    if config.auto_validate then
-      self:validate_database()
+    if self.status == STATUS.SETUP_CALLED then
+      self.database:start()
+      self.status = STATUS.DB_STARTED
+      timer.track "DB_STARTED"
+    end
+    if self.status == STATUS.DB_STARTED and need_cleanup then
+      self:assert_db_entries()
+      if config.auto_validate then
+        self:validate_database()
+      end
+      self.status = STATUS.CLEANUP_FINISHED
+      timer.track "CLEANUP_FINISHED"
     end
     timer.track "frecency.setup() finish"
-    self.status = STATUS.SETUP_FINISHED
   end
 
   if is_async then
@@ -62,7 +72,6 @@ function Frecency:setup(is_async)
     return
   end
   -- NOTE: This means init() has failed. Try again.
-  self.status = STATUS.NEW
   self:error(status == -1 and "init() never returns during the time" or "init() is interrupted during the time")
 end
 
@@ -101,6 +110,18 @@ end
 ---@param force? boolean
 ---@return nil
 function Frecency:validate_database(force)
+  self:_validate_database(force)
+  if self.status == STATUS.DB_STARTED then
+    self.status = STATUS.CLEANUP_FINISHED
+  end
+  timer.track "CLEANUP_FINISHED"
+end
+
+---@private
+---@async
+---@param force? boolean
+---@return nil
+function Frecency:_validate_database(force)
   timer.track "validate_database() start"
   local unlinked = self.database:unlinked_entries()
   timer.track "validate_database() calculate unlinked"
