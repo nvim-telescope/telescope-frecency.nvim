@@ -5,7 +5,6 @@ local config = require "frecency.config"
 local fs = require "frecency.fs"
 local fuzzy_sorter = require "frecency.fuzzy_sorter"
 local substr_sorter = require "frecency.substr_sorter"
-local log = require "frecency.log"
 local lazy_require = require "frecency.lazy_require"
 local Path = lazy_require "plenary.path" --[[@as FrecencyPlenaryPath]]
 local actions = lazy_require "telescope.actions"
@@ -21,7 +20,7 @@ local uv = vim.loop or vim.uv
 ---@field private lsp_workspaces string[]
 ---@field private namespace integer
 ---@field private state FrecencyState
----@field private workspace string?
+---@field private workspaces string[]?
 ---@field private workspace_tag_regex string
 local Picker = {}
 
@@ -67,17 +66,17 @@ end
 ---@field workspace? string
 
 ---@param opts table
----@param workspace? string
+---@param workspaces? string[]
 ---@param workspace_tag? string
-function Picker:finder(opts, workspace, workspace_tag)
+function Picker:finder(opts, workspaces, workspace_tag)
   local filepath_formatter = self:filepath_formatter(opts)
-  local entry_maker = self.entry_maker:create(filepath_formatter, workspace, workspace_tag)
-  local need_scandir = not not (workspace and config.show_unindexed)
+  local entry_maker = self.entry_maker:create(filepath_formatter, workspaces, workspace_tag)
+  local need_scandir = not not (workspaces and #workspaces > 0 and config.show_unindexed)
   return Finder.new(
     self.database,
     entry_maker,
     need_scandir,
-    workspace,
+    workspaces,
     self.state,
     { ignore_filenames = self.config.ignore_filenames }
   )
@@ -91,11 +90,10 @@ function Picker:start(opts)
       return self:default_path_display(picker_opts, path)
     end,
   }, telescope_config.values, opts or {}) --[[@as FrecencyPickerOptions]]
-  self.workspace = self:get_workspace(opts.cwd, self.config.initial_workspace_tag or config.default_workspace)
-  log.debug { workspace = self.workspace }
+  self.workspaces = self:get_workspaces(opts.cwd, self.config.initial_workspace_tag or config.default_workspace)
 
   self.state = State.new()
-  local finder = self:finder(opts, self.workspace, self.config.initial_workspace_tag or config.default_workspace)
+  local finder = self:finder(opts, self.workspaces, self.config.initial_workspace_tag or config.default_workspace)
   local picker = pickers.new(opts, {
     prompt_title = "Frecency",
     finder = finder,
@@ -140,7 +138,7 @@ end
 function Picker:workspace_tags()
   local tags = vim.tbl_keys(config.workspaces)
   table.insert(tags, "CWD")
-  if self:get_lsp_workspace() then
+  if self:get_lsp_workspaces() then
     table.insert(tags, "LSP")
   end
   return tags
@@ -152,7 +150,7 @@ end
 ---@return string
 function Picker:default_path_display(opts, path)
   local filename = Path:new(path):make_relative(opts.cwd)
-  if not self.workspace then
+  if not self.workspaces or #self.workspaces == 0 then
     if vim.startswith(filename, fs.os_homedir) then
       filename = "~" .. Path.path.sep .. fs.relative_from_home(filename)
     elseif filename ~= path then
@@ -165,26 +163,27 @@ end
 ---@private
 ---@param cwd string
 ---@param tag? string
----@return string?
-function Picker:get_workspace(cwd, tag)
+---@return string[]?
+function Picker:get_workspaces(cwd, tag)
   if not tag then
     return nil
   elseif config.workspaces[tag] then
-    return config.workspaces[tag]
+    local w = config.workspaces[tag]
+    return type(w) == "table" and w or { w }
   elseif tag == "LSP" then
-    return self:get_lsp_workspace()
+    return self:get_lsp_workspaces()
   elseif tag == "CWD" then
-    return cwd
+    return { cwd }
   end
 end
 
 ---@private
----@return string?
-function Picker:get_lsp_workspace()
+---@return string[]?
+function Picker:get_lsp_workspaces()
   if vim.tbl_isempty(self.lsp_workspaces) then
     self.lsp_workspaces = vim.api.nvim_buf_call(self.config.editing_bufnr, vim.lsp.buf.list_workspace_folders)
   end
-  return self.lsp_workspaces[1]
+  return self.lsp_workspaces
 end
 
 ---@private
@@ -192,13 +191,13 @@ end
 ---@return fun(prompt: string): table
 function Picker:on_input_filter_cb(picker_opts)
   return function(prompt)
-    local workspace
+    local workspaces
     local start, finish, tag = prompt:find(self.workspace_tag_regex)
     local opts = { prompt = start and prompt:sub(finish + 1) or prompt }
     if prompt == "" then
-      workspace = self:get_workspace(picker_opts.cwd, self.config.initial_workspace_tag or config.default_workspace)
+      workspaces = self:get_workspaces(picker_opts.cwd, self.config.initial_workspace_tag or config.default_workspace)
     else
-      workspace = self:get_workspace(picker_opts.cwd, tag) or self.workspace
+      workspaces = self:get_workspaces(picker_opts.cwd, tag) or self.workspaces
     end
     local picker = self.state:get()
     if picker then
@@ -217,10 +216,34 @@ function Picker:on_input_filter_cb(picker_opts)
         )
       end
     end
-    if self.workspace ~= workspace then
-      self.workspace = workspace
+
+    ---@param a? string[]
+    ---@param b? string[]
+    ---@return boolean
+    local function same_workspaces(a, b)
+      if not a or not b or #a ~= #b then
+        return false
+      end
+      local function list_to_map(list)
+        local tmp = {}
+        for _, v in ipairs(list) do
+          tmp[v] = true
+        end
+        return tmp
+      end
+      local a_map, b_map = list_to_map(a), list_to_map(b)
+      for _, v in ipairs(a_map) do
+        if not b_map[v] then
+          return false
+        end
+      end
+      return true
+    end
+
+    if not same_workspaces(self.workspaces, workspaces) then
+      self.workspaces = workspaces
       opts.updated_finder =
-        self:finder(picker_opts, self.workspace, tag or self.config.initial_workspace_tag or config.default_workspace)
+        self:finder(picker_opts, self.workspaces, tag or self.config.initial_workspace_tag or config.default_workspace)
       opts.updated_finder:start()
     end
     return opts

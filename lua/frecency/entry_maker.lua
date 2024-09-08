@@ -33,16 +33,16 @@ end
 ---@alias FrecencyEntryMakerInstance fun(file: FrecencyFile): FrecencyEntry
 
 ---@param filepath_formatter FrecencyFilepathFormatter
----@param workspace? string
+---@param workspaces? string[]
 ---@param workspace_tag? string
 ---@return FrecencyEntryMakerInstance
-function EntryMaker:create(filepath_formatter, workspace, workspace_tag)
+function EntryMaker:create(filepath_formatter, workspaces, workspace_tag)
   -- NOTE: entry_display.create calls non API-fast functions. We cannot call
   -- in entry_maker because it will be called in a Lua loop.
   local displayer = entry_display.create {
     separator = "",
     hl_chars = { [Path.path.sep] = "TelescopePathSeparator" },
-    items = self:width_items(workspace, workspace_tag),
+    items = self:width_items(workspaces, workspace_tag),
   }
 
   -- set loaded buffers for highlight
@@ -66,7 +66,17 @@ function EntryMaker:create(filepath_formatter, workspace, workspace_tag)
       ---@param entry FrecencyEntry
       ---@return table
       display = function(entry)
-        local items = self:items(entry, workspace, workspace_tag, filepath_formatter(workspace))
+        ---@type string
+        local matched
+        if workspaces then
+          for _, workspace in ipairs(workspaces) do
+            if entry.name:find(workspace, 1, true) then
+              matched = workspace
+              break
+            end
+          end
+        end
+        local items = self:items(entry, matched, workspace_tag, filepath_formatter(matched))
         return displayer(items)
       end,
     }
@@ -74,10 +84,10 @@ function EntryMaker:create(filepath_formatter, workspace, workspace_tag)
 end
 
 ---@private
----@param workspace? string
+---@param workspaces? string[]
 ---@param workspace_tag? string
 ---@return table[]
-function EntryMaker:width_items(workspace, workspace_tag)
+function EntryMaker:width_items(workspaces, workspace_tag)
   local width_items = {}
   if config.show_scores then
     table.insert(width_items, { width = 5 }) -- recency score
@@ -89,8 +99,8 @@ function EntryMaker:width_items(workspace, workspace_tag)
   if not config.disable_devicons then
     table.insert(width_items, { width = 2 })
   end
-  if config.show_filter_column and workspace and workspace_tag then
-    table.insert(width_items, { width = self:calculate_filter_column_width(workspace, workspace_tag) })
+  if config.show_filter_column and workspaces and #workspaces > 0 and workspace_tag then
+    table.insert(width_items, { width = self:calculate_filter_column_width(workspaces, workspace_tag) })
   end
   -- TODO: This is a stopgap measure to detect placeholders.
   table.insert(width_items, {})
@@ -146,18 +156,24 @@ function EntryMaker:items(entry, workspace, workspace_tag, formatter)
 end
 
 ---@private
----@param workspace string
+---@param workspaces string[]
 ---@param workspace_tag string
 ---@return integer
-function EntryMaker:calculate_filter_column_width(workspace, workspace_tag)
-  return self:should_show_tail(workspace_tag) and #(utils.path_tail(workspace)) + 1
-    or #(fs.relative_from_home(workspace)) + 1
+function EntryMaker:calculate_filter_column_width(workspaces, workspace_tag)
+  local longest = ""
+  for _, workspace in ipairs(workspaces) do
+    if not longest or #workspace > #longest then
+      longest = workspace
+    end
+  end
+  return self:should_show_tail(workspace_tag) and #(utils.path_tail(longest)) + 1
+    or #(fs.relative_from_home(longest)) + 1
 end
 
 ---@private
 ---@param workspace_tag string
 ---@return boolean
-function EntryMaker:should_show_tail(workspace_tag)
+function EntryMaker.should_show_tail(_, workspace_tag)
   local show_filter_column = config.show_filter_column
   local filters = type(show_filter_column) == "table" and show_filter_column or { "LSP", "CWD" }
   return vim.tbl_contains(filters, workspace_tag)

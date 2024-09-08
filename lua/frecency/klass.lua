@@ -204,7 +204,7 @@ end
 ---@field limit? integer default: 100
 ---@field order? FrecencyQueryOrder default: "score"
 ---@field record? boolean default: false
----@field workspace? string default: nil
+---@field workspace? string|string[] default: nil
 
 ---@class FrecencyQueryEntry
 ---@field count integer
@@ -223,6 +223,9 @@ function Frecency:query(opts, epoch)
     order = "score",
     record = false,
   }, opts or {})
+  local workspaces = type(opts.workspace) == "table" and opts.workspace
+    or type(opts.workspace) == "string" and { opts.workspace }
+    or nil
   ---@param entry FrecencyDatabaseEntry
   local entries = vim.tbl_map(function(entry)
     return {
@@ -231,7 +234,7 @@ function Frecency:query(opts, epoch)
       score = entry.ages and recency.calculate(entry.count, entry.ages) or 0,
       timestamps = entry.timestamps,
     }
-  end, self.database:get_entries(opts.workspace, epoch))
+  end, self.database:get_entries(workspaces, epoch))
   table.sort(entries, self:query_sorter(opts.order, opts.direction))
   local results = opts.record and entries or vim.tbl_map(function(entry)
     return entry.path
