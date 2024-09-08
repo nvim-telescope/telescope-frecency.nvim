@@ -9,6 +9,7 @@ local os_util = require "frecency.os_util"
 ---@field db_safe_mode? boolean default: true
 ---@field db_validate_threshold? integer default: 10
 ---@field debug? boolean default: false
+---@field debug_timer? boolean default: false
 ---@field default_workspace? string default: nil
 ---@field disable_devicons? boolean default: false
 ---@field filter_delimiter? string default: ":"
@@ -39,6 +40,7 @@ local Config = {}
 ---@field db_safe_mode boolean default: true
 ---@field db_validate_threshold integer default: 10
 ---@field debug boolean default: false
+---@field debug_timer boolean default: false
 ---@field default_workspace? string default: nil
 ---@field disable_devicons boolean default: false
 ---@field filter_delimiter string default: ":"
@@ -66,6 +68,7 @@ Config.new = function()
     db_safe_mode = true,
     db_validate_threshold = true,
     debug = true,
+    debug_timer = true,
     default_workspace = true,
     disable_devicons = true,
     filter_delimiter = true,
@@ -106,6 +109,7 @@ Config.default_values = {
   db_safe_mode = true,
   db_validate_threshold = 10,
   debug = false,
+  debug_timer = false,
   default_workspace = nil,
   disable_devicons = false,
   filter_delimiter = ":",

@@ -23,6 +23,9 @@ function M.track(event)
       return stats._stats.times[key] and make_key((num or 1) + 1) or key
     end
     stats.track(make_key())
+    if config.debug_timer then
+      log.debug(event)
+    end
   end
 end
 

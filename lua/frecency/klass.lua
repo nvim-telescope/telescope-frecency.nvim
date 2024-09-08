@@ -200,6 +200,7 @@ end
 
 ---@class FrecencyQueryOpts
 ---@field direction? "asc"|"desc" default: "desc"
+---@field json? boolean default: false
 ---@field limit? integer default: 100
 ---@field order? FrecencyQueryOrder default: "score"
 ---@field record? boolean default: false
@@ -213,10 +214,11 @@ end
 
 ---@param opts? FrecencyQueryOpts
 ---@param epoch? integer
----@return FrecencyQueryEntry[]|string[]
+---@return string|FrecencyQueryEntry[]|string[]
 function Frecency:query(opts, epoch)
   opts = vim.tbl_extend("force", {
     direction = "desc",
+    json = false,
     limit = 100,
     order = "score",
     record = false,
@@ -235,9 +237,9 @@ function Frecency:query(opts, epoch)
     return entry.path
   end, entries)
   if #results > opts.limit then
-    return vim.list_slice(results, 1, opts.limit)
+    results = vim.list_slice(results, 1, opts.limit)
   end
-  return results
+  return opts.json and vim.json.encode(results) or results
 end
 
 ---@private
