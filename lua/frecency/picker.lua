@@ -167,7 +167,6 @@ end
 ---@param tag? string
 ---@return string?
 function Picker:get_workspace(cwd, tag)
-  tag = tag or config.default_workspace
   if not tag then
     return nil
   elseif config.workspaces[tag] then
@@ -197,7 +196,7 @@ function Picker:on_input_filter_cb(picker_opts)
     local start, finish, tag = prompt:find(self.workspace_tag_regex)
     local opts = { prompt = start and prompt:sub(finish + 1) or prompt }
     if prompt == "" then
-      workspace = self:get_workspace(picker_opts.cwd, self.config.initial_workspace_tag)
+      workspace = self:get_workspace(picker_opts.cwd, self.config.initial_workspace_tag or config.default_workspace)
     else
       workspace = self:get_workspace(picker_opts.cwd, tag) or self.workspace
     end
