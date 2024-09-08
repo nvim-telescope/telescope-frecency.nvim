@@ -1,4 +1,6 @@
+local log = require "frecency.log"
 local timer = require "frecency.timer"
+local wait = require "frecency.wait"
 local lazy_require = require "frecency.lazy_require"
 local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 
@@ -24,7 +26,15 @@ end
 ---@param key string
 function Table:__index(key)
   if key == "records" and not rawget(self, "is_ready") then
-    Table.wait_ready(self)
+    local is_async = not not coroutine.running()
+    if is_async then
+      Table.wait_ready(self)
+    else
+      log.debug "need wait() for wait_ready()"
+      wait(function()
+        Table.wait_ready(self)
+      end)
+    end
   end
   return vim.F.if_nil(rawget(self, key), Table[key])
 end
