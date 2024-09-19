@@ -252,13 +252,13 @@ function Finder:process_channel(process_result, entries, rx, start_index)
   end
 end
 
----@param workspace? string
+---@param workspaces? string[]
 ---@param epoch? integer
 ---@return FrecencyFile[]
-function Finder:get_results(workspace, epoch)
-  log.debug { workspace = workspace or "NONE" }
+function Finder:get_results(workspaces, epoch)
+  log.debug { workspaces = workspaces or "NONE" }
   timer.track "fetching start"
-  local files = self.database:get_entries(workspace, epoch)
+  local files = self.database:get_entries(workspaces, epoch)
   timer.track "fetching finish"
   for _, file in ipairs(files) do
     file.score = file.ages and recency.calculate(file.count, file.ages) or 0

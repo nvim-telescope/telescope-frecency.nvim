@@ -170,14 +170,27 @@ function Database:update(path, epoch)
 end
 
 ---@async
----@param workspace? string
+---@param workspaces? string[]
 ---@param epoch? integer
 ---@return FrecencyDatabaseEntry[]
-function Database:get_entries(workspace, epoch)
+function Database:get_entries(workspaces, epoch)
   local now = epoch or os.time()
+  ---@param path string
+  ---@return boolean
+  local function in_workspace(path)
+    if not workspaces then
+      return true
+    end
+    for _, workspace in ipairs(workspaces) do
+      if fs.starts_with(path, workspace) then
+        return true
+      end
+    end
+    return false
+  end
   local items = {}
   for path, record in pairs(self.tbl.records) do
-    if fs.starts_with(path, workspace) then
+    if in_workspace(path) then
       table.insert(items, {
         path = path,
         count = record.count,
