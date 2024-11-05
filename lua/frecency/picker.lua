@@ -246,8 +246,10 @@ end
 ---@return nil
 function Picker:set_prompt_options(bufnr)
   vim.bo[bufnr].completefunc = "v:lua.require'telescope'.extensions.frecency.complete"
-  vim.keymap.set("i", "<Tab>", "pumvisible() ? '<C-n>' : '<C-x><C-u>'", { buffer = bufnr, expr = true })
-  vim.keymap.set("i", "<S-Tab>", "pumvisible() ? '<C-p>' : ''", { buffer = bufnr, expr = true })
+  if config.enable_prompt_mappings then
+    vim.keymap.set("i", "<Tab>", "pumvisible() ? '<C-n>' : '<C-x><C-u>'", { buffer = bufnr, expr = true })
+    vim.keymap.set("i", "<S-Tab>", "pumvisible() ? '<C-p>' : ''", { buffer = bufnr, expr = true })
+  end
 end
 
 ---@alias FrecencyFilepathFormatter fun(workspace: string?): fun(filename: string): string, FrecencyTelescopePathStyle[]
