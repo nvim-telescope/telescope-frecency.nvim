@@ -12,6 +12,7 @@ local os_util = require "frecency.os_util"
 ---@field debug_timer? boolean default: false
 ---@field default_workspace? string default: nil
 ---@field disable_devicons? boolean default: false
+---@field enable_prompt_mappings? boolean default: false
 ---@field filter_delimiter? string default: ":"
 ---@field hide_current_buffer? boolean default: false
 ---@field ignore_patterns? string[] default: { "*.git/*", "*/tmp/*", "term://*" }
@@ -43,6 +44,7 @@ local Config = {}
 ---@field debug_timer boolean default: false
 ---@field default_workspace? string default: nil
 ---@field disable_devicons boolean default: false
+---@field enable_prompt_mappings boolean default: false
 ---@field filter_delimiter string default: ":"
 ---@field hide_current_buffer boolean default: false
 ---@field ignore_patterns string[] default: { "*.git/*", "*/tmp/*", "term://*" }
@@ -71,6 +73,7 @@ Config.new = function()
     debug_timer = true,
     default_workspace = true,
     disable_devicons = true,
+    enable_prompt_mappings = true,
     filter_delimiter = true,
     hide_current_buffer = true,
     ignore_patterns = true,
@@ -112,6 +115,7 @@ Config.default_values = {
   debug_timer = false,
   default_workspace = nil,
   disable_devicons = false,
+  enable_prompt_mappings = false,
   filter_delimiter = ":",
   hide_current_buffer = false,
   ignore_patterns = os_util.is_windows and { [[*.git\*]], [[*\tmp\*]], "term://*" }
@@ -173,6 +177,7 @@ Config.setup = function(ext_config)
     debug = { opts.debug, "b" },
     default_workspace = { opts.default_workspace, "s", true },
     disable_devicons = { opts.disable_devicons, "b" },
+    enable_prompt_mappings={opts.enable_prompt_mappings,'b'},
     filter_delimiter = { opts.filter_delimiter, "s" },
     hide_current_buffer = { opts.hide_current_buffer, "b" },
     ignore_patterns = { opts.ignore_patterns, "t" },

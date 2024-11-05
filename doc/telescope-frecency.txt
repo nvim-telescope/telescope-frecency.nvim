@@ -490,6 +490,16 @@ Type: `boolean`
 
 Disable devicons (if available).
 
+		       *telescope-frecency-configuration-enable_prompt_mappings*
+enable_prompt_mappings ~
+
+Default: `false`
+Type: `boolean`
+
+If enabled, you can start completion for
+|telescope-frecency-introduction-workspace-filter| with `<Tab>` and `<S-Tab>` keys
+succeeded by input `:` (in default).
+
 			  *telescope-frecency-configuration-hide_current_buffer*
 hide_current_buffer ~
 
