@@ -659,7 +659,7 @@ Default: `true`
 Type: `boolean|string[]`
 
 Show the path of the active filter before file paths. In default, it uses the
-tail of paths for `"LSP"` and `"CWD"` tags. YOu can configure this by setting a
+tail of paths for `"LSP"` and `"CWD"` tags. You can configure this by setting a
 table for this option.
 >lua
     -- show the tail for "LSP", "CWD" and "FOO"
