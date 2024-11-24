@@ -25,7 +25,7 @@ local os_util = require "frecency.os_util"
 ---@field show_scores? boolean default: false
 ---@field show_unindexed? boolean default: true
 ---@field workspace_scan_cmd? "LUA"|string[] default: nil
----@field workspaces? table<string, string> default: {}
+---@field workspaces? table<string, string|string[]> default: {}
 
 ---@class FrecencyConfig: FrecencyRawConfig
 ---@field ext_config FrecencyRawConfig
@@ -57,7 +57,7 @@ local Config = {}
 ---@field show_scores boolean default: false
 ---@field show_unindexed boolean default: true
 ---@field workspace_scan_cmd? "LUA"|string[] default: nil
----@field workspaces table<string, string> default: {}
+---@field workspaces table<string, string|string[]> default: {}
 
 ---@return FrecencyConfig
 Config.new = function()

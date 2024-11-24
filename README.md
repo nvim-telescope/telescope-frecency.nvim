@@ -33,15 +33,18 @@ Frecency tackles this with *Workspace Filters*:
 
 The workspace filter feature enables you to select from user defined _filter
 tags_ that map to a directory or collection of directories. Filters are applied
-by entering `:workspace_tag:` anywhere in the query. Filter name completion is
-available by pressing `<Tab>` after the first `:` character.
+by entering `:workspace_tag:` anywhere in the query. You can complete names by
+pressing `<Tab>` after the first `:` character (in default setting).
 
 When a filter is applied, results are reduced to entries whose path is a
-descendant of the workspace directory. The indexed results are optionally
+descendant of the workspace directories. The indexed results are optionally
 augmented with a listing of _all_ files found in a recursive search of the
-workspace directory. Non-indexed files are given a score of zero and appear
-below the 'frecent' entries. When a non-indexed file is opened, it gains a
-score value and is available in future 'frecent' search results.
+workspace directories. Non-indexed files are given a score of zero and appear
+below the _frecent_ entries. When a non-indexed file is opened, it gains a
+score value and is available in future _frecent_ search results.
+
+In default, pre-defined workspace tag: `CWD` is available. that is, you can
+filter entries into ones under the current working directory.
 
 If the active buffer (prior to the finder being launched) is attached to an LSP
 server, an automatic `LSP` tag is available, which maps to the workspace
@@ -85,7 +88,7 @@ See `:h telescope-frecency-configuration` to know about further configurations.
 
 Filter tags are applied by typing the `:tag:` name (adding surrounding colons)
 in the finder query. Entering `:<Tab>` will trigger omni completion for
-available tags.
+available tags (in default setting).
 
 ## References
 
