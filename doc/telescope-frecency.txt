@@ -83,20 +83,27 @@ Frecency tackles this with “Workspace Filters”.
 WORKSPACE FILTER	      *telescope-frecency-introduction-workspace-filter*
 
 This feature enables you to select from user defined “filter tags” that map to
-a directory or collection of directories. Filters are applied by entering
-`:workspace_tag:` anywhere in the query. Filter name completion is available by
-pressing `<Tab>` after the first `:` character.
+a directory or a collection of directories. Filters are applied by entering
+`:workspace_tag:` anywhere in the query. You can complete names by pressing
+`<Tab>` after the first `:` character (see
+|telescope-frecency-configuration-enable_prompt_mappings|).
 
 When a filter is applied, results are reduced to entries whose path is a
-descendant of the workspace directory. The indexed results are optionally
+descendant of the workspace directories. The indexed results are optionally
 augmented with a listing of “all” files found in a recursive search of the
-workspace directory. Non-indexed files are given a score of zero and appear
+workspace directories. Non-indexed files are given a score of zero and appear
 below the “frecent” entries. When a non-indexed file is opened, it gains a
 score value and is available in future “frecent” search results.
+
+In default, pre-defined workspace tag: `CWD` is available, that is, you can
+filter entries into ones under the current working directory.
 
 If the active buffer (prior to the finder being launched) is attached to an
 LSP server, an automatic `LSP` tag is available, which maps to the workspace
 directories provided by the language server.
+
+You can define other workspace tags by an option:
+|telescope-frecency-configuration-workspaces|.
 
 
 ==============================================================================
@@ -707,18 +714,26 @@ because of performance consideration.
 workspaces ~
 
 Default: `{}`
-Type: `table<string, string>`
+Type: `table<string, string[]>`
 
-This table contains mappings of `workspace_tag` → `workspace_directory`. The key
-corresponds to the `:tag_name` used to select the filter in queries. The value
-corresponds to the top level directory by which results will be filtered.
+This table contains mappings of `workspace_tag` → `workspace_directories`. The key
+corresponds to the `:tag_name:` used to select the filter in queries. The value
+corresponds to the top level directories by which results will be filtered.
+
+When multiple directories are set to one `workspace_tag` such as `:PJT:` in this
+example setting below, you can show entries containing results filtered with
+each directory.
 >lua
     -- example configuration
     workspaces = {
-      ["conf"] = "/home/my_username/.config",
-      ["data"] = "/home/my_username/.local/share",
-      ["project"] = "/home/my_username/projects",
-      ["wiki"] = "/home/my_username/wiki",
+      CONF = "/home/my_username/.config",
+      DATA = "/home/my_username/.local/share",
+      WIKI = "/home/my_username/wiki",
+      PJT = {
+        "/home/my_username/project_foo",
+        "/home/my_username/project_bar",
+        "/home/my_username/project_foobar",
+      },
     }
 
 
