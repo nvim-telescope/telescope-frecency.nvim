@@ -21,6 +21,7 @@ local os_util = require "frecency.os_util"
 ---@field scoring_function? fun(recency: integer, fzy_score: number): number default: see lua/frecency/config.lua
 ---@field max_timestamps? integer default: 10
 ---@field path_display? table default: nil
+---@field preceding? "opened"|"same_repo" default: nil
 ---@field show_filter_column? boolean|string[] default: true
 ---@field show_scores? boolean default: false
 ---@field show_unindexed? boolean default: true
@@ -53,6 +54,7 @@ local Config = {}
 ---@field scoring_function fun(recency: integer, fzy_score: number): number default: see lua/frecency/config.lua
 ---@field max_timestamps integer default: 10
 ---@field path_display? table default: nil
+---@field preceding? "opened"|"same_repo" default: nil
 ---@field show_filter_column boolean|string[] default: true
 ---@field show_scores boolean default: false
 ---@field show_unindexed boolean default: true
@@ -81,6 +83,7 @@ Config.new = function()
     matcher = true,
     max_timestamps = true,
     path_display = true,
+    preceding = true,
     scoring_function = true,
     show_filter_column = true,
     show_scores = true,
@@ -177,7 +180,7 @@ Config.setup = function(ext_config)
     debug = { opts.debug, "b" },
     default_workspace = { opts.default_workspace, "s", true },
     disable_devicons = { opts.disable_devicons, "b" },
-    enable_prompt_mappings={opts.enable_prompt_mappings,'b'},
+    enable_prompt_mappings = { opts.enable_prompt_mappings, "b" },
     filter_delimiter = { opts.filter_delimiter, "s" },
     hide_current_buffer = { opts.hide_current_buffer, "b" },
     ignore_patterns = { opts.ignore_patterns, "t" },
@@ -194,6 +197,13 @@ Config.setup = function(ext_config)
         return type(v) == "number" and v > 0
       end,
       "positive number",
+    },
+    preceding = {
+      opts.preceding,
+      function(v)
+        return v == "opened" or v == "same_repo" or v == nil
+      end,
+      '"opened" or "same_repo" or nil',
     },
     show_filter_column = { opts.show_filter_column, { "b", "t" }, true },
     show_scores = { opts.show_scores, "b" },
