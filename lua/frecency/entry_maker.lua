@@ -46,16 +46,13 @@ function EntryMaker:create(filepath_formatter, workspaces, workspace_tag)
   }
 
   -- set loaded buffers for highlight
-  self.loaded = {}
-  local loaded_bufnrs = vim.tbl_filter(function(v)
-    return vim.api.nvim_buf_is_loaded(v)
-  end, vim.api.nvim_list_bufs())
-  for _, bufnr in ipairs(loaded_bufnrs) do
-    local bufname = vim.api.nvim_buf_get_name(bufnr)
+  self.loaded = vim.iter(vim.api.nvim_list_bufs()):filter(vim.api.nvim_buf_is_loaded):fold({}, function(a, b)
+    local bufname = vim.api.nvim_buf_get_name(b)
     if bufname then
-      self.loaded[bufname] = true
+      a[bufname] = true
     end
-  end
+    return a
+  end)
 
   return function(file)
     return {
@@ -69,12 +66,9 @@ function EntryMaker:create(filepath_formatter, workspaces, workspace_tag)
         ---@type string
         local matched
         if workspaces then
-          for _, workspace in ipairs(workspaces) do
-            if entry.name:find(workspace, 1, true) then
-              matched = workspace
-              break
-            end
-          end
+          matched = vim.iter(workspaces):find(function(workspace)
+            return not not entry.name:find(workspace, 1, true)
+          end)
         end
         local items = self:items(entry, matched, workspace_tag, filepath_formatter(matched))
         return displayer(items)
@@ -160,12 +154,9 @@ end
 ---@param workspace_tag string
 ---@return integer
 function EntryMaker:calculate_filter_column_width(workspaces, workspace_tag)
-  local longest = ""
-  for _, workspace in ipairs(workspaces) do
-    if not longest or #workspace > #longest then
-      longest = workspace
-    end
-  end
+  local longest = vim.iter(workspaces):fold("", function(a, b)
+    return #a > #b and a or b
+  end)
   return self:should_show_tail(workspace_tag) and #(utils.path_tail(longest)) + 1
     or #(fs.relative_from_home(longest)) + 1
 end
@@ -176,7 +167,7 @@ end
 function EntryMaker.should_show_tail(_, workspace_tag)
   local show_filter_column = config.show_filter_column
   local filters = type(show_filter_column) == "table" and show_filter_column or { "LSP", "CWD" }
-  return vim.tbl_contains(filters, workspace_tag)
+  return vim.list_contains(filters, workspace_tag)
 end
 
 return EntryMaker

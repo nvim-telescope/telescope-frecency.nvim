@@ -5,7 +5,7 @@ local recency = require "frecency.recency"
 local log = require "frecency.log"
 local timer = require "frecency.timer"
 local lazy_require = require "frecency.lazy_require"
-local Job = lazy_require "plenary.job" --[[@as FrecencyPlenaryJob]]
+local Sorter = require "frecency.sorter"
 local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 
 ---@class FrecencyFinder
@@ -25,6 +25,7 @@ local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 ---@field private seen table<string, boolean>
 ---@field private process table<string, { obj: VimSystemObj, done: boolean }>
 ---@field private state FrecencyState
+---@field private sorter FrecencySorter
 local Finder = {
   ---@type fun(): string[]?
   cmd = (function()
@@ -37,21 +38,9 @@ local Finder = {
     local cache
     return function()
       if not cache then
-        for _, candidate in ipairs(candidates) do
-          if vim.system then
-            if pcall(vim.system, { candidate[1], "--version" }) then
-              cache = candidate
-              break
-            end
-          elseif
-            pcall(function()
-              Job:new { command = candidate[1], args = { "--version" } }
-            end)
-          then
-            cache = candidate
-            break
-          end
-        end
+        cache = vim.iter(candidates):find(function(candidate)
+          return pcall(vim.system, { candidate[1], "--version" })
+        end)
       end
       return cache
     end
@@ -81,6 +70,7 @@ Finder.new = function(database, entry_maker, need_scandir, paths, state, finder_
     paths = paths,
     process = {},
     state = state,
+    sorter = Sorter.new(),
 
     seen = {},
     entries = {},
@@ -99,9 +89,10 @@ Finder.new = function(database, entry_maker, need_scandir, paths, state, finder_
     end,
   })
   if self.config.ignore_filenames then
-    for _, name in ipairs(self.config.ignore_filenames or {}) do
-      self.seen[name] = true
-    end
+    self.seen = vim.iter(self.config.ignore_filenames):fold({}, function(a, b)
+      a[b] = true
+      return a
+    end)
   end
   return self
 end
@@ -115,10 +106,10 @@ function Finder:start(epoch)
     local cmd = config.workspace_scan_cmd --[=[@as string[]]=]
       or Finder.cmd()
     if cmd then
-      for _, path in ipairs(self.paths) do
+      vim.iter(self.paths):each(function(path)
         log.debug(("scan_dir_cmd: %s: %s"):format(vim.inspect(cmd), path))
         results[path] = self:scan_dir_cmd(path, cmd)
-      end
+      end)
     end
   end
   async.void(function()
@@ -131,13 +122,16 @@ function Finder:start(epoch)
     end
     self.tx.send(nil)
     if self.need_scan_dir then
-      for _, path in pairs(self.paths) do
-        if not results[path] then
+      vim
+        .iter(self.paths)
+        :filter(function(path)
+          return not results[path]
+        end)
+        :each(function(path)
           log.debug("scan_dir_lua: " .. path)
           async.util.scheduler()
           self:scan_dir_lua(path)
-        end
-      end
+        end)
     end
   end)()
 end
@@ -159,51 +153,23 @@ function Finder:scan_dir_cmd(path, cmd)
 
   local function on_exit()
     self.process[path] = { done = true }
-    local done_all = true
-    for _, p in ipairs(self.paths) do
-      if not self.process[p] or not self.process[p].done then
-        done_all = false
-        break
-      end
-    end
-    if done_all then
+    local processing = vim.iter(self.paths):any(function(p)
+      return not self.process[p] or not self.process[p].done
+    end)
+    if not processing then
       self:close()
       self.scan_tx.send(nil)
     end
   end
 
-  local ok, process
-  if vim.system then
-    ---@diagnostic disable-next-line: assign-type-mismatch
-    ok, process = pcall(vim.system, cmd, {
-      cwd = path,
-      text = true,
-      stdout = stdout,
-    }, on_exit)
-  else
-    -- for Neovim v0.9.x
-    ok, process = pcall(function()
-      local args = {}
-      for i, arg in ipairs(cmd) do
-        if i > 1 then
-          table.insert(args, arg)
-        end
-      end
-      log.debug { cmd = cmd[1], args = args }
-      local job = Job:new {
-        cwd = path,
-        command = cmd[1],
-        args = args,
-        on_stdout = stdout,
-        on_exit = on_exit,
-      }
-      job:start()
-      return job.handle
-    end)
-  end
+  local ok, process = pcall(vim.system, cmd, {
+    cwd = path,
+    text = true,
+    stdout = stdout,
+  }, on_exit)
   if ok then
     self.process[path] = {
-      obj = process --[[@as VimSystemObj]],
+      obj = process,
       done = false,
     }
   end
@@ -315,11 +281,9 @@ function Finder:get_results(workspaces, epoch)
   end
   timer.track "making results"
 
-  table.sort(files, function(a, b)
-    return a.score > b.score or (a.score == b.score and a.path > b.path)
-  end)
+  local sorted = self.sorter:sort(files)
   timer.track "sorting finish"
-  return files
+  return sorted
 end
 
 function Finder:close()

@@ -126,10 +126,13 @@ function Picker:complete(findstart, base)
   elseif vim.fn.pumvisible() == 1 and #vim.v.completed_item > 0 then
     return ""
   end
-  ---@param v string
-  local matches = vim.tbl_filter(function(v)
-    return vim.startswith(v, base)
-  end, self:workspace_tags())
+  local matches = vim
+    .iter(self:workspace_tags())
+    ---@param v string
+    :filter(function(v)
+      return vim.startswith(v, base)
+    end)
+    :totable()
   return #matches > 0 and matches or ""
 end
 
@@ -217,6 +220,16 @@ function Picker:on_input_filter_cb(picker_opts)
       end
     end
 
+    ---@generic T
+    ---@param list T[]
+    ---@return table<T, boolean>
+    local function list_to_map(list)
+      return vim.iter(list):fold({}, function(a, b)
+        a[b] = true
+        return a
+      end)
+    end
+
     ---@param a? string[]
     ---@param b? string[]
     ---@return boolean
@@ -224,20 +237,10 @@ function Picker:on_input_filter_cb(picker_opts)
       if not a or not b or #a ~= #b then
         return false
       end
-      local function list_to_map(list)
-        local tmp = {}
-        for _, v in ipairs(list) do
-          tmp[v] = true
-        end
-        return tmp
-      end
       local a_map, b_map = list_to_map(a), list_to_map(b)
-      for _, v in ipairs(a_map) do
-        if not b_map[v] then
-          return false
-        end
-      end
-      return true
+      return vim.iter(a_map):all(function(k, _)
+        return b_map[k]
+      end)
     end
 
     if not same_workspaces(self.workspaces, workspaces) then
@@ -283,11 +286,12 @@ end
 function Picker:filepath_formatter(picker_opts)
   ---@param workspace string?
   return function(workspace)
-    local opts = {}
-    for k, v in pairs(picker_opts) do
-      opts[k] = v
-    end
-    opts.cwd = workspace or fs.os_homedir
+    local opts = vim.iter(picker_opts):fold({ cwd = workspace or fs.os_homedir }, function(a, k, v)
+      if k ~= "cwd" then
+        a[k] = v
+      end
+      return a
+    end)
 
     return function(filename)
       return utils.transform_path(opts, filename)
