@@ -8,10 +8,12 @@ local Opened = setmetatable({}, { __index = Default })
 ---@return FrecencySorterOpened
 Opened.new = function()
   local self = setmetatable(Default.new(), { __index = Opened }) --[[@as FrecencySorterOpened]]
-  self.buffers = vim.tbl_map(vim.api.nvim_buf_get_name, vim.api.nvim_list_bufs())
+  self.buffers = vim.api.nvim_list_bufs()
   self.buffers_map = {}
-  for _, buffer in ipairs(self.buffers) do
-    self.buffers_map[buffer] = true
+  for _, h in ipairs(self.buffers) do
+    local buffer_name = vim.api.nvim_buf_get_name(h)
+    local is_loaded = vim.api.nvim_buf_is_loaded(h)
+    self.buffers_map[buffer_name] = is_loaded
   end
   return self
 end
