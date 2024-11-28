@@ -9,9 +9,11 @@ local SameRepo = setmetatable({}, { __index = Opened })
 SameRepo.new = function()
   local self = setmetatable(Opened.new(), { __index = SameRepo }) --[[@as FrecencySorterSameRepo]]
   self.repos = {}
-  for _, buf in ipairs(self.buffers) do
-    local repo = vim.fs.root(buf, ".git")
-    if repo then
+  for _, h in ipairs(self.buffers) do
+    local buffer_name = vim.api.nvim_buf_get_name(h)
+    local is_loaded = vim.api.nvim_buf_is_loaded(h)
+    local repo = vim.fs.root(buffer_name, ".git")
+    if repo and is_loaded then
       table.insert(self.repos, repo)
     end
   end
