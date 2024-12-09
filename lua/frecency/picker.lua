@@ -3,8 +3,8 @@ local State = require "frecency.state"
 local Finder = require "frecency.finder"
 local config = require "frecency.config"
 local fs = require "frecency.fs"
-local fuzzy_sorter = require "frecency.fuzzy_sorter"
-local substr_sorter = require "frecency.substr_sorter"
+local fuzzy_matcher = require "frecency.fuzzy_matcher"
+local substr_matcher = require "frecency.substr_matcher"
 local lazy_require = require "frecency.lazy_require"
 local Path = lazy_require "plenary.path" --[[@as FrecencyPlenaryPath]]
 local actions = lazy_require "telescope.actions"
@@ -98,7 +98,7 @@ function Picker:start(opts)
     prompt_title = "Frecency",
     finder = finder,
     previewer = telescope_config.values.file_previewer(opts),
-    sorter = config.matcher == "default" and substr_sorter() or fuzzy_sorter(opts),
+    sorter = config.matcher == "default" and substr_matcher() or fuzzy_matcher(opts),
     on_input_filter_cb = self:on_input_filter_cb(opts),
     attach_mappings = function(prompt_bufnr)
       return self:attach_mappings(prompt_bufnr)
