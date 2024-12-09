@@ -173,7 +173,7 @@ end
 ---@return nil
 Config.setup = function(ext_config)
   local opts = vim.tbl_extend("force", Config.default_values, ext_config or {})
-  if vim.version().minor >= 11 then
+  if vim.fn.has "nvim-0.11" == 1 then
     vim.validate("recency_values", opts.recency_values, "table")
     vim.validate("auto_validate", opts.auto_validate, "boolean")
     vim.validate("bootstrap", opts.bootstrap, "boolean")

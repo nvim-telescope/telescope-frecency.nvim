@@ -8,7 +8,7 @@ return require("telescope").register_extension {
   },
   setup = frecency.setup,
   health = function()
-    if vim.version().minor >= 10 then
+    if vim.fn.has "nvim-0.10" == 1 then
       vim.health.ok "Neovim version is 0.10 or higher."
     else
       vim.health.error "Neovim version must be 0.10 or higher."
