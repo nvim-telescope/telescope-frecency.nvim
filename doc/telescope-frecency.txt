@@ -625,6 +625,21 @@ these priorities below.
       },
     }
 <
+				    *telescope-frecency-configuration-preceding*
+preceding ~
+
+Default: `nil`
+Type: `"opened"|"same_repo"`
+
+You can precede entries related to already opened ones. `"opened"` means that it
+precedes opened entries above other ones. `"same_repo"` means that it precedes
+entries coming under the same repositories opened entries does.
+
+Real world example is described in the PR below.
+
+feat: precede opened or related buffers by delphinus · Pull Request #274
+https://github.com/nvim-telescope/telescope-frecency.nvim/pull/274
+
 			       *telescope-frecency-configuration-recency_values*
 recency_values ~
 
