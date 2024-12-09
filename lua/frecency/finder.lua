@@ -5,6 +5,7 @@ local recency = require "frecency.recency"
 local log = require "frecency.log"
 local timer = require "frecency.timer"
 local lazy_require = require "frecency.lazy_require"
+local Sorter = require "frecency.sorter"
 local Job = lazy_require "plenary.job" --[[@as FrecencyPlenaryJob]]
 local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 
@@ -25,6 +26,7 @@ local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 ---@field private seen table<string, boolean>
 ---@field private process table<string, { obj: VimSystemObj, done: boolean }>
 ---@field private state FrecencyState
+---@field private sorter FrecencySorter
 local Finder = {
   ---@type fun(): string[]?
   cmd = (function()
@@ -81,6 +83,7 @@ Finder.new = function(database, entry_maker, need_scandir, paths, state, finder_
     paths = paths,
     process = {},
     state = state,
+    sorter = Sorter.new(),
 
     seen = {},
     entries = {},
@@ -315,11 +318,9 @@ function Finder:get_results(workspaces, epoch)
   end
   timer.track "making results"
 
-  table.sort(files, function(a, b)
-    return a.score > b.score or (a.score == b.score and a.path > b.path)
-  end)
+  local sorted = self.sorter:sort(files)
   timer.track "sorting finish"
-  return files
+  return sorted
 end
 
 function Finder:close()
