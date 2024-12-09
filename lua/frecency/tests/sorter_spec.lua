@@ -76,11 +76,11 @@ describe("frecency.sorter", function()
       end
       ---@diagnostic disable-next-line: duplicate-set-field
       vim.api.nvim_buf_get_name = function(bufnr)
-        return ({ "/path/to/project_A/image.jpg", "/path/to/project_B/Makefile" })[bufnr]
+        return ({ "/path/to/project_A/image.jpg", "/path/to/project_B/Makefile", "/path/to/project_A/index.html" })[bufnr]
       end
       ---@diagnostic disable-next-line: duplicate-set-field
       vim.api.nvim_buf_is_loaded = function(bufnr)
-        return ({ true, true })[bufnr]
+        return ({ true, true, false })[bufnr]
       end
       ---@diagnostic disable-next-line: duplicate-set-field
       vim.fs.root = function(path, _)
