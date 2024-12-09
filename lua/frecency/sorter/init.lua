@@ -7,4 +7,10 @@ local SameRepo = require "frecency.sorter.same_repo"
 ---@field new fun(): FrecencySorter
 ---@field sort fun(self: FrecencySorter, files: FrecencyDatabaseEntry[]): FrecencyDatabaseEntry[]
 
-return config.preceding == "opened" and Opened or config.preceding == "same_repo" and SameRepo or Default
+return {
+  ---@return FrecencySorter
+  new = function()
+    local Klass = config.preceding == "opened" and Opened or config.preceding == "same_repo" and SameRepo or Default
+    return Klass.new()
+  end,
+}
