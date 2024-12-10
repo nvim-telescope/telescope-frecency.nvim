@@ -226,19 +226,26 @@ function Frecency:query(opts, epoch)
   local workspaces = type(opts.workspace) == "table" and opts.workspace
     or type(opts.workspace) == "string" and { opts.workspace }
     or nil
-  ---@param entry FrecencyDatabaseEntry
-  local entries = vim.tbl_map(function(entry)
-    return {
-      count = entry.count,
-      path = entry.path,
-      score = entry.ages and recency.calculate(entry.count, entry.ages) or 0,
-      timestamps = entry.timestamps,
-    }
-  end, self.database:get_entries(workspaces, epoch))
+  local entries = vim
+    .iter(self.database:get_entries(workspaces, epoch))
+    ---@param entry FrecencyDatabaseEntry
+    :map(function(entry)
+      return {
+        count = entry.count,
+        path = entry.path,
+        score = entry.ages and recency.calculate(entry.count, entry.ages) or 0,
+        timestamps = entry.timestamps,
+      }
+    end)
+    :totable()
   table.sort(entries, self:query_sorter(opts.order, opts.direction))
-  local results = opts.record and entries or vim.tbl_map(function(entry)
-    return entry.path
-  end, entries)
+  local results = opts.record and entries
+    or vim
+      .iter(entries)
+      :map(function(entry)
+        return entry.path
+      end)
+      :totable()
   if #results > opts.limit then
     results = vim.list_slice(results, 1, opts.limit)
   end
@@ -249,7 +256,7 @@ end
 ---@param order FrecencyQueryOrder
 ---@param direction FrecencyQueryDirection
 ---@return fun(a: FrecencyQueryEntry, b: FrecencyQueryEntry): boolean
-function Frecency:query_sorter(order, direction)
+function Frecency.query_sorter(_, order, direction)
   local is_asc = direction == "asc"
   if order == "count" then
     if is_asc then
@@ -296,7 +303,7 @@ end
 ---@param fmt string
 ---@param ...? any
 ---@return string
-function Frecency:message(fmt, ...)
+function Frecency.message(_, fmt, ...)
   return ("[Telescope-Frecency] " .. fmt):format(unpack { ... })
 end
 

@@ -126,19 +126,18 @@ end
 ---@async
 ---@return string[]
 function Database:unlinked_entries()
-  -- HACK: async.util.join() does not work with empty table. So when the table
-  -- has no entries, return early.
-  -- TODO: This is fixed in https://github.com/nvim-lua/plenary.nvim/pull/616
-  local paths = vim.tbl_keys(self.tbl.records)
-  return #paths == 0 and {}
-    or vim.tbl_flatten(async.util.join(vim.tbl_map(function(path)
+  local threads = vim
+    .iter(self.tbl.records)
+    :map(function(path, _)
       return function()
         local err, realpath = async.uv.fs_realpath(path)
         if err or not realpath or realpath ~= path or fs.is_ignored(realpath) then
           return path
         end
       end
-    end, paths)))
+    end)
+    :totable()
+  return vim.iter(async.util.join(threads)):flatten():totable()
 end
 
 ---@async
@@ -159,11 +158,7 @@ function Database:update(path, epoch)
   local now = epoch or os.time()
   table.insert(record.timestamps, now)
   if #record.timestamps > config.max_timestamps then
-    local new_table = {}
-    for i = #record.timestamps - config.max_timestamps + 1, #record.timestamps do
-      table.insert(new_table, record.timestamps[i])
-    end
-    record.timestamps = new_table
+    record.timestamps = vim.iter(record.timestamps):skip(#record.timestamps - config.max_timestamps):totable()
   end
   self.tbl.records[path] = record
   self.watcher_tx.send "save"
@@ -175,33 +170,28 @@ end
 ---@return FrecencyDatabaseEntry[]
 function Database:get_entries(workspaces, epoch)
   local now = epoch or os.time()
-  ---@param path string
-  ---@return boolean
-  local function in_workspace(path)
-    if not workspaces then
-      return true
-    end
-    for _, workspace in ipairs(workspaces) do
-      if fs.starts_with(path, workspace) then
-        return true
-      end
-    end
-    return false
-  end
-  local items = {}
-  for path, record in pairs(self.tbl.records) do
-    if in_workspace(path) then
-      table.insert(items, {
+  return vim
+    .iter(self.tbl.records)
+    :filter(function(path, _)
+      return not workspaces
+        or vim.iter(workspaces):any(function(workspace)
+          return fs.starts_with(path, workspace)
+        end)
+    end)
+    :map(function(path, record)
+      return {
         path = path,
         count = record.count,
-        ages = vim.tbl_map(function(v)
-          return (now - v) / 60
-        end, record.timestamps),
+        ages = vim
+          .iter(record.timestamps)
+          :map(function(timestamp)
+            return (now - timestamp) / 60
+          end)
+          :totable(),
         timestamps = record.timestamps,
-      })
-    end
-  end
-  return items
+      }
+    end)
+    :totable()
 end
 
 ---@async

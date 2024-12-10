@@ -8,13 +8,12 @@ local SameRepo = setmetatable({}, { __index = Opened })
 ---@return FrecencySorterSameRepo
 SameRepo.new = function()
   local self = setmetatable(Opened.new(), { __index = SameRepo }) --[[@as FrecencySorterSameRepo]]
-  self.repos = {}
-  for _, buffer in ipairs(self.buffers) do
-    local repo = vim.fs.root(buffer, ".git")
-    if repo then
-      table.insert(self.repos, repo)
-    end
-  end
+  self.repos = vim
+    .iter(self.buffers)
+    :map(function(buffer)
+      return vim.fs.root(buffer, ".git")
+    end)
+    :totable()
   return self
 end
 
@@ -26,13 +25,9 @@ function SameRepo:sort(files)
   ---@type FrecencyDatabaseEntry[], FrecencyDatabaseEntry[]
   local result, others = {}, {}
   for _, entry in ipairs(sorted) do
-    local matched
-    for _, repo in ipairs(self.repos) do
-      matched = not not entry.path:find(repo, 1, true)
-      if matched then
-        break
-      end
-    end
+    local matched = vim.iter(self.repos):find(function(repo)
+      return not not entry.path:find(repo, 1, true)
+    end)
     table.insert(matched and result or others, entry)
   end
   for _, entry in ipairs(others) do

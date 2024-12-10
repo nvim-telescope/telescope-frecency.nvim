@@ -126,10 +126,13 @@ function Picker:complete(findstart, base)
   elseif vim.fn.pumvisible() == 1 and #vim.v.completed_item > 0 then
     return ""
   end
-  ---@param v string
-  local matches = vim.tbl_filter(function(v)
-    return vim.startswith(v, base)
-  end, self:workspace_tags())
+  local matches = vim
+    .iter(self:workspace_tags())
+    ---@param v string
+    :filter(function(v)
+      return vim.startswith(v, base)
+    end)
+    :totable()
   return #matches > 0 and matches or ""
 end
 
@@ -221,23 +224,22 @@ function Picker:on_input_filter_cb(picker_opts)
     ---@param b? string[]
     ---@return boolean
     local function same_workspaces(a, b)
+      if not a and not b then
+        return true
+      end
       if not a or not b or #a ~= #b then
         return false
       end
-      local function list_to_map(list)
-        local tmp = {}
-        for _, v in ipairs(list) do
-          tmp[v] = true
-        end
-        return tmp
+      if #a == 0 then
+        return true
       end
-      local a_map, b_map = list_to_map(a), list_to_map(b)
-      for _, v in ipairs(a_map) do
-        if not b_map[v] then
-          return false
-        end
-      end
-      return true
+      local b_map = vim.iter(b):fold({}, function(m, workspace)
+        m[workspace] = true
+        return m
+      end)
+      return vim.iter(a):all(function(workspace)
+        return b_map[workspace]
+      end)
     end
 
     if not same_workspaces(self.workspaces, workspaces) then
@@ -283,11 +285,12 @@ end
 function Picker:filepath_formatter(picker_opts)
   ---@param workspace string?
   return function(workspace)
-    local opts = {}
-    for k, v in pairs(picker_opts) do
-      opts[k] = v
-    end
-    opts.cwd = workspace or fs.os_homedir
+    local opts = vim.iter(picker_opts):fold({ cwd = workspace or fs.os_homedir }, function(a, k, v)
+      if k ~= "cwd" then
+        a[k] = v
+      end
+      return a
+    end)
 
     return function(filename)
       return utils.transform_path(opts, filename)
