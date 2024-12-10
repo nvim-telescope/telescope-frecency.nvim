@@ -32,16 +32,22 @@ end
 ---@return string
 function M.pp()
   local times = require("lazy.stats")._stats.times
-  local result = vim.tbl_map(function(k)
-    return { event = k, t = times[k] }
-  end, vim.tbl_keys(times))
+  local result = vim
+    .iter(times)
+    :map(function(event, t)
+      return { event = event, t = t }
+    end)
+    :totable()
   table.sort(result, function(a, b)
     return a.t < b.t
   end)
   return table.concat(
-    vim.tbl_map(function(r)
-      return ("%8.3f : %s"):format(r.t, r.event)
-    end, result),
+    vim
+      .iter(result)
+      :map(function(r)
+        return ("%8.3f : %s"):format(r.t, r.event)
+      end)
+      :totable(),
     "\n"
   )
 end

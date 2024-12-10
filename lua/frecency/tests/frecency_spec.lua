@@ -183,10 +183,13 @@ describe("frecency", function()
             register(file, make_epoch "2023-07-29T00:00:00+09:00")
             log.new({}, true)
           end
-          local results = vim.tbl_map(function(result)
-            result.timestamps = nil
-            return result
-          end, finder:get_results(nil, make_epoch "2023-07-29T00:01:00+09:00"))
+          local results = vim
+            .iter(finder:get_results(nil, make_epoch "2023-07-29T00:01:00+09:00"))
+            :map(function(result)
+              result.timestamps = nil
+              return result
+            end)
+            :totable()
           table.sort(results, function(a, b)
             return a.path < b.path
           end)

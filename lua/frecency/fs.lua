@@ -18,12 +18,9 @@ local SCAN_DEPTH = 100
 ---@param path string
 ---@return boolean
 function M.is_ignored(path)
-  for _, regex in ipairs(config.ignore_regexes()) do
-    if path:find(regex) then
-      return true
-    end
-  end
-  return false
+  return vim.iter(config.ignore_regexes()):any(function(regex)
+    return not not path:find(regex)
+  end)
 end
 
 ---@async
