@@ -158,10 +158,13 @@ end
 ---@return string[]
 Config.ignore_regexes = function()
   if not config.cached_ignore_regexes then
-    config.cached_ignore_regexes = vim.tbl_map(function(pattern)
-      local regex = vim.pesc(pattern):gsub("%%%*", ".*"):gsub("%%%?", ".")
-      return "^" .. regex .. "$"
-    end, config.ignore_patterns)
+    config.cached_ignore_regexes = vim
+      .iter(config.ignore_patterns)
+      :map(function(pattern)
+        local regex = vim.pesc(pattern):gsub("%%%*", ".*"):gsub("%%%?", ".")
+        return "^" .. regex .. "$"
+      end)
+      :totable()
   end
   return config.cached_ignore_regexes
 end
@@ -170,47 +173,78 @@ end
 ---@return nil
 Config.setup = function(ext_config)
   local opts = vim.tbl_extend("force", Config.default_values, ext_config or {})
-  vim.validate {
-    recency_values = { opts.recency_values, "t" },
-    auto_validate = { opts.auto_validate, "b" },
-    bootstrap = { opts.bootstrap, "b" },
-    db_root = { opts.db_root, "s" },
-    db_safe_mode = { opts.db_safe_mode, "b" },
-    db_validate_threshold = { opts.db_validate_threshold, "n" },
-    debug = { opts.debug, "b" },
-    default_workspace = { opts.default_workspace, "s", true },
-    disable_devicons = { opts.disable_devicons, "b" },
-    enable_prompt_mappings = { opts.enable_prompt_mappings, "b" },
-    filter_delimiter = { opts.filter_delimiter, "s" },
-    hide_current_buffer = { opts.hide_current_buffer, "b" },
-    ignore_patterns = { opts.ignore_patterns, "t" },
-    matcher = {
-      opts.matcher,
-      function(v)
-        return type(v) == "string" and (v == "default" or v == "fuzzy")
-      end,
-      '"default" or "fuzzy"',
-    },
-    max_timestamps = {
-      opts.max_timestamps,
-      function(v)
-        return type(v) == "number" and v > 0
-      end,
-      "positive number",
-    },
-    preceding = {
-      opts.preceding,
-      function(v)
-        return v == "opened" or v == "same_repo" or v == nil
-      end,
-      '"opened" or "same_repo" or nil',
-    },
-    show_filter_column = { opts.show_filter_column, { "b", "t" }, true },
-    show_scores = { opts.show_scores, "b" },
-    show_unindexed = { opts.show_unindexed, "b" },
-    workspace_scan_cmd = { opts.workspace_scan_cmd, { "s", "t" }, true },
-    workspaces = { opts.workspaces, "t" },
-  }
+  if vim.fn.has "nvim-0.11" == 1 then
+    vim.validate("recency_values", opts.recency_values, "table")
+    vim.validate("auto_validate", opts.auto_validate, "boolean")
+    vim.validate("bootstrap", opts.bootstrap, "boolean")
+    vim.validate("db_root", opts.db_root, "string")
+    vim.validate("db_safe_mode", opts.db_safe_mode, "boolean")
+    vim.validate("db_validate_threshold", opts.db_validate_threshold, "number")
+    vim.validate("debug", opts.debug, "boolean")
+    vim.validate("default_workspace", opts.default_workspace, "string", true)
+    vim.validate("disable_devicons", opts.disable_devicons, "boolean")
+    vim.validate("enable_prompt_mappings", opts.enable_prompt_mappings, "boolean")
+    vim.validate("filter_delimiter", opts.filter_delimiter, "string")
+    vim.validate("hide_current_buffer", opts.hide_current_buffer, "boolean")
+    vim.validate("ignore_patterns", opts.ignore_patterns, "table")
+    vim.validate("matcher", opts.matcher, function(v)
+      return type(v) == "string" and (v == "default" or v == "fuzzy")
+    end, '"default" or "fuzzy"')
+    vim.validate("max_timestamps", opts.max_timestamps, function(v)
+      return type(v) == "number" and v > 0
+    end, "positive number")
+    vim.validate("preceding", opts.preceding, function(v)
+      return v == "opened" or v == "same_repo" or v == nil
+    end, '"opened" or "same_repo" or nil')
+    vim.validate("show_filter_column", opts.show_filter_column, { "boolean", "table" }, true)
+    vim.validate("show_scores", opts.show_scores, "boolean")
+    vim.validate("show_unindexed", opts.show_unindexed, "boolean")
+    vim.validate("workspace_scan_cmd", opts.workspace_scan_cmd, { "string", "table" }, true)
+    vim.validate("workspaces", opts.workspaces, "table")
+  else
+    -- TODO: remove this for deprecating 0.10 in the future
+    vim.validate {
+      recency_values = { opts.recency_values, "t" },
+      auto_validate = { opts.auto_validate, "b" },
+      bootstrap = { opts.bootstrap, "b" },
+      db_root = { opts.db_root, "s" },
+      db_safe_mode = { opts.db_safe_mode, "b" },
+      db_validate_threshold = { opts.db_validate_threshold, "n" },
+      debug = { opts.debug, "b" },
+      default_workspace = { opts.default_workspace, "s", true },
+      disable_devicons = { opts.disable_devicons, "b" },
+      enable_prompt_mappings = { opts.enable_prompt_mappings, "b" },
+      filter_delimiter = { opts.filter_delimiter, "s" },
+      hide_current_buffer = { opts.hide_current_buffer, "b" },
+      ignore_patterns = { opts.ignore_patterns, "t" },
+      matcher = {
+        opts.matcher,
+        function(v)
+          return type(v) == "string" and (v == "default" or v == "fuzzy")
+        end,
+        '"default" or "fuzzy"',
+      },
+      max_timestamps = {
+        opts.max_timestamps,
+        function(v)
+          return type(v) == "number" and v > 0
+        end,
+        "positive number",
+      },
+      preceding = {
+        opts.preceding,
+        function(v)
+          return v == "opened" or v == "same_repo" or v == nil
+        end,
+        '"opened" or "same_repo" or nil',
+      },
+      show_filter_column = { opts.show_filter_column, { "b", "t" }, true },
+      show_scores = { opts.show_scores, "b" },
+      show_unindexed = { opts.show_unindexed, "b" },
+      workspace_scan_cmd = { opts.workspace_scan_cmd, { "s", "t" }, true },
+      workspaces = { opts.workspaces, "t" },
+    }
+  end
   config.cached_ignore_regexes = nil
   config.ext_config = ext_config
   config.values = opts
