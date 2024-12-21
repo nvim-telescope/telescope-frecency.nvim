@@ -53,7 +53,7 @@ directories provided by the language server.
 ## Requirements
 
 * Neovim v0.10.0 or higher
-    * Use `0.9.0` tag for Neovim 0.9.x (See [Notice for versioning](#notice-for-versioning)).
+    * Use `^0.9.0` tag for Neovim 0.9.x (See [Notice for versioning](#notice-for-versioning)).
 - [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) **(required)**
 - [nvim-web-devicons](https://github.com/kyazdani42/nvim-web-devicons) (optional)
 - [fd](https://github.com/sharkdp/fd) or [ripgrep](https://github.com/BurntSushi/ripgrep) (optional)
@@ -82,7 +82,7 @@ See `:h telescope-frecency-configuration` to know about further configurations.
 ### Notice for versioning
 
 A tagged release `1.0.0` is published and it drops the support for Neovim 0.9.x.
-If you are still using Neovim 0.9.x, use `0.9.0` tag for your favorite plugin
+If you are still using Neovim 0.9.x, use `^0.9.0` tag for your favorite plugin
 manager.
 
 ```lua
