@@ -109,6 +109,9 @@ You can define other workspace tags by an option:
 ==============================================================================
 REQUIREMENTS				       *telescope-frecency-requirements*
 
+- Neovim 0.10.0 or higher
+  - Use `^0.9.0` tag for Neovim 0.9.x (See
+    |telescope-frecency-installation-versioning|)
 - |telescope.nvim| (required)
   https://github.com/nvim-telescope/telescope.nvim
 - nvim-web-devicons (optional)
@@ -133,6 +136,8 @@ lazy.nvim: https://github.com/folke/lazy.nvim
     -- for lazy.nvim
     {
       "nvim-telescope/telescope-frecency.nvim",
+      -- install the latest stable version
+      version = "*",
       config = function()
         require("telescope").load_extension "frecency"
       end,
@@ -145,6 +150,22 @@ imported.
 NOTE: Even if you want to load |telescope.nvim| lazily, you should NOT load
 telescope-frecency.nvim lazily. See |telescope-frecency-function-setup|.
 
+------------------------------------------------------------------------------
+Notice for versioning		    *telescope-frecency-installation-versioning*
+
+A tagged release `1.0.0` is published and it drops the support for Neovim
+0.9.x. If you are still using Neovim 0.9.x, use `^0.9.0` tag for your favorite
+plugin manager.
+>lua
+    -- for lazy.nvim
+    {
+      "nvim-telescope/telescope-frecency.nvim",
+      -- install any compatible version of 0.9.x
+      version = "^0.9.0",
+      config = function()
+        require("telescope").load_extension "frecency"
+      end,
+    }
 
 ==============================================================================
 USAGE						      *telescope-frecency-usage*

@@ -50,9 +50,10 @@ If the active buffer (prior to the finder being launched) is attached to an LSP
 server, an automatic `LSP` tag is available, which maps to the workspace
 directories provided by the language server.
 
-
 ## Requirements
 
+* Neovim v0.10.0 or higher
+    * Use `^0.9.0` tag for Neovim 0.9.x (See [Notice for versioning](#notice-for-versioning)).
 - [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) **(required)**
 - [nvim-web-devicons](https://github.com/kyazdani42/nvim-web-devicons) (optional)
 - [fd](https://github.com/sharkdp/fd) or [ripgrep](https://github.com/BurntSushi/ripgrep) (optional)
@@ -68,6 +69,8 @@ This is an example for [Lazy.nvim](https://github.com/folke/lazy.nvim).
 ```lua
 {
   "nvim-telescope/telescope-frecency.nvim",
+  -- install the latest stable version
+  version = "*",
   config = function()
     require("telescope").load_extension "frecency"
   end,
@@ -75,6 +78,23 @@ This is an example for [Lazy.nvim](https://github.com/folke/lazy.nvim).
 ```
 
 See `:h telescope-frecency-configuration` to know about further configurations.
+
+### Notice for versioning
+
+A tagged release `1.0.0` is published and it drops the support for Neovim 0.9.x.
+If you are still using Neovim 0.9.x, use `^0.9.0` tag for your favorite plugin
+manager.
+
+```lua
+{
+  "nvim-telescope/telescope-frecency.nvim",
+  -- install any compatible version of 0.9.x
+  version = "^0.9.0",
+  config = function()
+    require("telescope").load_extension "frecency"
+  end,
+}
+```
 
 ## Usage
 

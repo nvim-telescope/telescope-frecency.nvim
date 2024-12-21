@@ -7,16 +7,12 @@ local M = {}
 ---@param ages number[]
 ---@return number
 function M.calculate(count, ages)
-  local score = 0
-  for _, age in ipairs(ages) do
-    for _, rank in ipairs(config.recency_values) do
-      if age <= rank.age then
-        score = score + rank.value
-        goto continue
-      end
-    end
-    ::continue::
-  end
+  local score = vim.iter(ages):fold(0, function(a, age)
+    local matched = vim.iter(config.recency_values):find(function(rank)
+      return age <= rank.age
+    end)
+    return a + (matched and matched.value or 0)
+  end)
   return count * score / config.max_timestamps
 end
 
