@@ -791,7 +791,7 @@ Maintenance			       *telescope-frecency-database-maintenance*
 By default, this plugin will prune files that no longer exist from the
 database. In certain workflows, switching branches in a repository, that
 behavior might not be desired. The following configuration control this
-behavior.
+behavior. 
 
 - `db_safe_mode
   When this is enabled, the user will be prompted before any entries are
