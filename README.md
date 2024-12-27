@@ -34,7 +34,8 @@ Frecency tackles this with *Workspace Filters*:
 The workspace filter feature enables you to select from user defined _filter
 tags_ that map to a directory or collection of directories. Filters are applied
 by entering `:workspace_tag:` anywhere in the query. You can complete names by
-pressing `<Tab>` after the first `:` character (in default setting).
+pressing `<Tab>` after the first `:` character (the case when
+`enable_prompt_mappings = true`).
 
 When a filter is applied, results are reduced to entries whose path is a
 descendant of the workspace directories. The indexed results are optionally
@@ -108,7 +109,7 @@ manager.
 
 Filter tags are applied by typing the `:tag:` name (adding surrounding colons)
 in the finder query. Entering `:<Tab>` will trigger omni completion for
-available tags (in default setting).
+available tags (the case when `enabled_prompt_mappings = true`).
 
 ## References
 
