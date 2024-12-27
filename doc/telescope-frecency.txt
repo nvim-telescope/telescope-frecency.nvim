@@ -222,7 +222,7 @@ Combining results outside this plugin
 
 You can use frecency entries even outside this plugin with
 |telescope-frecency-function-query|. For example, you can search any input
-string within filenames in frecency results.
+string within files in frecency results.
 >lua
     vim.keymap.set("n", "<Leader>tg", function()
       local frecency = require("telescope").extensions.frecency
@@ -313,23 +313,23 @@ plugin. See |telescope-frecency-combining-results-outside-this-plugin|.
 
 Options:			     *telescope-frecency-function-query-options*
 			   *telescope-frecency-function-query-options-direction*
-  - `direction`	Default: `"desc"
-		`Type: `"asc"|"desc"`
+  - `direction`	Default: `"desc"`
+		Type: `"asc"|"desc"`
 		This specifies the order direction for results.
 			       *telescope-frecency-function-query-options-limit*
-  - `limit`	Default: `100
-		`Type: `integer`
+  - `limit`	Default: `100`
+		Type: `integer`
 		This limits the number of results.
 			       *telescope-frecency-function-query-options-order*
-  - `order`	Default: `"score"
-		`Type: `"count"|"path"|"score"|"timestamps"`
+  - `order`	Default: `"score"`
+		Type: `"count"|"path"|"score"|"timestamps"`
 		This is used to sort results with their properties. With
 		`"count"`, `"score"` and `"timestamps"`, when candidates have the
 		same value, they will be sorted by `"path"` always in ascending
 		order. With `"path"`, the order direction differs by the value
 		of `direction`.
 			      *telescope-frecency-function-query-options-record*
-  - `record`	Default: `false
+  - `record`	Default: `false`
 		Type: `boolean`
 		If `false`, it returns results containing filenames with
 		absolute paths. If `true`, it contains tables with this
@@ -340,8 +340,8 @@ Options:			     *telescope-frecency-function-query-options*
 		`score`: Recency score to be used in frecency picker.
 		`timestamps`: UNIX timestamps that the file has been opened at.
 			   *telescope-frecency-function-query-options-workspace*
-  - `workspace`	`Default: `nil`
-		Type: `string?
+  - `workspace`	Default: `nil`
+		Type: `string?`
 		This applies |telescope-frecency-introduction-workspace-filter|
 		into query results. You can limit candidates to ones that
 		exist below the directory specified this value. See also
@@ -354,9 +354,10 @@ This will be called by |telescope.nvim| for its initialization. You can also
 call this to initialize this plugin separated from |telescope.nvim|'s
 initialization phase.
 
-This is useful when you want to load |telescope.nvim| lazily and want to
-register opened files as soon as Neovim has started. Example configuration for
-|lazy.nvim| is below.
+This is useful when you want to load |telescope.nvim| lazily, but to load
+this plugin non-lazily (recommended way). If you load this plugin lazily,
+opened buffers at the same time in Neovim launching will not registered
+into DB. Example configuration for |lazy.nvim| is below.
 >lua
     {
       "nvim-telescope/telescope-frecency.nvim",
@@ -516,7 +517,7 @@ disable_devicons ~
 Default: `false`
 Type: `boolean`
 
-Disable devicons (if available).
+If `false` (the default value), it uses icons from nvim-web-devicons.
 
 		       *telescope-frecency-configuration-enable_prompt_mappings*
 enable_prompt_mappings ~
