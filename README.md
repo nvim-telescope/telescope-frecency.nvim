@@ -113,4 +113,4 @@ available tags (the case when `enabled_prompt_mappings = true`).
 
 ## References
 
-- [Mozilla: Frecency algorithm](https://developer.mozilla.org/en-US/docs/Mozilla/Tech/Places/Frecency_algorithm)
+- [Mozilla: Frecency algorithm](https://web.archive.org/web/20210421120120/https://developer.mozilla.org/en-US/docs/Mozilla/Tech/Places/Frecency_algorithm)
