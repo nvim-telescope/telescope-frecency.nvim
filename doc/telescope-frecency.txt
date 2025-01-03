@@ -500,6 +500,19 @@ This plugin uses `plenary.log` to log debugging messages. You should set this to
     # see debug messages.
     env DEBUG_PLENARY=1 nvim
 <
+				  *telescope-frecency-configuration-debug_timer*
+debug_timer ~
+
+Default: `false`
+Type: `boolean|fun(event: string): nil`
+
+If `debug == true` and this variable seems truthy, it starts to call a function
+to track its activities. In default, it uses `require("lazy.stats").track()` if
+available. You can specify your own function to do this by setting here.
+
+See detail demo in this PR below.
+https://github.com/nvim-telescope/telescope-frecency.nvim/pull/282
+
 			    *telescope-frecency-configuration-default_workspace*
 default_workspace ~
 
