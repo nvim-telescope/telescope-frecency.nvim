@@ -2,13 +2,23 @@ local config = require "frecency.config"
 local log = require "frecency.log"
 
 ---@class FrecencyTimer
----@field has_lazy boolean?
+---@field has_lazy? boolean
+---@field has_func_err? boolean
 local M = {}
 
 ---@param event string
 ---@return nil
 function M.track(event)
   if not config.debug then
+    return
+  end
+  local debug_timer = config.debug_timer
+  if type(debug_timer) == "function" and not M.has_func_err then
+    local ok, err = pcall(debug_timer, event)
+    if not ok then
+      log.warn(("config.debug_timer has error: %s"):format(err))
+      M.has_func_err = true
+    end
     return
   elseif M.has_lazy == nil then
     M.has_lazy = (pcall(require, "lazy.stats"))
@@ -23,7 +33,7 @@ function M.track(event)
       return stats._stats.times[key] and make_key((num or 1) + 1) or key
     end
     stats.track(make_key())
-    if config.debug_timer then
+    if debug_timer then
       log.debug(event)
     end
   end
