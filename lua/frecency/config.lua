@@ -9,7 +9,7 @@ local os_util = require "frecency.os_util"
 ---@field db_safe_mode? boolean default: true
 ---@field db_validate_threshold? integer default: 10
 ---@field debug? boolean default: false
----@field debug_timer? boolean default: false
+---@field debug_timer? boolean|fun(event: string): nil default: false
 ---@field default_workspace? string default: nil
 ---@field disable_devicons? boolean default: false
 ---@field enable_prompt_mappings? boolean default: false
@@ -42,7 +42,7 @@ local Config = {}
 ---@field db_safe_mode boolean default: true
 ---@field db_validate_threshold integer default: 10
 ---@field debug boolean default: false
----@field debug_timer boolean default: false
+---@field debug_timer boolean|fun(event: string): nil default: false
 ---@field default_workspace? string default: nil
 ---@field disable_devicons boolean default: false
 ---@field enable_prompt_mappings boolean default: false
@@ -181,6 +181,7 @@ Config.setup = function(ext_config)
     vim.validate("db_safe_mode", opts.db_safe_mode, "boolean")
     vim.validate("db_validate_threshold", opts.db_validate_threshold, "number")
     vim.validate("debug", opts.debug, "boolean")
+    vim.validate("debug_timer", opts.debug_timer, { "boolean", "function" })
     vim.validate("default_workspace", opts.default_workspace, "string", true)
     vim.validate("disable_devicons", opts.disable_devicons, "boolean")
     vim.validate("enable_prompt_mappings", opts.enable_prompt_mappings, "boolean")
@@ -211,6 +212,7 @@ Config.setup = function(ext_config)
       db_safe_mode = { opts.db_safe_mode, "b" },
       db_validate_threshold = { opts.db_validate_threshold, "n" },
       debug = { opts.debug, "b" },
+      debug_timer = { opts.debug, { "b", "f" } },
       default_workspace = { opts.default_workspace, "s", true },
       disable_devicons = { opts.disable_devicons, "b" },
       enable_prompt_mappings = { opts.enable_prompt_mappings, "b" },
