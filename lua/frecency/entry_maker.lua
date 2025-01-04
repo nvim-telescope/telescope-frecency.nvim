@@ -24,13 +24,7 @@ end
 ---@field fuzzy_score? number
 ---@field display fun(entry: FrecencyEntry): string, table
 
----@class FrecencyFile
----@field count integer
----@field id integer
----@field path string
----@field score integer calculated from count and age
-
----@alias FrecencyEntryMakerInstance fun(file: FrecencyFile): FrecencyEntry
+---@alias FrecencyEntryMakerInstance fun(file: table): FrecencyEntry
 
 ---@param filepath_formatter FrecencyFilepathFormatter
 ---@param workspaces? string[]

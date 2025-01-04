@@ -3,7 +3,6 @@ local Picker = require "frecency.picker"
 local config = require "frecency.config"
 local fs = require "frecency.fs"
 local log = require "frecency.log"
-local recency = require "frecency.recency"
 local timer = require "frecency.timer"
 local wait = require "frecency.wait"
 local lazy_require = require "frecency.lazy_require"
@@ -28,7 +27,7 @@ local Frecency = {}
 ---@return Frecency
 Frecency.new = function(database)
   local self = setmetatable({ buf_registered = {}, status = STATUS.NEW }, { __index = Frecency }) --[[@as Frecency]]
-  self.database = database or Database.new()
+  self.database = database or Database.create(config.db_version)
   return self
 end
 
@@ -226,77 +225,25 @@ function Frecency:query(opts, epoch)
   local workspaces = type(opts.workspace) == "table" and opts.workspace
     or type(opts.workspace) == "string" and { opts.workspace }
     or nil
-  local entries = vim
+  local objects = vim
     .iter(self.database:get_entries(workspaces, epoch))
     ---@param entry FrecencyDatabaseEntry
     :map(function(entry)
-      return {
-        count = entry.count,
-        path = entry.path,
-        score = entry.ages and recency.calculate(entry.count, entry.ages) or 0,
-        timestamps = entry.timestamps,
-      }
+      return entry:obj()
     end)
     :totable()
-  table.sort(entries, self:query_sorter(opts.order, opts.direction))
-  local results = opts.record and entries
+  table.sort(objects, self.database.query_sorter(opts.order, opts.direction))
+  local results = opts.record and objects
     or vim
-      .iter(entries)
-      :map(function(entry)
-        return entry.path
+      .iter(objects)
+      :map(function(obj)
+        return obj.path
       end)
       :totable()
   if #results > opts.limit then
     results = vim.list_slice(results, 1, opts.limit)
   end
   return opts.json and vim.json.encode(results) or results
-end
-
----@private
----@param order FrecencyQueryOrder
----@param direction FrecencyQueryDirection
----@return fun(a: FrecencyQueryEntry, b: FrecencyQueryEntry): boolean
-function Frecency.query_sorter(_, order, direction)
-  local is_asc = direction == "asc"
-  if order == "count" then
-    if is_asc then
-      return function(a, b)
-        return a.count < b.count or (a.count == b.count and a.path < b.path)
-      end
-    end
-    return function(a, b)
-      return a.count > b.count or (a.count == b.count and a.path < b.path)
-    end
-  elseif order == "path" then
-    if is_asc then
-      return function(a, b)
-        return a.path < b.path
-      end
-    end
-    return function(a, b)
-      return a.path > b.path
-    end
-  elseif order == "score" then
-    if is_asc then
-      return function(a, b)
-        return a.score < b.score or (a.score == b.score and a.path < b.path)
-      end
-    end
-    return function(a, b)
-      return a.score > b.score or (a.score == b.score and a.path < b.path)
-    end
-  elseif is_asc then
-    return function(a, b)
-      local a_timestamp = a.timestamps[1] or 0
-      local b_timestamp = b.timestamps[1] or 0
-      return a_timestamp < b_timestamp or (a_timestamp == b_timestamp and a.path < b.path)
-    end
-  end
-  return function(a, b)
-    local a_timestamp = a.timestamps[1] or 0
-    local b_timestamp = b.timestamps[1] or 0
-    return a_timestamp > b_timestamp or (a_timestamp == b_timestamp and a.path < b.path)
-  end
 end
 
 ---@private

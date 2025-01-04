@@ -8,6 +8,7 @@ local os_util = require "frecency.os_util"
 ---@field db_root? string default: vim.fn.stdpath "state"
 ---@field db_safe_mode? boolean default: true
 ---@field db_validate_threshold? integer default: 10
+---@field db_version? "v1" default: "v1"
 ---@field debug? boolean default: false
 ---@field debug_timer? boolean|fun(event: string): nil default: false
 ---@field default_workspace? string default: nil
@@ -41,6 +42,7 @@ local Config = {}
 ---@field db_root string default: vim.fn.stdpath "state"
 ---@field db_safe_mode boolean default: true
 ---@field db_validate_threshold integer default: 10
+---@field db_version "v1" default: "v1"
 ---@field debug boolean default: false
 ---@field debug_timer boolean|fun(event: string): nil default: false
 ---@field default_workspace? string default: nil
@@ -71,6 +73,7 @@ Config.new = function()
     db_root = true,
     db_safe_mode = true,
     db_validate_threshold = true,
+    db_version = true,
     debug = true,
     debug_timer = true,
     default_workspace = true,
@@ -114,6 +117,7 @@ Config.default_values = {
   db_root = vim.fn.stdpath "state" --[[@as string]],
   db_safe_mode = true,
   db_validate_threshold = 10,
+  db_version = "v1",
   debug = false,
   debug_timer = false,
   default_workspace = nil,
@@ -180,6 +184,9 @@ Config.setup = function(ext_config)
     vim.validate("db_root", opts.db_root, "string")
     vim.validate("db_safe_mode", opts.db_safe_mode, "boolean")
     vim.validate("db_validate_threshold", opts.db_validate_threshold, "number")
+    vim.validate("db_version", opts.db_version, function(v)
+      return v == "v1"
+    end, false, '"v1"')
     vim.validate("debug", opts.debug, "boolean")
     vim.validate("debug_timer", opts.debug_timer, { "boolean", "function" })
     vim.validate("default_workspace", opts.default_workspace, "string", true)
@@ -211,6 +218,13 @@ Config.setup = function(ext_config)
       db_root = { opts.db_root, "s" },
       db_safe_mode = { opts.db_safe_mode, "b" },
       db_validate_threshold = { opts.db_validate_threshold, "n" },
+      db_version = {
+        opts.db_version,
+        function(v)
+          return v == "v1"
+        end,
+        '"v1"',
+      },
       debug = { opts.debug, "b" },
       debug_timer = { opts.debug_timer, { "b", "f" } },
       default_workspace = { opts.default_workspace, "s", true },

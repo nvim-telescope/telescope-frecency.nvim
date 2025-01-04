@@ -6,13 +6,13 @@ Default.new = function()
   return setmetatable({}, { __index = Default })
 end
 
----@param files FrecencyDatabaseEntry[]
+---@param entries FrecencyDatabaseEntry[]
 ---@return FrecencyDatabaseEntry[]
-function Default.sort(_, files)
-  table.sort(files, function(a, b)
+function Default.sort(_, entries)
+  table.sort(entries, function(a, b)
     return a.score > b.score or (a.score == b.score and a.path > b.path)
   end)
-  return files
+  return entries
 end
 
 return Default

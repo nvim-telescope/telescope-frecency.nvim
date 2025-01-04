@@ -11,7 +11,7 @@ local function with_database(f)
   dir:joinpath("file_frecency.bin"):touch()
   return function()
     config.setup { debug = true, db_root = dir.filename }
-    local database = Database.new()
+    local database = Database.create "v1"
     database:start()
     f(database)
     close()
@@ -20,7 +20,7 @@ end
 
 ---@async
 ---@param database FrecencyDatabase
----@param tbl table<string, FrecencyDatabaseRecordValue>
+---@param tbl table<string, table>
 ---@param epoch integer
 ---@return FrecencyEntry[]
 local function save_and_load(database, tbl, epoch)
@@ -45,13 +45,13 @@ a.describe("frecency.database", function()
             {
               path = "hoge1.txt",
               count = 1,
-              ages = { 60 },
+              score = 10,
               timestamps = { make_epoch "2023-08-21T00:00:00+09:00" },
             },
             {
               path = "hoge2.txt",
               count = 1,
-              ages = { 60 },
+              score = 10,
               timestamps = { make_epoch "2023-08-21T00:00:00+09:00" },
             },
           },

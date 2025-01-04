@@ -1,7 +1,6 @@
 local config = require "frecency.config"
 local fs = require "frecency.fs"
 local os_util = require "frecency.os_util"
-local recency = require "frecency.recency"
 local log = require "frecency.log"
 local timer = require "frecency.timer"
 local lazy_require = require "frecency.lazy_require"
@@ -269,19 +268,13 @@ end
 
 ---@param workspaces? string[]
 ---@param epoch? integer
----@return FrecencyFile[]
+---@return FrecencyDatabaseEntry[]
 function Finder:get_results(workspaces, epoch)
   log.debug { workspaces = workspaces or "NONE" }
   timer.track "fetching start"
-  local files = self.database:get_entries(workspaces, epoch)
-  timer.track "fetching finish"
-  for _, file in ipairs(files) do
-    file.score = file.ages and recency.calculate(file.count, file.ages) or 0
-    file.ages = nil
-  end
+  local entries = self.database:get_entries(workspaces, epoch)
   timer.track "making results"
-
-  local sorted = self.sorter:sort(files)
+  local sorted = self.sorter:sort(entries)
   timer.track "sorting finish"
   return sorted
 end

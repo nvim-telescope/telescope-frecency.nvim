@@ -75,7 +75,7 @@ local function make_epoch(datetime)
   return time_piece(tz_fix) or 0
 end
 
----@param records table<string, FrecencyDatabaseRecordValue>
+---@param records table<string, table>
 local function v1_table(records)
   return { version = "v1", records = records }
 end
