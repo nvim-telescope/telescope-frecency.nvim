@@ -1,0 +1,96 @@
+#!/usr/bin/perl
+
+=head1 DESCRIPTION
+
+    Utility to do tests
+
+=head1 SYNOPSIS
+
+    bin/run-tests
+    # Run all tests
+
+    bin/run-tests lua/frecency/tests/sorter_spec.lua
+    # Run specified test
+
+    bin/run-tests -e /path/to/nvim
+    # Use another Neovim binary
+
+    bin/run-tests -v
+    # Show verbose log
+
+=cut
+
+use 5.24.0;
+use warnings;
+use feature 'signatures';
+no warnings 'experimental::signatures';
+use Getopt::Long qw(:config posix_default no_ignore_case bundling auto_help);
+use File::Temp qw(tempdir);
+BEGIN {
+    # HACK: Perl on GHA Windows has no Pod::Usage ??
+    if (defined $ENV{RUNNER_OS} && $ENV{RUNNER_OS} eq 'Windows') {
+        *pod2usage = sub {};
+    } else {
+        # do the same thing as `use Pod::Usage`
+        require Pod::Usage;
+        Pod::Usage->import(qw(pod2usage));
+    }
+}
+
+my %opt = (
+    executable => 'nvim',
+);
+GetOptions(
+    \%opt, qw(
+    executable|e=s
+    verbose|v
+    help|h
+)) or pod2usage(1);
+$opt{help} and pod2usage(0);
+
+my $test_file = shift;
+
+my $test_dir = 'lua/frecency/tests/';
+my $minimal_lua = "${test_dir}minimal.lua";
+my $command = defined $test_file
+    ? qq(PlenaryBustedFile $test_file)
+    : qq(PlenaryBustedDirectory $test_dir {minimal_init = '$minimal_lua'});
+
+sub logger($msg) {
+    if ($opt{verbose}) {
+        say "[run-tests]: $msg";
+    }
+}
+
+sub create_tempdir {
+    my $dir = tempdir('telescope-frecency-XXXX', CLEANUP => 1, TMPDIR => 1);
+    logger("tempdir: $dir");
+    $dir;
+}
+
+logger('Preparing libraries...');
+
+my $telescope_path = create_tempdir;
+0 == system 'git', 'clone', 'https://github.com/nvim-telescope/telescope.nvim', $telescope_path
+    or die 'Failed to clone telescope.nvim';
+my $plenary_path = create_tempdir;
+0 == system 'git', 'clone', 'https://github.com/nvim-lua/plenary.nvim', $plenary_path
+    or die 'Failed to clone plenary.nvim';
+
+my @cmd = ($opt{executable}, '--headless', '--clean', '-u', $minimal_lua, '-c', $command);
+logger("Running: @{[join ' ', @cmd]}");
+
+my $code = system 'env',
+    ($opt{verbose} ? 'DEBUG_PLENARY=1' : ()),
+    'XDG_CONFIG_HOME=' . create_tempdir,
+    'XDG_DATA_HOME=' . create_tempdir,
+    'XDG_STATE_HOME=' . create_tempdir,
+    'NVIM_LOG_FILE=' . create_tempdir . '/log',
+    "TELESCOPE_PATH=$telescope_path",
+    "PLENARY_PATH=$plenary_path",
+    @cmd;
+
+my $status = $code >> 8;
+logger("Exit status $status");
+
+exit $code >> 8;
