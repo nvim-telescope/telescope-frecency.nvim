@@ -14,6 +14,7 @@ Configuration		|telescope-frecency-configuration|
 Database		|telescope-frecency-database|
 Highlight Groups	|telescope-frecency-highlight-groups|
 FAQ			|telescope-frecency-faq|
+Development		|telescope-frecency-development|
 Reference		|telescope-frecency-reference|
 
 
@@ -906,6 +907,16 @@ If you feel this annoying, you can disable it by config. See
 	telescope.load_extension "frecency"
       end,
     }
+
+==============================================================================
+DEVELOPMENT				        *telescope-frecency-development*
+
+You can run unit tests included in this plugin by a script: `bin/run-tests`.
+>bash
+    # Run this in /path/to/telescope-frecency.nvim
+    bin/run-tests
+<
+Run `bin/run-tests -h` for more details.
 
 ==============================================================================
 REFERENCE					  *telescope-frecency-reference*
