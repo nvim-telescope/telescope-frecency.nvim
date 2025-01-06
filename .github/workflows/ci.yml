@@ -34,39 +34,10 @@ jobs:
         with:
           neovim: true
           version: ${{ matrix.version }}
-      - name: Run tests (not for Windows)
+      - name: Run tests
         env:
-          PLENARY_PATH: plenary.nvim
-          TELESCOPE_PATH: telescope.nvim
-          DEBUG_PLENARY: 1
           EXE: ${{ steps.nvim.outputs.executable }}
-        run: |-
-          TEST_DIR=lua/frecency/tests/
-          MINIMAL_LUA=${TEST_DIR}minimal.lua
-          NVIM=$(perl -e '$_ = $ENV{EXE}; s,\\,/,g; print')
-          $NVIM --headless --clean -u $MINIMAL_LUA -c "PlenaryBustedDirectory $TEST_DIR {minimal_init = '$MINIMAL_LUA'}"
-        if: matrix.os != 'windows-latest'
-      - name: Run tests (for Windows)
-        shell: bash
-        env:
-          PLENARY_PATH: plenary.nvim
-          TELESCOPE_PATH: telescope.nvim
-          DEBUG_PLENARY: 1
-          EXE: ${{ steps.nvim.outputs.executable }}
-        run: |-
-          # HACK: This is needed because it fails to add runtimepath's.
-          cp -af $PLENARY_PATH/lua/plenary/ lua/
-          cp -af $TELESCOPE_PATH/lua/telescope/ lua/
-          TEST_DIR=lua/frecency/tests/
-          MINIMAL_LUA=${TEST_DIR}minimal.lua
-          NVIM=$(perl -e '$_ = $ENV{EXE}; s,\\,/,g; print')
-          attempts=0
-          while ! $NVIM --headless --clean -u $MINIMAL_LUA -c "PlenaryBustedDirectory $TEST_DIR {minimal_init = '$MINIMAL_LUA', timeout = 180000, sequential = true}"; do
-            if (( attempts++ > 5 )); then
-              exit 1
-            fi
-          done
-        if: matrix.os == 'windows-latest'
+        run: bin/run-tests -e "$EXE" -v
       - name: Type Check Code Base
         uses: mrcjkb/lua-typecheck-action@v0.2.0
         with:
