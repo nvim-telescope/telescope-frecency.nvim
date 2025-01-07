@@ -25,7 +25,11 @@ use warnings;
 use feature 'signatures';
 no warnings 'experimental::signatures';
 use Getopt::Long qw(:config posix_default no_ignore_case bundling auto_help);
+use JSON::PP;
+use File::Spec;
+use File::Path qw(make_path);
 use File::Temp qw(tempdir);
+use Time::Piece;
 BEGIN {
     # HACK: Perl on GHA Windows has no Pod::Usage ??
     if (defined $ENV{RUNNER_OS} && $ENV{RUNNER_OS} eq 'Windows') {
@@ -42,6 +46,7 @@ my %opt = (
 );
 GetOptions(
     \%opt, qw(
+    update_libs|u
     executable|e=s
     verbose|v
     help|h
@@ -62,20 +67,42 @@ sub logger($msg) {
     }
 }
 
-sub create_tempdir {
-    my $dir = tempdir('telescope-frecency-XXXX', CLEANUP => 1, TMPDIR => 1);
+sub create_tempdir($cleanup = 1) {
+    my $dir = tempdir('telescope-frecency-XXXX', CLEANUP => $cleanup, TMPDIR => 1);
     logger("tempdir: $dir");
     $dir;
 }
 
+my $xdg_cache_home = $ENV{XDG_CACHE_HOME} || File::Spec->catdir($ENV{HOME}, '.cache');
+my $cache_dir = File::Spec->catdir($xdg_cache_home, 'telescope-frecency');
+make_path($cache_dir);
+my $info_json = File::Spec->catdir($cache_dir, 'info.json');
+my $info = (-e $info_json && !$opt{update_libs}) ? do {
+    open my $fh, '<', $info_json or die;
+    local $/;
+    decode_json <$fh>;
+}: {};
+sub prepare_lib($name) {
+    my $today = localtime->ymd;
+    if (defined $info->{$name} && $info->{$name}{ymd} eq $today) {
+        logger("Using cached $name");
+    } else {
+        $info->{$name} = {
+            ymd => $today,
+            path => create_tempdir(0),
+        };
+        0 == system 'git', 'clone', "https://github.com/$name", $info->{$name}{path}
+            or die "Failed to clone $name";
+    }
+    open my $fh, '>', $info_json or die;
+    $fh->print(encode_json $info);
+    $info->{$name}{path};
+}
+
 logger('Preparing libraries...');
 
-my $telescope_path = create_tempdir;
-0 == system 'git', 'clone', 'https://github.com/nvim-telescope/telescope.nvim', $telescope_path
-    or die 'Failed to clone telescope.nvim';
-my $plenary_path = create_tempdir;
-0 == system 'git', 'clone', 'https://github.com/nvim-lua/plenary.nvim', $plenary_path
-    or die 'Failed to clone plenary.nvim';
+my $telescope_path = prepare_lib('nvim-telescope/telescope.nvim');
+my $plenary_path = prepare_lib('nvim-lua/plenary.nvim');
 
 my @cmd = ($opt{executable}, '--headless', '--clean', '-u', $minimal_lua, '-c', $command);
 logger("Running: @{[join ' ', @cmd]}");
