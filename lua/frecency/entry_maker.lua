@@ -175,6 +175,9 @@ end
 ---@return boolean
 function EntryMaker.should_show_tail(_, workspace_tag)
   local show_filter_column = config.show_filter_column
+  if show_filter_column == false then
+    return false
+  end
   local filters = type(show_filter_column) == "table" and show_filter_column or { "LSP", "CWD" }
   return vim.tbl_contains(filters, workspace_tag)
 end
