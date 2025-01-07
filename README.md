@@ -90,6 +90,17 @@ Filter tags are applied by typing the `:tag:` name (adding surrounding colons)
 in the finder query. Entering `:<Tab>` will trigger omni completion for
 available tags (in default setting).
 
+## Development
+
+You can run unit tests included in this repository by a script.
+
+```bash
+# Run this in /path/to/telescope-frecency.nvim
+bin/run-tests
+```
+
+Run `bin/run-tests -h` for more details.
+
 ## References
 
 - [Mozilla: Frecency algorithm](https://developer.mozilla.org/en-US/docs/Mozilla/Tech/Places/Frecency_algorithm)
