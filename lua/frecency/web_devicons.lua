@@ -6,11 +6,11 @@ local M = {
   ---@return string
   ---@return string
   get_icon = function(name, ext, opts)
-    local ok, web_devicons = pcall(require, "nvim-web-devicons", opts)
+    local ok, web_devicons = pcall(require, "nvim-web-devicons")
     if not ok then
       return "", ""
     end
-    return web_devicons.get_icon(name, ext)
+    return web_devicons.get_icon(name, ext, opts)
   end,
 }
 
