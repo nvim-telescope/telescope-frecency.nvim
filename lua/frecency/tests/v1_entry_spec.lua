@@ -1,6 +1,7 @@
-local recency = require "frecency.recency"
+local config = require "frecency.config"
+local entry = require "frecency.v1.entry"
 
-describe("frecency.recency", function()
+describe("frecency.entry", function()
   for _, c in ipairs {
     { count = 1, ages = { 200 }, score = 10 },
     { count = 2, ages = { 200, 1000 }, score = 36 },
@@ -12,7 +13,7 @@ describe("frecency.recency", function()
   } do
     local dumped = vim.inspect(c.ages, { indent = "", newline = "" })
     it(("%d, %s => %d"):format(c.count, dumped, c.score), function()
-      assert.are.same(c.score, recency.calculate(c.count, c.ages))
+      assert.are.same(c.score, c.count * entry.calculate(c.ages) / config.max_timestamps)
     end)
   end
 end)

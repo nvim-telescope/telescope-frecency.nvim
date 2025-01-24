@@ -4,13 +4,9 @@ local wait = require "frecency.wait"
 local lazy_require = require "frecency.lazy_require"
 local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 
----@class FrecencyDatabaseRecordValue
----@field count integer
----@field timestamps integer[]
-
 ---@class FrecencyDatabaseRawTable
 ---@field version string
----@field records table<string,FrecencyDatabaseRecordValue>
+---@field records table<string, table>
 
 ---@class FrecencyDatabaseTable: FrecencyDatabaseRawTable
 ---@field private is_ready boolean

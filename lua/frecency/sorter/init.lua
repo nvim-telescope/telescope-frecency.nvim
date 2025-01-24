@@ -5,7 +5,7 @@ local SameRepo = require "frecency.sorter.same_repo"
 
 ---@class FrecencySorter
 ---@field new fun(): FrecencySorter
----@field sort fun(self: FrecencySorter, files: FrecencyDatabaseEntry[]): FrecencyDatabaseEntry[]
+---@field sort fun(self: FrecencySorter, entries: FrecencyDatabaseEntry[]): FrecencyDatabaseEntry[]
 
 return {
   ---@return FrecencySorter
