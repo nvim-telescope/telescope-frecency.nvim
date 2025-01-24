@@ -1,6 +1,6 @@
 local EntryV1 = require "frecency.v1.entry"
+local TableV1 = require "frecency.v1.table"
 local FileLock = require "frecency.file_lock"
-local Table = require "frecency.table"
 local timer = require "frecency.timer"
 local config = require "frecency.config"
 local fs = require "frecency.fs"
@@ -22,7 +22,7 @@ DatabaseV1.new = function()
     file_lock_rx = file_lock_rx,
     file_lock_tx = file_lock_tx,
     is_started = false,
-    tbl = Table.new(version),
+    tbl = TableV1.new(version),
     version = version,
     watcher_rx = watcher_rx,
     watcher_tx = watcher_tx,
@@ -210,7 +210,7 @@ end
 
 ---@async
 ---@param target string
----@param tbl FrecencyDatabaseRawTable
+---@param tbl FrecencyDatabaseRawTableV1
 function DatabaseV1:raw_save(tbl, target)
   local f = assert(load("return " .. vim.inspect(tbl)))
   local data = string.dump(f)

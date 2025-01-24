@@ -4,16 +4,16 @@ local wait = require "frecency.wait"
 local lazy_require = require "frecency.lazy_require"
 local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 
----@class FrecencyDatabaseRawTable
+---@class FrecencyDatabaseRawTableV1
 ---@field version string
 ---@field records table<string, table>
 
----@class FrecencyDatabaseTable: FrecencyDatabaseRawTable
+---@class FrecencyDatabaseTableV1: FrecencyDatabaseRawTableV1
 ---@field private is_ready boolean
 local Table = {}
 
 ---@param version string
----@return FrecencyDatabaseTable
+---@return FrecencyDatabaseTableV1
 Table.new = function(version)
   return setmetatable({ is_ready = false, version = version }, { __index = Table.__index })
 end
@@ -39,7 +39,7 @@ function Table:raw()
   return { version = self.version, records = self.records }
 end
 
----@param raw_table? FrecencyDatabaseRawTable
+---@param raw_table? FrecencyDatabaseRawTableV1
 ---@return nil
 function Table:set(raw_table)
   local tbl = raw_table or { version = self.version, records = {} }
