@@ -6,6 +6,8 @@ local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 
 ---@class FrecencyDatabaseRawTable
 ---@field version string
+---@field reference_time integer
+---@field half_life integer
 ---@field records table<string, table>
 
 ---@class FrecencyDatabaseTable: FrecencyDatabaseRawTable
