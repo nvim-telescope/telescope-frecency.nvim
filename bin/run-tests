@@ -120,4 +120,4 @@ my $code = system 'env',
 my $status = $code >> 8;
 logger("Exit status $status");
 
-exit $code >> 8;
+exit $status;
