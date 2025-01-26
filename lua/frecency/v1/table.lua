@@ -10,38 +10,37 @@ local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 
 ---@class FrecencyDatabaseTableV1: FrecencyDatabaseRawTableV1
 ---@field private is_ready boolean
-local Table = {}
+local TableV1 = {}
 
----@param version string
 ---@return FrecencyDatabaseTableV1
-Table.new = function(version)
-  return setmetatable({ is_ready = false, version = version }, { __index = Table.__index })
+TableV1.new = function()
+  return setmetatable({ is_ready = false, version = "v1" }, { __index = TableV1.__index })
 end
 
 ---@async
 ---@param key string
-function Table:__index(key)
+function TableV1:__index(key)
   if key == "records" and not rawget(self, "is_ready") then
     local is_async = not not coroutine.running()
     if is_async then
-      Table.wait_ready(self)
+      TableV1.wait_ready(self)
     else
       log.debug "need wait() for wait_ready()"
       wait(function()
-        Table.wait_ready(self)
+        TableV1.wait_ready(self)
       end)
     end
   end
-  return vim.F.if_nil(rawget(self, key), Table[key])
+  return vim.F.if_nil(rawget(self, key), TableV1[key])
 end
 
-function Table:raw()
+function TableV1:raw()
   return { version = self.version, records = self.records }
 end
 
 ---@param raw_table? FrecencyDatabaseRawTableV1
 ---@return nil
-function Table:set(raw_table)
+function TableV1:set(raw_table)
   local tbl = raw_table or { version = self.version, records = {} }
   if self.version ~= tbl.version then
     error "Invalid version"
@@ -53,7 +52,7 @@ end
 ---This is for internal or testing use only.
 ---@async
 ---@return nil
-function Table:wait_ready()
+function TableV1:wait_ready()
   timer.track "wait_ready() start"
   local t = 0.2
   while not rawget(self, "is_ready") do
@@ -63,4 +62,4 @@ function Table:wait_ready()
   timer.track "wait_ready() finish"
 end
 
-return Table
+return TableV1
