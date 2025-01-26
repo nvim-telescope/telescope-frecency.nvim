@@ -12,10 +12,9 @@ local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 ---@field private is_ready boolean
 local TableV1 = {}
 
----@param version string
 ---@return FrecencyDatabaseTableV1
-TableV1.new = function(version)
-  return setmetatable({ is_ready = false, version = version }, { __index = TableV1.__index })
+TableV1.new = function()
+  return setmetatable({ is_ready = false, version = "v1" }, { __index = TableV1.__index })
 end
 
 ---@async
