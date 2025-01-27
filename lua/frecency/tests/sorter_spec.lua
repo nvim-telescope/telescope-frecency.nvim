@@ -76,7 +76,11 @@ describe("frecency.sorter", function()
       end
       ---@diagnostic disable-next-line: duplicate-set-field
       vim.api.nvim_buf_get_name = function(bufnr)
-        return ({ "/path/to/project_A/image.jpg", "/path/to/project_B/Makefile", "/path/to/project_A/index.html" })[bufnr]
+        return ({
+          "/path/to/project_A/image.jpg",
+          "/path/to/project_B/Makefile",
+          "/path/to/project_A/index.html",
+        })[bufnr]
       end
       ---@diagnostic disable-next-line: duplicate-set-field
       vim.api.nvim_buf_is_loaded = function(bufnr)
@@ -87,6 +91,7 @@ describe("frecency.sorter", function()
         return (path:match "(.*project_.)")
       end
       local sorter = c.M.new()
+      ---@diagnostic disable-next-line: undefined-field
       assert.are.same(parse_text(c.entries), sorter:sort(parse_text(entries)))
       vim.api.nvim_list_bufs = originals.nvim_list_bufs
       vim.api.nvim_buf_get_name = originals.nvim_buf_get_name

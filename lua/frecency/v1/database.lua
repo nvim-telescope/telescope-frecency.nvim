@@ -211,7 +211,7 @@ end
 ---@async
 ---@param target string
 ---@param tbl FrecencyDatabaseRawTableV1
-function DatabaseV1:raw_save(tbl, target)
+function DatabaseV1:raw_save(tbl, target) -- luacheck: no self
   local f = assert(load("return " .. vim.inspect(tbl)))
   local data = string.dump(f)
   local err, fd = async.uv.fs_open(target, "w", tonumber("644", 8))

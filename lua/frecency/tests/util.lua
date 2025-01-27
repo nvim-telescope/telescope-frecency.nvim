@@ -154,9 +154,9 @@ local function with_fake_register(frecency, dir, callback)
   local bufnr = 0
   local buffers = {}
   local original_nvim_buf_get_name = vim.api.nvim_buf_get_name
-  ---@diagnostic disable-next-line: redefined-local, duplicate-set-field
-  vim.api.nvim_buf_get_name = function(bufnr)
-    return buffers[bufnr]
+  ---@diagnostic disable-next-line: duplicate-set-field
+  vim.api.nvim_buf_get_name = function(buf)
+    return buffers[buf]
   end
   ---@param file string
   ---@param epoch integer

@@ -1,3 +1,6 @@
+-- luacheck: no max comment line length
+-- luacheck: no unused
+
 ---@diagnostic disable: unused-local, missing-return
 
 -- NOTE: types are borrowed from plenary.nvim

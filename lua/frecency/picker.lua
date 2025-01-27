@@ -255,7 +255,7 @@ end
 ---@private
 ---@param _ integer
 ---@return boolean
-function Picker:attach_mappings(_)
+function Picker:attach_mappings(_) -- luacheck: no self
   actions.select_default:replace_if(function()
     return vim.fn.complete_info().pum_visible == 1
   end, function()
@@ -269,7 +269,7 @@ end
 ---@private
 ---@param bufnr integer
 ---@return nil
-function Picker:set_prompt_options(bufnr)
+function Picker:set_prompt_options(bufnr) -- luacheck: no self
   vim.bo[bufnr].completefunc = "v:lua.require'telescope'.extensions.frecency.complete"
   if config.enable_prompt_mappings then
     vim.keymap.set("i", "<Tab>", "pumvisible() ? '<C-n>' : '<C-x><C-u>'", { buffer = bufnr, expr = true })
@@ -282,7 +282,7 @@ end
 ---@private
 ---@param picker_opts table
 ---@return FrecencyFilepathFormatter
-function Picker:filepath_formatter(picker_opts)
+function Picker:filepath_formatter(picker_opts) -- luacheck: no self
   ---@param workspace string?
   return function(workspace)
     local opts = vim.iter(picker_opts):fold({ cwd = workspace or fs.os_homedir }, function(a, k, v)
