@@ -1,5 +1,7 @@
 -- HACK: This is needed because plenary.test_harness resets &rtp.
+-- luacheck: push no max comment line length
 -- https://github.com/nvim-lua/plenary.nvim/blob/663246936325062427597964d81d30eaa42ab1e4/lua/plenary/test_harness.lua#L86-L86
+-- luacheck: pop
 vim.opt.runtimepath:append(vim.env.TELESCOPE_PATH)
 
 local util = require "frecency.tests.util"
