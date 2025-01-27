@@ -35,3 +35,6 @@ jobs:
           configpath: .luarc.json
         # NOTE: This step needs nix that seems not to work with SIP (macOS)
         if: matrix.os == 'ubuntu-latest'
+      - name: Luacheck linter
+        uses: lunarmodules/luacheck@v1
+        if: matrix.os == 'ubuntu-latest'
