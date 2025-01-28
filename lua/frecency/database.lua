@@ -5,7 +5,7 @@ local DatabaseV1 = require "frecency.v1.database"
 ---@field protected file_lock_rx async fun(): ...
 ---@field protected file_lock_tx fun(...): nil
 ---@field protected is_started boolean
----@field protected tbl FrecencyDatabaseTableV1
+---@field protected tbl FrecencyDatabaseTable
 ---@field protected version FrecencyDatabaseVersion
 ---@field protected watcher_rx FrecencyPlenaryAsyncControlChannelRx
 ---@field protected watcher_tx FrecencyPlenaryAsyncControlChannelTx
@@ -17,7 +17,7 @@ local DatabaseV1 = require "frecency.v1.database"
 ---@field load async fun(self): nil
 ---@field new fun(): FrecencyDatabase
 ---@field query_sorter fun(order: string, direction: "asc"|"desc"): FrecencyDatabaseEntryCmp
----@field raw_save async fun(self, tbl: FrecencyDatabaseRawTableV1, target: string): nil
+---@field raw_save async fun(self, tbl: table, target: string): nil
 ---@field remove_entry async fun(self, path: string): boolean
 ---@field remove_files async fun(self, paths: string[]): nil
 ---@field save async fun(self): nil
