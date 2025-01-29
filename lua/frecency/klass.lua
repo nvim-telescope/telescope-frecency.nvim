@@ -259,7 +259,7 @@ end
 ---@param ...? any
 ---@return nil
 function Frecency:notify(fmt, ...)
-  vim.notify(self:message(fmt, ...))
+  self:_notify(self:message(fmt, ...))
 end
 
 ---@private
@@ -267,7 +267,7 @@ end
 ---@param ...? any
 ---@return nil
 function Frecency:warn(fmt, ...)
-  vim.notify(self:message(fmt, ...), vim.log.levels.WARN)
+  self:_notify(self:message(fmt, ...), vim.log.levels.WARN)
 end
 
 ---@private
@@ -275,7 +275,20 @@ end
 ---@param ...? any
 ---@return nil
 function Frecency:error(fmt, ...)
-  vim.notify(self:message(fmt, ...), vim.log.levels.ERROR)
+  self:_notify(self:message(fmt, ...), vim.log.levels.ERROR)
+end
+
+---@param msg string
+---@param level? integer
+---@param opts? table
+function Frecency:_notify(msg, level, opts) -- luacheck: no self
+  local ok, err = pcall(vim.notify, msg, level, opts)
+  if
+    not ok and (err --[[@as string]]):match "E5560"
+  then
+    print "E5560 detected. doing fallback..."
+    print(msg)
+  end
 end
 
 return Frecency
