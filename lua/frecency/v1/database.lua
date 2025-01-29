@@ -188,7 +188,8 @@ function DatabaseV1:load()
     return data
   end)
   assert(not err, err)
-  local tbl = vim.F.npcall(loadstring(data or ""))
+  local f = vim.F.npcall(loadstring, data or "")
+  local tbl = f and vim.F.npcall(f)
   self.tbl:set(tbl)
   timer.track "load() finish"
 end
