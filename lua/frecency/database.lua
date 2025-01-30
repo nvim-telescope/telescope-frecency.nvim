@@ -1,4 +1,5 @@
 local DatabaseV1 = require "frecency.v1.database"
+local DatabaseV2 = require "frecency.v2.database"
 
 ---@class FrecencyDatabase
 ---@field protected _file_lock FrecencyFileLock
@@ -31,7 +32,7 @@ local DatabaseV1 = require "frecency.v1.database"
 ---@field score number
 
 ---@alias FrecencyDatabaseEntryCmp fun(a: table, b: table): boolean
----@alias FrecencyDatabaseVersion "v1"
+---@alias FrecencyDatabaseVersion "v1"|"v2"
 
 local M = {}
 
@@ -40,6 +41,8 @@ local M = {}
 function M.create(version)
   if version == "v1" then
     return DatabaseV1.new()
+  elseif version == "v2" then
+    return DatabaseV2.new()
   else
     error(("unknown version: %s"):format(version))
   end

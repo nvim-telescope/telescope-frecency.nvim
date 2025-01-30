@@ -8,7 +8,7 @@ local os_util = require "frecency.os_util"
 ---@field db_root? string default: vim.fn.stdpath "state"
 ---@field db_safe_mode? boolean default: true
 ---@field db_validate_threshold? integer default: 10
----@field db_version? "v1" default: "v1"
+---@field db_version? "v1"|"v2" default: "v1"
 ---@field debug? boolean default: false
 ---@field debug_timer? boolean|fun(event: string): nil default: false
 ---@field default_workspace? string default: nil
@@ -42,7 +42,7 @@ local Config = {}
 ---@field db_root string default: vim.fn.stdpath "state"
 ---@field db_safe_mode boolean default: true
 ---@field db_validate_threshold integer default: 10
----@field db_version "v1" default: "v1"
+---@field db_version "v1"|"v2" default: "v1"
 ---@field debug boolean default: false
 ---@field debug_timer boolean|fun(event: string): nil default: false
 ---@field default_workspace? string default: nil
@@ -185,8 +185,8 @@ Config.setup = function(ext_config)
     vim.validate("db_safe_mode", opts.db_safe_mode, "boolean")
     vim.validate("db_validate_threshold", opts.db_validate_threshold, "number")
     vim.validate("db_version", opts.db_version, function(v)
-      return v == "v1"
-    end, false, '"v1"')
+      return v == "v1" or v == "v2"
+    end, false, '"v1" or "v2"')
     vim.validate("debug", opts.debug, "boolean")
     vim.validate("debug_timer", opts.debug_timer, { "boolean", "function" })
     vim.validate("default_workspace", opts.default_workspace, "string", true)
@@ -221,7 +221,7 @@ Config.setup = function(ext_config)
       db_version = {
         opts.db_version,
         function(v)
-          return v == "v1"
+          return v == "v1" or v == "v2"
         end,
         '"v1"',
       },
