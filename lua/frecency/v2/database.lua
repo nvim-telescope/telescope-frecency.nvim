@@ -10,7 +10,10 @@ local lazy_require = require "frecency.lazy_require"
 local Path = lazy_require "plenary.path" --[[@as FrecencyPlenaryPath]]
 
 ---@class FrecencyDatabaseV2: FrecencyDatabaseV1
----@field private tbl FrecencyDatabaseTableV2
+---@field private tbl FrecencyTableV2
+-- luacheck: push no max comment line length
+---@field protected _load fun(self: FrecencyDatabaseV2, file_lock: FrecencyFileLock, update_watcher?: boolean): FrecencyTableDataV2
+-- luacheck: pop
 local DatabaseV2 = setmetatable({}, { __index = DatabaseV1 })
 
 ---@return FrecencyDatabaseV2
@@ -35,14 +38,14 @@ function DatabaseV2:filename()
 end
 
 ---@async
----@param db string
+---@param v2 string
 ---@param v1 string
 ---@return nil
-function DatabaseV2:migrate_from(db, v1)
+function DatabaseV2:migrate_from(v2, v1)
   log.debug "migration start"
-  log.debug("v2: " .. db)
-  log.debug("v1: " .. v1)
-  local tbl = self:_load(FileLock.new(v1))
+  log.debug("v2:", v2)
+  log.debug("v1:", v1)
+  local tbl = self:_load(FileLock.new(v1)) --[[@as FrecencyTableDataV1]]
   if not tbl then
     return
   end
@@ -95,7 +98,6 @@ function DatabaseV2:load()
   local tbl = self:_load(self:file_lock(), true)
   self.tbl:set(tbl)
   if self.tbl:half_lives_passed() > 5.0 then
-    timer.track "half_life recalculation: start"
     log.debug "half_life recalculation start"
     local now = os.time()
     for path, record in pairs(self.tbl:records()) do
@@ -103,7 +105,6 @@ function DatabaseV2:load()
       entry:update(now)
       self.tbl:set_record(path, entry:record())
     end
-    timer.track "half_life recalculation: finish"
     log.debug "half_life recalculation finish"
     self.watcher_tx.send "save"
   end

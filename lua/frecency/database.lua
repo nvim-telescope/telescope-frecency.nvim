@@ -6,7 +6,7 @@ local DatabaseV2 = require "frecency.v2.database"
 ---@field protected file_lock_rx async fun(): ...
 ---@field protected file_lock_tx fun(...): nil
 ---@field protected is_started boolean
----@field protected tbl FrecencyDatabaseTable
+---@field protected tbl FrecencyTable
 ---@field protected version FrecencyDatabaseVersion
 ---@field protected watcher_rx FrecencyPlenaryAsyncControlChannelRx
 ---@field protected watcher_tx FrecencyPlenaryAsyncControlChannelTx

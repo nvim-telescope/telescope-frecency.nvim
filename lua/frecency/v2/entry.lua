@@ -1,19 +1,10 @@
----@class FrecencyDatabaseRecordV2
----@field half_life integer
----@field reference_time integer
+---@class FrecencyDatabaseEntryV2: FrecencyTableRecordV2
+---@field path string
 ---@field score number
----@field last_accessed integer
----@field num_accesses integer
-
----@class FrecencyDatabaseEntryV2: FrecencyDatabaseEntry
----@field half_life integer
----@field reference_time integer
----@field last_accessed integer
----@field num_accesses integer
 local EntryV2 = {}
 
 ---@param path string
----@param record table
+---@param record FrecencyTableRecordV2
 ---@param epoch? integer
 ---@return FrecencyDatabaseEntryV2
 EntryV2.new = function(path, record, epoch)
@@ -30,7 +21,11 @@ EntryV2.new = function(path, record, epoch)
   return self
 end
 
----@return table
+---@class FrecencyDatabaseObjV2: FrecencyTableRecordV2
+---@field path string
+---@field score number
+
+---@return FrecencyDatabaseObjV2
 function EntryV2:obj()
   return {
     path = self.path,
@@ -42,7 +37,7 @@ function EntryV2:obj()
   }
 end
 
----@return FrecencyDatabaseRecordV2
+---@return FrecencyTableRecordV2
 function EntryV2:record()
   return {
     half_life = self.half_life,

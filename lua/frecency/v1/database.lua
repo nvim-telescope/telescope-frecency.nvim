@@ -11,11 +11,11 @@ local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 local Path = lazy_require "plenary.path" --[[@as FrecencyPlenaryPath]]
 
 ---@class FrecencyDatabaseV1: FrecencyDatabase
+---@field protected tbl FrecencyTableV1
 local DatabaseV1 = {}
 
 ---@return FrecencyDatabaseV1
 DatabaseV1.new = function()
-  local version = "v1"
   local file_lock_tx, file_lock_rx = async.control.channel.oneshot()
   local watcher_tx, watcher_rx = async.control.channel.mpsc()
   return setmetatable({
@@ -23,7 +23,7 @@ DatabaseV1.new = function()
     file_lock_tx = file_lock_tx,
     is_started = false,
     tbl = TableV1.new(),
-    version = version,
+    version = "v1",
     watcher_rx = watcher_rx,
     watcher_tx = watcher_tx,
   }, { __index = DatabaseV1 })
@@ -178,11 +178,11 @@ end
 
 ---@async
 ---@protected
----@param fl FrecencyFileLock
+---@param file_lock FrecencyFileLock
 ---@param update_watcher? boolean
----@return table?
-function DatabaseV1:_load(fl, update_watcher) -- luacheck: no self
-  local err, data = fl:with(function(target)
+---@return FrecencyTableDataV1?
+function DatabaseV1:_load(file_lock, update_watcher) -- luacheck: no self
+  local err, data = file_lock:with(function(target)
     local err, stat = async.uv.fs_stat(target)
     if err then
       return nil
