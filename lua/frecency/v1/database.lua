@@ -243,7 +243,7 @@ function DatabaseV1:remove_entry(path)
   if not self.tbl:records()[path] then
     return false
   end
-  self.tbl.records[path] = nil
+  self.tbl:remove_record(path)
   self.watcher_tx.send "save"
   return true
 end
