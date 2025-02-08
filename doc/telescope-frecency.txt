@@ -364,6 +364,8 @@ into DB. Example configuration for |lazy.nvim| is below.
       "nvim-telescope/telescope-frecency.nvim",
       -- `opts` property calls the plugin's setup() function.
       -- In this case, this calls frecency.setup().
+      ---@module 'frecency'
+      ---@type FrecencyOpts
       opts = {
 	  db_safe_mode = false,
       },
@@ -419,6 +421,7 @@ lua-ls. https://github.com/LuaLS/lua-language-server
 >lua
     require("telescope").setup {
       extensions = {
+	---@module 'frecency'
 	---@type FrecencyOpts
 	frecency = {
 	  auto_validate = false,
