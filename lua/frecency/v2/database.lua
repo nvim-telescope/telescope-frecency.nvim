@@ -1,5 +1,4 @@
 local DatabaseV1 = require "frecency.v1.database"
-local EntryV2 = require "frecency.v2.entry"
 local FileLock = require "frecency.file_lock"
 local TableV2 = require "frecency.v2.table"
 local config = require "frecency.config"
@@ -62,9 +61,8 @@ end
 ---@param path string
 ---@param epoch? integer
 function DatabaseV2:update(path, epoch)
-  local record = self.tbl:records()[path] or self.tbl:default_record()
   local now = epoch or os.time()
-  local entry = EntryV2.new(path, record, now)
+  local entry = self.tbl:entry(path, now)
   entry:update(now)
   self.tbl:set_record(path, entry:record())
   self.watcher_tx.send "save"
@@ -84,8 +82,8 @@ function DatabaseV2:get_entries(workspaces, epoch)
           return fs.starts_with(path, workspace)
         end)
     end)
-    :map(function(path, record)
-      return EntryV2.new(path, record, now)
+    :map(function(path, _)
+      return self.tbl:entry(path, now)
     end)
     :totable()
 end
@@ -99,12 +97,7 @@ function DatabaseV2:load()
   self.tbl:set(tbl)
   if self.tbl:half_lives_passed() > 5.0 then
     log.debug "half_life recalculation start"
-    local now = os.time()
-    for path, record in pairs(self.tbl:records()) do
-      local entry = EntryV2.new(path, record, now)
-      entry:update(now)
-      self.tbl:set_record(path, entry:record())
-    end
+    self.tbl:reset_reference_time()
     log.debug "half_life recalculation finish"
     self.watcher_tx.send "save"
   end

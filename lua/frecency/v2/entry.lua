@@ -1,18 +1,22 @@
 ---@class FrecencyDatabaseEntryV2: FrecencyTableRecordV2
+---@field half_life integer
 ---@field path string
+---@field reference_time integer
 ---@field score number
 local EntryV2 = {}
 
 ---@param path string
 ---@param record FrecencyTableRecordV2
+---@param half_life integer
+---@param reference_time integer
 ---@param epoch? integer
 ---@return FrecencyDatabaseEntryV2
-EntryV2.new = function(path, record, epoch)
+EntryV2.new = function(path, record, half_life, reference_time, epoch)
   local now = epoch or os.time()
   local self = setmetatable({
     path = path,
-    half_life = record.half_life,
-    reference_time = record.reference_time,
+    half_life = half_life,
+    reference_time = reference_time,
     last_accessed = record.last_accessed,
     num_accesses = record.num_accesses,
     score = record.score,
@@ -40,8 +44,6 @@ end
 ---@return FrecencyTableRecordV2
 function EntryV2:record()
   return {
-    half_life = self.half_life,
-    reference_time = self.reference_time,
     score = self.score,
     last_accessed = self.last_accessed,
     num_accesses = self.num_accesses,

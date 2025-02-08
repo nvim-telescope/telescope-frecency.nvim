@@ -2,10 +2,8 @@ local TableV1 = require "frecency.v1.table"
 local EntryV2 = require "frecency.v2.entry"
 
 ---@class FrecencyTableRecordV2
----@field half_life integer
 ---@field last_accessed integer
 ---@field num_accesses integer
----@field reference_time integer
 ---@field score number
 
 ---@class FrecencyTableDataV2
@@ -43,7 +41,7 @@ function TableV2:from_v1(v1_tbl)
     ---@param record FrecencyTableRecordV2
     ---@param timestamp integer
     tbl.records[path] = vim.iter(v1.timestamps):fold(v2, function(record, timestamp)
-      local entry = EntryV2.new(path, record, timestamp)
+      local entry = EntryV2.new(path, record, self:half_life(), self:reference_time(), timestamp)
       entry:update(timestamp)
       record.score = entry.score
       return record
@@ -58,9 +56,24 @@ function TableV2:get_records()
   return self.data.records
 end
 
+---@private
+---@param path string
+---@param record FrecencyTableRecordV2
+---@return nil
+function TableV2:set_record(path, record)
+  self.data.records[path] = record
+end
+
 ---@return integer
 function TableV2:reference_time()
   return self.data.reference_time
+end
+
+---@private
+---@param epoch integer
+---@return nil
+function TableV2:set_reference_time(epoch)
+  self.data.reference_time = epoch
 end
 
 ---@return integer
@@ -84,20 +97,41 @@ function TableV2:default_table()
 end
 
 ---@return FrecencyTableRecordV2
-function TableV2:default_record()
+function TableV2:default_record() -- luacheck: no self
   return {
-    half_life = self:half_life(),
-    reference_time = self:reference_time(),
     score = 0,
     last_accessed = 0,
     num_accesses = 0,
   }
 end
 
+---@param path string
+---@param epoch? integer
+---@return FrecencyDatabaseEntryV2
+function TableV2:entry(path, epoch)
+  local now = epoch or os.time()
+  local record = self:get_records()[path] or self:default_record()
+  return EntryV2.new(path, record, self:half_life(), self:reference_time(), now)
+end
+
 ---@param now? integer
 ---@return number
 function TableV2:half_lives_passed(now)
   return ((now or os.time()) - self:reference_time()) / self:half_life()
+end
+
+---@param epoch? integer
+---@return nil
+function TableV2:reset_reference_time(epoch)
+  local now = epoch or os.time()
+  local delta = self:reference_time() - now
+  self:set_reference_time(now)
+  for path, _ in pairs(self:records()) do
+    local entry = self:entry(path, now)
+    entry:update(now)
+    entry.last_accessed = entry.last_accessed + delta
+    self:set_record(path, entry:record())
+  end
 end
 
 return TableV2
