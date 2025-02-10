@@ -12,7 +12,7 @@ jobs:
           - macos-latest
           - windows-latest
         version:
-          - v0.10.3
+          - v0.10.4
           - nightly
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
