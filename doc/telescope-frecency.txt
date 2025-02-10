@@ -492,6 +492,24 @@ Type: `integer`
 
 It will remove entries when stale ones exist more than this count.
 
+				   *telescope-frecency-configuration-db_version*
+db_version ~
+
+Default: `"v1"`
+Type: `"v1"|"v2"`
+
+WARNING: This option is highly experimental.
+
+After 1.1.0, it has the “v2” version of database. This implements “New
+Frecency” algorithm that improves performance and stability.
+
+User:Jesse/NewFrecency - MozillaWiki
+https://wiki.mozilla.org/User:Jesse/NewFrecency?title=User:Jesse/NewFrecency
+
+NOTE: In the future version, such as 1.2.x or later, “v1” version will be
+marked “deprecated” and be removed in 2.0.0.
+
+
 					*telescope-frecency-configuration-debug*
 debug ~
 
