@@ -24,7 +24,7 @@ end
 ---@param epoch integer
 ---@return FrecencyEntry[]
 local function save_and_load(database, records, epoch)
-  ---@diagnostic disable-next-line: invisible
+  ---@diagnostic disable-next-line: invisible, undefined-field
   database.tbl:set(util.v1_table(records))
   database:save()
   async.util.sleep(100)
