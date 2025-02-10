@@ -107,7 +107,12 @@ end
 function EntryMaker:items(entry, workspace, workspace_tag, formatter)
   local items = {}
   if config.show_scores then
-    table.insert(items, { entry.score, "TelescopeFrecencyScores" })
+    if config.db_version == "v1" then
+      table.insert(items, { entry.score, "TelescopeFrecencyScores" })
+    else
+      local formatted = ("%.3f"):format(entry.score):sub(0, 5)
+      table.insert(items, { formatted, "TelescopeFrecencyScores" })
+    end
     if config.matcher == "fuzzy" then
       table.insert(items, { entry.index, "TelescopeFrecencyScores" })
       local score = (not entry.fuzzy_score or entry.fuzzy_score == 0) and "0"

@@ -20,12 +20,13 @@ end
 
 ---@async
 ---@param database FrecencyDatabase
----@param tbl table<string, table>
+---@param records table<string, table>
 ---@param epoch integer
 ---@return FrecencyEntry[]
-local function save_and_load(database, tbl, epoch)
-  ---@diagnostic disable-next-line: invisible
-  database:raw_save(util.v1_table(tbl), database:file_lock().target)
+local function save_and_load(database, records, epoch)
+  ---@diagnostic disable-next-line: invisible, undefined-field
+  database.tbl:set(util.v1_table(records))
+  database:save()
   async.util.sleep(100)
   local entries = database:get_entries(nil, epoch)
   table.sort(entries, function(a, b)

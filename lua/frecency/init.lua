@@ -103,6 +103,9 @@ local function setup(ext_config)
 end
 
 return {
+  frecency = function()
+    return rawget(frecency, "instance")
+  end,
   start = frecency.start,
   complete = frecency.complete,
   query = frecency.query,

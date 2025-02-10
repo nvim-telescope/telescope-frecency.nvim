@@ -1,17 +1,12 @@
 local config = require "frecency.config"
 
----@class FrecencyDatabaseEntryV1: FrecencyDatabaseEntry
----@field count integer
----@field timestamps integer[]
+---@class FrecencyDatabaseEntryV1: FrecencyTableRecordV1
+---@field path string
+---@field score number
 local EntryV1 = {}
 
----@class FrecencyDatabaseRawEntryV1
----@field ages integer[]
----@field count integer
----@field timestamps integer[]
-
 ---@param path string
----@param record FrecencyDatabaseRawEntryV1
+---@param record FrecencyTableRecordV1
 ---@param epoch? integer
 EntryV1.new = function(path, record, epoch)
   local now = epoch or os.time()
@@ -40,7 +35,11 @@ EntryV1.calculate = function(ages)
   end)
 end
 
----@return table
+---@class FrecencyDatabaseObjV1: FrecencyTableRecordV1
+---@field path string
+---@field score number
+
+---@return FrecencyDatabaseObjV1
 function EntryV1:obj()
   return { path = self.path, count = self.count, timestamps = self.timestamps, score = self.score }
 end

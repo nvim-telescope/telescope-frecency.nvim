@@ -11,11 +11,11 @@ local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 local Path = lazy_require "plenary.path" --[[@as FrecencyPlenaryPath]]
 
 ---@class FrecencyDatabaseV1: FrecencyDatabase
+---@field protected tbl FrecencyTableV1
 local DatabaseV1 = {}
 
 ---@return FrecencyDatabaseV1
 DatabaseV1.new = function()
-  local version = "v1"
   local file_lock_tx, file_lock_rx = async.control.channel.oneshot()
   local watcher_tx, watcher_rx = async.control.channel.mpsc()
   return setmetatable({
@@ -23,7 +23,7 @@ DatabaseV1.new = function()
     file_lock_tx = file_lock_tx,
     is_started = false,
     tbl = TableV1.new(),
-    version = version,
+    version = "v1",
     watcher_rx = watcher_rx,
     watcher_tx = watcher_tx,
   }, { __index = DatabaseV1 })
@@ -31,30 +31,20 @@ end
 
 ---@async
 ---@return string
-function DatabaseV1:filename()
+function DatabaseV1:filename() -- luacheck: no self
   local file_v1 = "file_frecency.bin"
 
-  ---@async
-  ---@return string
-  local function filename_v1()
-    -- NOTE: for backward compatibility
-    -- If the user does not set db_root specifically, search DB in
-    -- $XDG_DATA_HOME/nvim in addition to $XDG_STATE_HOME/nvim (default value).
-    local db = Path.new(config.db_root, file_v1).filename
-    if not config.ext_config.db_root and not fs.exists(db) then
-      local old_location = Path.new(vim.fn.stdpath "data", file_v1).filename
-      if fs.exists(old_location) then
-        return old_location
-      end
+  -- NOTE: for backward compatibility
+  -- If the user does not set db_root specifically, search DB in
+  -- $XDG_DATA_HOME/nvim in addition to $XDG_STATE_HOME/nvim (default value).
+  local db = Path.new(config.db_root, file_v1).filename
+  if not config.ext_config.db_root and not fs.exists(db) then
+    local old_location = Path.new(vim.fn.stdpath "data", file_v1).filename
+    if fs.exists(old_location) then
+      return old_location
     end
-    return db
   end
-
-  if self.version == "v1" then
-    return filename_v1()
-  else
-    error(("unknown version: %s"):format(self.version))
-  end
+  return db
 end
 
 ---@async
@@ -91,7 +81,7 @@ end
 ---@async
 ---@return boolean
 function DatabaseV1:has_entry()
-  return not vim.tbl_isempty(self.tbl.records)
+  return not vim.tbl_isempty(self.tbl:records())
 end
 
 ---@async
@@ -102,16 +92,25 @@ function DatabaseV1:insert_files(paths)
     return
   end
   for _, path in ipairs(paths) do
-    self.tbl.records[path] = { count = 1, timestamps = { 0 } }
+    local record = self.tbl:default_record()
+    self:initialize_record(record)
+    self.tbl:set_record(path, record)
   end
   self.watcher_tx.send "save"
+end
+
+---@param record table
+---@return nil
+function DatabaseV1:initialize_record(record) -- luacheck: no self
+  record.count = 1
+  table.insert(record.timestamps, 0)
 end
 
 ---@async
 ---@return string[]
 function DatabaseV1:unlinked_entries()
   local threads = vim
-    .iter(self.tbl.records)
+    .iter(self.tbl:records())
     :map(function(path, _)
       return function()
         local err, realpath = async.uv.fs_realpath(path)
@@ -128,7 +127,7 @@ end
 ---@param paths string[]
 function DatabaseV1:remove_files(paths)
   for _, file in ipairs(paths) do
-    self.tbl.records[file] = nil
+    self.tbl:remove_record(file)
   end
   self.watcher_tx.send "save"
 end
@@ -137,14 +136,14 @@ end
 ---@param path string
 ---@param epoch? integer
 function DatabaseV1:update(path, epoch)
-  local record = self.tbl.records[path] or { count = 0, timestamps = {} }
+  local record = self.tbl:records()[path] or self.tbl:default_record()
   record.count = record.count + 1
   local now = epoch or os.time()
   table.insert(record.timestamps, now)
   if #record.timestamps > config.max_timestamps then
     record.timestamps = vim.iter(record.timestamps):skip(#record.timestamps - config.max_timestamps):totable()
   end
-  self.tbl.records[path] = record
+  self.tbl:set_record(path, record)
   self.watcher_tx.send "save"
 end
 
@@ -155,7 +154,7 @@ end
 function DatabaseV1:get_entries(workspaces, epoch)
   local now = epoch or os.time()
   return vim
-    .iter(self.tbl.records)
+    .iter(self.tbl:records())
     :filter(function(path, _)
       return not workspaces
         or vim.iter(workspaces):any(function(workspace)
@@ -172,7 +171,18 @@ end
 ---@return nil
 function DatabaseV1:load()
   timer.track "load() start"
-  local err, data = self:file_lock():with(function(target)
+  local tbl = self:_load(self:file_lock(), true)
+  self.tbl:set(tbl)
+  timer.track "load() finish"
+end
+
+---@async
+---@protected
+---@param file_lock FrecencyFileLock
+---@param update_watcher? boolean
+---@return FrecencyTableDataV1?
+function DatabaseV1:_load(file_lock, update_watcher) -- luacheck: no self
+  local err, data = file_lock:with(function(target)
     local err, stat = async.uv.fs_stat(target)
     if err then
       return nil
@@ -184,56 +194,61 @@ function DatabaseV1:load()
     err, data = async.uv.fs_read(fd, stat.size)
     assert(not err, err)
     assert(not async.uv.fs_close(fd))
-    watcher.update(stat)
+    if update_watcher then
+      watcher.update(stat)
+    end
     return data
   end)
   assert(not err, err)
   local f = vim.F.npcall(loadstring, data or "")
-  local tbl = f and vim.F.npcall(f)
-  self.tbl:set(tbl)
-  timer.track "load() finish"
+  return f and vim.F.npcall(f)
 end
 
 ---@async
 ---@return nil
 function DatabaseV1:save()
   timer.track "save() start"
-  local err = self:file_lock():with(function(target)
-    self:raw_save(self.tbl:raw(), target)
-    local err, stat = async.uv.fs_stat(target)
-    assert(not err, err)
-    watcher.update(stat)
-    return nil
-  end)
-  assert(not err, err)
+  self:_save(self:file_lock(), true)
   timer.track "save() finish"
 end
 
 ---@async
----@param target string
----@param tbl FrecencyDatabaseRawTableV1
-function DatabaseV1:raw_save(tbl, target) -- luacheck: no self
-  local f = assert(load("return " .. vim.inspect(tbl)))
-  local data = string.dump(f)
-  local err, fd = async.uv.fs_open(target, "w", tonumber("644", 8))
+---@protected
+---@param fl FrecencyFileLock
+---@param update_watcher? boolean
+---@return nil
+function DatabaseV1:_save(fl, update_watcher) -- luacheck: no self
+  local err = fl:with(function(target)
+    local f = assert(load("return " .. vim.inspect(self.tbl:raw())))
+    local data = string.dump(f)
+    local err, fd = async.uv.fs_open(target, "w", tonumber("644", 8))
+    assert(not err, err)
+    assert(not async.uv.fs_write(fd, data))
+    assert(not async.uv.fs_close(fd))
+    local stat
+    err, stat = async.uv.fs_stat(target)
+    assert(not err, err)
+    if update_watcher then
+      watcher.update(stat)
+    end
+    return nil
+  end)
   assert(not err, err)
-  assert(not async.uv.fs_write(fd, data))
-  assert(not async.uv.fs_close(fd))
 end
 
 ---@async
 ---@param path string
 ---@return boolean
 function DatabaseV1:remove_entry(path)
-  if not self.tbl.records[path] then
+  if not self.tbl:records()[path] then
     return false
   end
-  self.tbl.records[path] = nil
+  self.tbl:remove_record(path)
   self.watcher_tx.send "save"
   return true
 end
 
----@private
+---@protected
 ---@async
 ---@return FrecencyFileLock
 function DatabaseV1:file_lock()
