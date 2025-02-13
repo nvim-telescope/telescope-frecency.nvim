@@ -114,7 +114,7 @@ function DatabaseV1:unlinked_entries()
     :map(function(path, _)
       return function()
         local err, realpath = async.uv.fs_realpath(path)
-        if err or not realpath or realpath ~= path or fs.is_ignored(realpath) then
+        if err or not realpath or realpath ~= path then
           return path
         end
       end
