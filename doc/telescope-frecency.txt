@@ -760,6 +760,20 @@ Type: `boolean`
 
 Determines if non-indexed files are included in workspace filter results.
 
+			    *telescope-frecency-configuration-unregister_hidden*
+unregister_hidden ~
+
+Default: `false`
+Type: `boolean`
+
+If `false` (default value), this plugin marks the file as “registered” when it
+is opened, so the file's frecency score will not be increased when the buffer
+is shown again until Neovim restarts.
+
+If `true`, it marks the buffer as “unregistered” when it becomes a |hidden-buffer|
+or an |inactive-buffer|. Then it will increase the buffer's score when it
+becomes an |active-buffer| that means it is shown in another window again.
+
 			   *telescope-frecency-configuration-workspace_scan_cmd*
 workspace_scan_cmd ~
 
