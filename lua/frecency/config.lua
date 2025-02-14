@@ -26,6 +26,7 @@ local os_util = require "frecency.os_util"
 ---@field show_filter_column? boolean|string[] default: true
 ---@field show_scores? boolean default: false
 ---@field show_unindexed? boolean default: true
+---@field unregister_hidden? boolean default: false
 ---@field workspace_scan_cmd? "LUA"|string[] default: nil
 ---@field workspaces? table<string, string|string[]> default: {}
 
@@ -60,6 +61,7 @@ local Config = {}
 ---@field show_filter_column boolean|string[] default: true
 ---@field show_scores boolean default: false
 ---@field show_unindexed boolean default: true
+---@field unregister_hidden boolean default: false
 ---@field workspace_scan_cmd? "LUA"|string[] default: nil
 ---@field workspaces table<string, string|string[]> default: {}
 
@@ -91,6 +93,7 @@ Config.new = function()
     show_filter_column = true,
     show_scores = true,
     show_unindexed = true,
+    unregister_hidden = true,
     workspace_scan_cmd = true,
     workspaces = true,
   }
@@ -148,6 +151,7 @@ Config.default_values = {
   show_filter_column = true,
   show_scores = false,
   show_unindexed = true,
+  unregister_hidden = false,
   workspace_scan_cmd = nil,
   workspaces = {},
 }
@@ -207,6 +211,7 @@ Config.setup = function(ext_config)
     vim.validate("show_filter_column", opts.show_filter_column, { "boolean", "table" }, true)
     vim.validate("show_scores", opts.show_scores, "boolean")
     vim.validate("show_unindexed", opts.show_unindexed, "boolean")
+    vim.validate("unregister_hidden", opts.unregister_hidden, "boolean")
     vim.validate("workspace_scan_cmd", opts.workspace_scan_cmd, { "string", "table" }, true)
     vim.validate("workspaces", opts.workspaces, "table")
   else
@@ -257,6 +262,7 @@ Config.setup = function(ext_config)
       show_filter_column = { opts.show_filter_column, { "b", "t" }, true },
       show_scores = { opts.show_scores, "b" },
       show_unindexed = { opts.show_unindexed, "b" },
+      unregister_hidden = { opts.unregister_hidden, "b" },
       workspace_scan_cmd = { opts.workspace_scan_cmd, { "s", "t" }, true },
       workspaces = { opts.workspaces, "t" },
     }

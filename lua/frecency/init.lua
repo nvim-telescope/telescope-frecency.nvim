@@ -10,6 +10,7 @@ local database
 ---@field query fun(opts?: FrecencyQueryOpts): FrecencyQueryEntry[]|string[]
 ---@field register async fun(bufnr: integer, datetime: string?): nil
 ---@field start fun(opts: FrecencyPickerOptions?): nil
+---@field unregister fun(bufnr: integer): nil
 ---@field validate_database async fun(force: boolean?): nil
 local frecency = setmetatable({}, {
   ---@param self FrecencyInstance
@@ -90,6 +91,16 @@ local function setup(ext_config)
       async_call(frecency.register, args.buf, vim.api.nvim_buf_get_name(args.buf))
     end,
   })
+
+  if config.unregister_hidden then
+    vim.api.nvim_create_autocmd({ "BufHidden", "BufUnload" }, {
+      desc = "Unregister in hiding buffers for telescope-frecency",
+      group = group,
+      callback = function(args)
+        frecency.unregister(args.buf)
+      end,
+    })
+  end
 
   if config.bootstrap and vim.v.vim_did_enter == 0 then
     database = require("frecency.database").create(config.db_version)

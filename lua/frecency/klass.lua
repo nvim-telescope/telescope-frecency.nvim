@@ -183,6 +183,12 @@ function Frecency:register(bufnr, path, epoch)
   log.debug("registered:", bufnr, path)
 end
 
+---@param bufnr integer
+---@return nil
+function Frecency:unregister(bufnr)
+  self.buf_registered[bufnr] = nil
+end
+
 ---@async
 ---@param path string
 ---@return nil
