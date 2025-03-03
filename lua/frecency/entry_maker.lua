@@ -79,7 +79,7 @@ end
 function EntryMaker:width_items(workspaces, workspace_tag)
   local width_items = {}
   if config.show_scores then
-    table.insert(width_items, { width = 5 }) -- recency score
+    table.insert(width_items, { width = 6 }) -- recency score
     if config.matcher == "fuzzy" then
       table.insert(width_items, { width = 5 }) -- index
       table.insert(width_items, { width = 6 }) -- fuzzy score
@@ -105,19 +105,19 @@ end
 ---@param formatter fun(filename: string): string, FrecencyTelescopePathStyle[]
 ---@return table[]
 function EntryMaker:items(entry, workspace, workspace_tag, formatter)
+  ---@param score number
+  ---@return string
+  local function format_score(score)
+    local fmt = score % 1 == 0 and "%5d" or "%.3f"
+    return fmt:format(score):sub(0, 5)
+  end
+
   local items = {}
   if config.show_scores then
-    if config.db_version == "v1" then
-      table.insert(items, { entry.score, "TelescopeFrecencyScores" })
-    else
-      local formatted = ("%.3f"):format(entry.score):sub(0, 5)
-      table.insert(items, { formatted, "TelescopeFrecencyScores" })
-    end
+    table.insert(items, { format_score(entry.score), "TelescopeFrecencyScores" })
     if config.matcher == "fuzzy" then
-      table.insert(items, { entry.index, "TelescopeFrecencyScores" })
-      local score = (not entry.fuzzy_score or entry.fuzzy_score == 0) and "0"
-        or ("%.3f"):format(entry.fuzzy_score):sub(0, 5)
-      table.insert(items, { score, "TelescopeFrecencyScores" })
+      table.insert(items, { ("%4d"):format(entry.index), "TelescopeFrecencyScores" })
+      table.insert(items, { format_score(entry.fuzzy_score or 0), "TelescopeFrecencyScores" })
     end
   end
   if not config.disable_devicons then
