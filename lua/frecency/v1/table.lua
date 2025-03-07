@@ -105,4 +105,10 @@ function TableV1:remove_record(key)
   self.data.records[key] = nil
 end
 
+---@param records table[]
+---@return table
+function TableV1:dump(records)
+  return { version = self.version, records = records }
+end
+
 return TableV1
