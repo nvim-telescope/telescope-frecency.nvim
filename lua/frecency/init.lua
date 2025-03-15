@@ -97,7 +97,9 @@ local function setup(ext_config)
       desc = "Unregister in hiding buffers for telescope-frecency",
       group = group,
       callback = function(args)
-        frecency.unregister(args.buf)
+        if vim.api.nvim_buf_get_name(args.buf) ~= "" then
+          frecency.unregister(args.buf)
+        end
       end,
     })
   end
