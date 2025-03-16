@@ -115,12 +115,22 @@ local function setup(ext_config)
   timer.track "setup() finish"
 end
 
-return {
-  frecency = function()
-    return rawget(frecency, "instance")
-  end,
+---@class FrecencyModule
+---@field complete fun(findstart: 1|0, base: string): integer|''|string[]
+---@field frecency Frecency
+---@field query fun(opts?: FrecencyQueryOpts): FrecencyQueryEntry[]|string[]
+---@field setup fun(ext_config?: FrecencyOpts): nil
+---@field start fun(opts: FrecencyPickerOptions?): nil
+
+return setmetatable({
   start = frecency.start,
   complete = frecency.complete,
   query = frecency.query,
   setup = setup,
-}
+}, {
+  __index = function(_, key)
+    if key == "frecency" then
+      return rawget(frecency, "instance")
+    end
+  end,
+}) --[[@as FrecencyModule]]
