@@ -11,7 +11,7 @@ local Path = lazy_require "plenary.path" --[[@as FrecencyPlenaryPath]]
 ---@class FrecencyDatabaseV2: FrecencyDatabaseV1
 ---@field private tbl FrecencyTableV2
 -- luacheck: push no max comment line length
----@field protected _load fun(self: FrecencyDatabaseV2, file_lock: FrecencyFileLock, update_watcher?: boolean): FrecencyTableDataV2
+---@field protected _load async fun(self: FrecencyDatabaseV2, file_lock: FrecencyFileLock, update_watcher?: boolean): FrecencyTableDataV2
 -- luacheck: pop
 local DatabaseV2 = setmetatable({}, { __index = DatabaseV1 })
 
