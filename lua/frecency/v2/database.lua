@@ -77,10 +77,13 @@ function DatabaseV2:get_entries(workspaces, epoch)
   return vim
     .iter(self.tbl:records())
     :filter(function(path, _)
-      return not workspaces
-        or vim.iter(workspaces):any(function(workspace)
-          return fs.starts_with(path, workspace)
-        end)
+      return not fs.is_ignored(path)
+        and (
+          not workspaces
+          or vim.iter(workspaces):any(function(workspace)
+            return fs.starts_with(path, workspace)
+          end)
+        )
     end)
     :map(function(path, _)
       return self.tbl:entry(path, now)
