@@ -215,6 +215,7 @@ Config.setup = function(ext_config)
     vim.validate("workspace_scan_cmd", opts.workspace_scan_cmd, { "string", "table" }, true)
     vim.validate("workspaces", opts.workspaces, "table")
   else
+    ---@diagnostic disable: assign-type-mismatch
     -- TODO: remove this for deprecating 0.10 in the future
     vim.validate {
       recency_values = { opts.recency_values, "t" },
@@ -266,6 +267,7 @@ Config.setup = function(ext_config)
       workspace_scan_cmd = { opts.workspace_scan_cmd, { "s", "t" }, true },
       workspaces = { opts.workspaces, "t" },
     }
+    ---@diagnostic enable: assign-type-mismatch
   end
   config.cached_ignore_regexes = nil
   config.ext_config = ext_config
