@@ -1,7 +1,20 @@
 local os_util = require "frecency.os_util"
 
+---@class FrecencyOverwritableOpts
+---@field disable_devicons? boolean default: false
+---@field enable_prompt_mappings? boolean default: false
+---@field filter_delimiter? string default: ":"
+---@field hide_current_buffer? boolean default: false
+---@field ignore_patterns? string[] default: { "*.git/*", "*/tmp/*", "term://*" }
+---@field matcher? "default"|"fuzzy" default: "default"
+---@field show_filter_column? boolean|string[] default: true
+---@field show_scores? boolean default: false
+---@field show_unindexed? boolean default: true
+---@field workspace_scan_cmd? "LUA"|string[] default: nil
+---@field workspaces? table<string, string|string[]> default: {}
+
 ---Type to use when users write their own config.
----@class FrecencyOpts
+---@class FrecencyOpts: FrecencyOverwritableOpts
 ---@field recency_values? { age: integer, value: integer }[] default: see lua/frecency/config.lua
 ---@field auto_validate? boolean default: true
 ---@field bootstrap? boolean default: true
@@ -12,23 +25,12 @@ local os_util = require "frecency.os_util"
 ---@field debug? boolean default: false
 ---@field debug_timer? boolean|fun(event: string): nil default: false
 ---@field default_workspace? string default: nil
----@field disable_devicons? boolean default: false
----@field enable_prompt_mappings? boolean default: false
----@field filter_delimiter? string default: ":"
----@field hide_current_buffer? boolean default: false
----@field ignore_patterns? string[] default: { "*.git/*", "*/tmp/*", "term://*" }
 ---@field ignore_register? fun(bufnr: integer): boolean
----@field matcher? "default"|"fuzzy" default: "default"
 ---@field scoring_function? fun(recency: integer, fzy_score: number): number default: see lua/frecency/config.lua
 ---@field max_timestamps? integer default: 10
 ---@field path_display? table default: nil
 ---@field preceding? "opened"|"same_repo" default: nil
----@field show_filter_column? boolean|string[] default: true
----@field show_scores? boolean default: false
----@field show_unindexed? boolean default: true
 ---@field unregister_hidden? boolean default: false
----@field workspace_scan_cmd? "LUA"|string[] default: nil
----@field workspaces? table<string, string|string[]> default: {}
 
 ---@class FrecencyConfig: FrecencyRawConfig
 ---@field ext_config FrecencyRawConfig
@@ -159,7 +161,7 @@ Config.default_values = {
 local config = Config.new()
 
 ---@return FrecencyRawConfig
-Config.get = function()
+Config.get_all = function()
   return config.values
 end
 
@@ -272,6 +274,40 @@ Config.setup = function(ext_config)
   config.cached_ignore_regexes = nil
   config.ext_config = ext_config
   config.values = opts
+end
+
+---@param opts table
+---@param key "disable_devicons"
+---| "enable_prompt_mappings"
+---| "filter_delimiter"
+---| "hide_current_buffer"
+---| "ignore_patterns"
+---| "matcher"
+---| "show_filter_column"
+---| "show_scores"
+---| "show_unindexed"
+---| "workspace_scan_cmd"
+---| "workspaces"
+---@return any
+Config.get = function(opts, key)
+  ---@type table<string, true>
+  local overwritable = {
+    disable_devicons = true,
+    enable_prompt_mappings = true,
+    filter_delimiter = true,
+    hide_current_buffer = true,
+    ignore_patterns = true,
+    matcher = true,
+    show_filter_column = true,
+    show_scores = true,
+    show_unindexed = true,
+    workspace_scan_cmd = true,
+    workspaces = true,
+  }
+  if overwritable[key] and opts[key] ~= nil then
+    return opts[key]
+  end
+  return config[key]
 end
 
 return config
