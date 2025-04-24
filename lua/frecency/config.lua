@@ -218,6 +218,7 @@ Config.setup = function(ext_config)
     ---@diagnostic disable: assign-type-mismatch
     -- TODO: remove this for deprecating 0.10 in the future
     vim.validate {
+      ---@diagnostic disable: assign-type-mismatch
       recency_values = { opts.recency_values, "t" },
       auto_validate = { opts.auto_validate, "b" },
       bootstrap = { opts.bootstrap, "b" },
@@ -266,6 +267,7 @@ Config.setup = function(ext_config)
       unregister_hidden = { opts.unregister_hidden, "b" },
       workspace_scan_cmd = { opts.workspace_scan_cmd, { "s", "t" }, true },
       workspaces = { opts.workspaces, "t" },
+      ---@diagnostic enable: assign-type-mismatch
     }
     ---@diagnostic enable: assign-type-mismatch
   end
