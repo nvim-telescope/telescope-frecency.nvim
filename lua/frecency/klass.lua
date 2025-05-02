@@ -239,17 +239,18 @@ function Frecency:query(opts, epoch)
     end)
     :totable()
   table.sort(objects, self.database.query_sorter(opts.order, opts.direction))
-  local results = opts.record and objects
+  local records = opts.record and objects
     or vim
       .iter(objects)
       :map(function(obj)
         return obj.path
       end)
       :totable()
-  if #results > opts.limit then
-    results = vim.list_slice(results, 1, opts.limit)
+  if #records > opts.limit then
+    records = vim.list_slice(records, 1, opts.limit)
   end
-  return opts.json and vim.json.encode(results) or results
+  local dumped = self.database.tbl:dump(records)
+  return opts.json and vim.json.encode(dumped) or dumped
 end
 
 ---@private
