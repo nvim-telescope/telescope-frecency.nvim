@@ -41,6 +41,13 @@ local Finder = {
           return pcall(vim.system, { candidate[1], "--version" })
         end)
       end
+      vim.iter(config.ignore_patterns):each(cache[1] == "rg" and function(v)
+        table.insert(cache, "-g")
+        table.insert(cache, "!" .. v)
+      end or function(v)
+        table.insert(cache, "-E")
+        table.insert(cache, v)
+      end)
       return cache
     end
   end)(),
