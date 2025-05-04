@@ -114,12 +114,34 @@ function Finder:start(epoch)
   async.void(function()
     -- NOTE: return to the main loop to show the main window
     async.util.scheduler()
+    
+    -- Collect deleted files to remove from database if enabled
+    local deleted_files = {}
+    local check_existence = config.remove_non_existent_files
+    
+    -- Process database entries
     for _, file in ipairs(self:get_results(self.paths, epoch)) do
       file.path = os_util.normalize_sep(file.path)
-      local entry = self.entry_maker(file)
-      self.tx.send(entry)
+      
+      if not check_existence or fs.exists(file.path) then
+        local entry = self.entry_maker(file)
+        self.tx.send(entry)
+      else
+        -- File doesn't exist, schedule it for removal from database
+        table.insert(deleted_files, file.path)
+      end
     end
+    
     self.tx.send(nil)
+    
+    -- Remove deleted files from database in the background after telescope display is complete
+    if check_existence and #deleted_files > 0 then
+      log.debug("Removing " .. #deleted_files .. " deleted files from database")
+      async.void(function()
+        self.database:remove_files(deleted_files)
+      end)()
+    end
+    
     if self.need_scan_dir then
       vim
         .iter(self.paths)
