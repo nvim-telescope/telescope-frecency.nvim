@@ -19,6 +19,7 @@ local os_util = require "frecency.os_util"
 ---@field ignore_patterns? string[] default: { "*.git/*", "*/tmp/*", "term://*" }
 ---@field ignore_register? fun(bufnr: integer): boolean
 ---@field matcher? "default"|"fuzzy" default: "default"
+---@field remove_non_existent_files? boolean default: true
 ---@field scoring_function? fun(recency: integer, fzy_score: number): number default: see lua/frecency/config.lua
 ---@field max_timestamps? integer default: 10
 ---@field path_display? table default: nil
@@ -54,6 +55,7 @@ local Config = {}
 ---@field ignore_patterns string[] default: { "*.git/*", "*/tmp/*", "term://*" }
 ---@field ignore_register? fun(bufnr: integer): boolean default: nil
 ---@field matcher "default"|"fuzzy" default: "default"
+---@field remove_non_existent_files boolean default: true
 ---@field scoring_function fun(recency: integer, fzy_score: number): number default: see lua/frecency/config.lua
 ---@field max_timestamps integer default: 10
 ---@field path_display? table default: nil
@@ -89,6 +91,7 @@ Config.new = function()
     max_timestamps = true,
     path_display = true,
     preceding = true,
+    remove_non_existent_files = true,
     scoring_function = true,
     show_filter_column = true,
     show_scores = true,
@@ -132,6 +135,7 @@ Config.default_values = {
     or { "*.git/*", "*/tmp/*", "term://*" },
   matcher = "default",
   max_timestamps = 10,
+  remove_non_existent_files = true,
   recency_values = {
     { age = 240, value = 100 }, -- past 4 hours
     { age = 1440, value = 80 }, -- past day
@@ -208,6 +212,7 @@ Config.setup = function(ext_config)
     vim.validate("preceding", opts.preceding, function(v)
       return v == "opened" or v == "same_repo" or v == nil
     end, '"opened" or "same_repo" or nil')
+    vim.validate("remove_non_existent_files", opts.remove_non_existent_files, "boolean", true)
     vim.validate("show_filter_column", opts.show_filter_column, { "boolean", "table" }, true)
     vim.validate("show_scores", opts.show_scores, "boolean")
     vim.validate("show_unindexed", opts.show_unindexed, "boolean")
@@ -261,6 +266,7 @@ Config.setup = function(ext_config)
         end,
         '"opened" or "same_repo" or nil',
       },
+      remove_non_existent_files = { opts.remove_non_existent_files, "b", true },
       show_filter_column = { opts.show_filter_column, { "b", "t" }, true },
       show_scores = { opts.show_scores, "b" },
       show_unindexed = { opts.show_unindexed, "b" },
