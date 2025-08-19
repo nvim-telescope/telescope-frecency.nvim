@@ -134,4 +134,13 @@ function TableV2:reset_reference_time(epoch)
   end
 end
 
+---@param records table[]
+---@return table
+function TableV2:dump(records)
+  local dumped = TableV1.dump(self, records)
+  dumped.reference_time = self:reference_time()
+  dumped.half_life = self:half_life()
+  return dumped
+end
+
 return TableV2

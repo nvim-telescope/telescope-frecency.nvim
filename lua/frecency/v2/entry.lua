@@ -33,8 +33,6 @@ end
 function EntryV2:obj()
   return {
     path = self.path,
-    half_life = self.half_life,
-    reference_time = self.reference_time,
     last_accessed = self.last_accessed,
     num_accesses = self.num_accesses,
     score = self.score,
