@@ -231,11 +231,23 @@ function Frecency:query(opts, epoch)
   local workspaces = type(opts.workspace) == "table" and opts.workspace
     or type(opts.workspace) == "string" and { opts.workspace }
     or nil
+
+  -- NOTE: Here we do not use vim.F.if_nil because it always does
+  -- require("telescope.config") and prevents to load telescope lazily.
+  local file_ignore_patterns = config.file_ignore_patterns
+    or require("telescope.config").values.file_ignore_patterns
+    or {} --[=[@as string[]]=]
+
   local objects = vim
     .iter(self.database:get_entries(workspaces, epoch))
     ---@param entry FrecencyDatabaseEntry
     :map(function(entry)
       return entry:obj()
+    end)
+    :filter(function(obj)
+      return not vim.iter(ipairs(file_ignore_patterns)):any(function(_, v)
+        return not not obj.path:match(v)
+      end)
     end)
     :totable()
   table.sort(objects, self.database.query_sorter(opts.order, opts.direction))

@@ -564,6 +564,26 @@ If enabled, you can start completion for
 |telescope-frecency-introduction-workspace-filter| with `<Tab>` and `<S-Tab>` keys
 succeeded by input `:` (in default).
 
+			 *telescope-frecency-configuration-file_ignore_patterns*
+file_ignore_patterns ~
+
+Default: `nil`
+Type: `table`
+
+Like |telescope.defaults.file_ignore_patterns|, this is a table of lua regex and
+will be used to filter out results from not only the frecency picker but also
+|telescope-frecency-function-query|.
+
+NOTE: See also |telescope-frecency-configuration-ignore_patterns|.
+
+			     *telescope-frecency-configuration-filter_delimiter*
+filter_delimiter ~
+
+Default: `":"`
+Type: `string`
+
+Delimiters to indicate the filter like `:CWD:`.
+
 			  *telescope-frecency-configuration-hide_current_buffer*
 hide_current_buffer ~
 
@@ -571,11 +591,6 @@ Default: `false`
 Type: `boolean`
 
 If `true`, it does not show the filename in the current buffer in candidates.
-
-			     *telescope-frecency-configuration-filter_delimiter*
-filter_delimiter ~
-
-Delimiters to indicate the filter like `:CWD:`.
 
 			      *telescope-frecency-configuration-ignore_patterns*
 ignore_patterns ~
@@ -590,6 +605,8 @@ which you'll see in the finder results).
 
 NOTE: In registering, |telescope-frecency-configuration-ignore_register| is
 applied before this patterns
+
+NOTE: See also |telescope-frecency-configuration-file_ignore_patterns|.
 
 			      *telescope-frecency-configuration-ignore_register*
 ignore_register ~
