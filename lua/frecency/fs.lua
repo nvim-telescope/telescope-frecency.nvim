@@ -44,14 +44,15 @@ function M.scan_dir(path)
       vim.fs.dir(path, {
         depth = SCAN_DEPTH,
         skip = function(dirname)
-          if M.is_ignored(os_util.join_path(path, dirname)) then
+          -- NOTE: need to ignore other directories?
+          if dirname == ".git" then
             return false
           end
         end,
       })
     do
       local fullpath = os_util.join_path(path, name)
-      if type == "file" and not M.is_ignored(fullpath) and gitignore({ path }, fullpath) then
+      if type == "file" and gitignore({ path }, fullpath) then
         coroutine.yield(name)
       end
     end
