@@ -312,11 +312,17 @@ plugin. See |telescope-frecency-combining-results-outside-this-plugin|.
       ……
     ]
 
-Options:			     *telescope-frecency-function-query-options*
+Options:						     *FrecencyQueryOpts*
+				     *telescope-frecency-function-query-options*
 			   *telescope-frecency-function-query-options-direction*
   - `direction`	Default: `"desc"`
 		Type: `"asc"|"desc"`
 		This specifies the order direction for results.
+			      *telescope-frecency-function-query-options-filter*
+  - `filter`    Default: `function() return true end`
+		Type: `fun(entry: table) boolean`
+		This function is used to filter candidates out. The argument
+		`entry` has the same type as results.
 			       *telescope-frecency-function-query-options-limit*
   - `limit`	Default: `100`
 		Type: `integer`
