@@ -233,9 +233,12 @@ function Frecency:query(opts, epoch)
     order = "score",
     record = false,
   }, opts or {})
-  local workspaces = type(opts.workspace) == "table" and opts.workspace
-    or type(opts.workspace) == "string" and { opts.workspace }
-    or nil
+  ---@type string[]?
+  local workspaces
+  do
+    local w = opts.workspace
+    workspaces = type(w) == "table" and w or type(w) == "string" and { w } or nil
+  end
   local objects = vim
     .iter(self.database:get_entries(workspaces, epoch))
     ---@param entry FrecencyDatabaseEntry
