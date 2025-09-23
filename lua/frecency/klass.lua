@@ -205,6 +205,7 @@ end
 
 ---@class FrecencyQueryOpts
 ---@field direction? "asc"|"desc" default: "desc"
+---@field filter? fun(obj: FrecencyDatabaseObjV1|FrecencyDatabaseObjV2): boolean? default: nil
 ---@field json? boolean default: false
 ---@field limit? integer default: 100
 ---@field order? FrecencyQueryOrder default: "score"
@@ -221,16 +222,23 @@ end
 ---@param epoch? integer
 ---@return string|FrecencyQueryEntry[]|string[]
 function Frecency:query(opts, epoch)
+  ---@type FrecencyQueryOpts
   opts = vim.tbl_extend("force", {
     direction = "desc",
+    filter = function(_)
+      return true
+    end,
     json = false,
     limit = 100,
     order = "score",
     record = false,
   }, opts or {})
-  local workspaces = type(opts.workspace) == "table" and opts.workspace
-    or type(opts.workspace) == "string" and { opts.workspace }
-    or nil
+  ---@type string[]?
+  local workspaces
+  do
+    local w = opts.workspace
+    workspaces = type(w) == "table" and w or type(w) == "string" and { w } or nil
+  end
   local objects = vim
     .iter(self.database:get_entries(workspaces, epoch))
     ---@param entry FrecencyDatabaseEntry
@@ -242,6 +250,7 @@ function Frecency:query(opts, epoch)
   local results = opts.record and objects
     or vim
       .iter(objects)
+      :filter(opts.filter)
       :map(function(obj)
         return obj.path
       end)
