@@ -14,7 +14,6 @@ local os_util = require "frecency.os_util"
 ---@field default_workspace? string default: nil
 ---@field disable_devicons? boolean default: false
 ---@field enable_prompt_mappings? boolean default: false
----@field file_ignore_patterns? string[]? default: nil
 ---@field filter_delimiter? string default: ":"
 ---@field hide_current_buffer? boolean default: false
 ---@field ignore_patterns? string[] default: { "*.git/*", "*/tmp/*", "term://*" }
@@ -50,7 +49,6 @@ local Config = {}
 ---@field default_workspace? string default: nil
 ---@field disable_devicons boolean default: false
 ---@field enable_prompt_mappings boolean default: false
----@field file_ignore_patterns string[]? default: nil
 ---@field filter_delimiter string default: ":"
 ---@field hide_current_buffer boolean default: false
 ---@field ignore_patterns string[] default: { "*.git/*", "*/tmp/*", "term://*" }
@@ -83,7 +81,6 @@ Config.new = function()
     default_workspace = true,
     disable_devicons = true,
     enable_prompt_mappings = true,
-    file_ignore_patterns = true,
     filter_delimiter = true,
     hide_current_buffer = true,
     ignore_patterns = true,
@@ -129,7 +126,6 @@ Config.default_values = {
   default_workspace = nil,
   disable_devicons = false,
   enable_prompt_mappings = false,
-  file_ignore_patterns = nil,
   filter_delimiter = ":",
   hide_current_buffer = false,
   ignore_patterns = os_util.is_windows and { [[*.git\*]], [[*\tmp\*]], "term://*" }
@@ -200,7 +196,6 @@ Config.setup = function(ext_config)
     vim.validate("default_workspace", opts.default_workspace, "string", true)
     vim.validate("disable_devicons", opts.disable_devicons, "boolean")
     vim.validate("enable_prompt_mappings", opts.enable_prompt_mappings, "boolean")
-    vim.validate("file_ignore_patterns", opts.file_ignore_patterns, "table", true)
     vim.validate("filter_delimiter", opts.filter_delimiter, "string")
     vim.validate("hide_current_buffer", opts.hide_current_buffer, "boolean")
     vim.validate("ignore_patterns", opts.ignore_patterns, "table")
@@ -242,7 +237,6 @@ Config.setup = function(ext_config)
       default_workspace = { opts.default_workspace, "s", true },
       disable_devicons = { opts.disable_devicons, "b" },
       enable_prompt_mappings = { opts.enable_prompt_mappings, "b" },
-      file_ignore_patterns = { opts.file_ignore_patterns, "t", true },
       filter_delimiter = { opts.filter_delimiter, "s" },
       hide_current_buffer = { opts.hide_current_buffer, "b" },
       ignore_patterns = { opts.ignore_patterns, "t" },
