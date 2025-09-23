@@ -564,6 +564,14 @@ If enabled, you can start completion for
 |telescope-frecency-introduction-workspace-filter| with `<Tab>` and `<S-Tab>` keys
 succeeded by input `:` (in default).
 
+			     *telescope-frecency-configuration-filter_delimiter*
+filter_delimiter ~
+
+Default: `":"`
+Type: `string`
+
+Delimiters to indicate the filter like `:CWD:`.
+
 			  *telescope-frecency-configuration-hide_current_buffer*
 hide_current_buffer ~
 
@@ -571,11 +579,6 @@ Default: `false`
 Type: `boolean`
 
 If `true`, it does not show the filename in the current buffer in candidates.
-
-			     *telescope-frecency-configuration-filter_delimiter*
-filter_delimiter ~
-
-Delimiters to indicate the filter like `:CWD:`.
 
 			      *telescope-frecency-configuration-ignore_patterns*
 ignore_patterns ~
