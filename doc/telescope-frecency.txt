@@ -594,6 +594,10 @@ which you'll see in the finder results).
 NOTE: In registering, |telescope-frecency-configuration-ignore_register| is
 applied before this patterns
 
+NOTE: This option is used NOT for listing candidates in the picker. If you
+want to filter some candidates out, use
+|telescope.defaults.file_ignore_patterns| instead.
+
 			      *telescope-frecency-configuration-ignore_register*
 ignore_register ~
 
