@@ -7,12 +7,14 @@ local entry_display = lazy_require "telescope.pickers.entry_display" --[[@as Fre
 local utils = lazy_require "telescope.utils" --[[@as FrecencyTelescopeUtils]]
 
 ---@class FrecencyEntryMaker
+---@field opts FrecencyPickerOptions
 ---@field loaded table<string,boolean>
 local EntryMaker = {}
 
+---@param opts FrecencyPickerOptions
 ---@return FrecencyEntryMaker
-EntryMaker.new = function()
-  return setmetatable({}, { __index = EntryMaker })
+EntryMaker.new = function(opts)
+  return setmetatable({ opts = opts }, { __index = EntryMaker })
 end
 
 ---@class FrecencyEntry
@@ -78,17 +80,17 @@ end
 ---@return table[]
 function EntryMaker:width_items(workspaces, workspace_tag)
   local width_items = {}
-  if config.show_scores then
+  if config.get(self.opts, "show_scores") then
     table.insert(width_items, { width = 6 }) -- recency score
-    if config.matcher == "fuzzy" then
+    if config.get(self.opts, "matcher") == "fuzzy" then
       table.insert(width_items, { width = 5 }) -- index
       table.insert(width_items, { width = 6 }) -- fuzzy score
     end
   end
-  if not config.disable_devicons then
+  if not config.get(self.opts, "disable_devicons") then
     table.insert(width_items, { width = 2 })
   end
-  if config.show_filter_column and workspaces and #workspaces > 0 and workspace_tag then
+  if config.get(self.opts, "show_filter_column") and workspaces and #workspaces > 0 and workspace_tag then
     table.insert(width_items, { width = self:calculate_filter_column_width(workspaces, workspace_tag) })
   end
   -- TODO: This is a stopgap measure to detect placeholders.
@@ -113,14 +115,14 @@ function EntryMaker:items(entry, workspace, workspace_tag, formatter)
   end
 
   local items = {}
-  if config.show_scores then
+  if config.get(self.opts, "show_scores") then
     table.insert(items, { format_score(entry.score), "TelescopeFrecencyScores" })
-    if config.matcher == "fuzzy" then
+    if config.get(self.opts, "matcher") == "fuzzy" then
       table.insert(items, { ("%4d"):format(entry.index), "TelescopeFrecencyScores" })
       table.insert(items, { format_score(entry.fuzzy_score or 0), "TelescopeFrecencyScores" })
     end
   end
-  if not config.disable_devicons then
+  if not config.get(self.opts, "disable_devicons") then
     local basename = utils.path_tail(entry.name)
     local icon, icon_highlight = web_devicons.get_icon(basename, utils.file_extension(basename), { default = false })
     if not icon then
@@ -128,7 +130,7 @@ function EntryMaker:items(entry, workspace, workspace_tag, formatter)
     end
     table.insert(items, { icon, icon_highlight })
   end
-  if config.show_filter_column and workspace and workspace_tag then
+  if config.get(self.opts, "show_filter_column") and workspace and workspace_tag then
     local filtered = self:should_show_tail(workspace_tag) and utils.path_tail(workspace) .. Path.path.sep
       or fs.relative_from_home(workspace) .. Path.path.sep
     table.insert(items, { filtered, "Directory" })
@@ -164,8 +166,8 @@ end
 ---@private
 ---@param workspace_tag string
 ---@return boolean
-function EntryMaker.should_show_tail(_, workspace_tag)
-  local show_filter_column = config.show_filter_column
+function EntryMaker:should_show_tail(workspace_tag)
+  local show_filter_column = config.get(self.opts, "show_filter_column")
   if show_filter_column == false then
     return false
   end
