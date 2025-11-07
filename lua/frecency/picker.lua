@@ -11,7 +11,6 @@ local actions = lazy_require "telescope.actions"
 local telescope_config = lazy_require "telescope.config"
 local pickers = lazy_require "telescope.pickers"
 local utils = lazy_require "telescope.utils" --[[@as FrecencyTelescopeUtils]]
-local uv = vim.loop or vim.uv
 
 ---@class FrecencyPicker
 ---@field private config FrecencyPickerConfig
@@ -85,7 +84,7 @@ end
 ---@param opts? FrecencyPickerOptions
 function Picker:start(opts)
   opts = vim.tbl_extend("force", {
-    cwd = uv.cwd(),
+    cwd = vim.uv.cwd(),
     path_display = function(picker_opts, path)
       return self:default_path_display(picker_opts, path)
     end,

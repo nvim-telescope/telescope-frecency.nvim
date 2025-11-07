@@ -5,11 +5,10 @@ local lazy_require = require "frecency.lazy_require"
 local Path = lazy_require "plenary.path" --[[@as FrecencyPlenaryPath]]
 local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 local scandir = lazy_require "plenary.scandir"
-local uv = vim.uv or vim.loop
 
 ---@class FrecencyFS
 local M = {
-  os_homedir = assert(uv.os_homedir()),
+  os_homedir = assert(vim.uv.os_homedir()),
 }
 
 -- TODO: make this configurable
