@@ -1,7 +1,6 @@
 local log = require "frecency.log"
 local lazy_require = require "frecency.lazy_require"
 local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
-local uv = vim.loop or vim.uv
 
 ---@class FrecencyWatcherMtime
 ---@field sec integer
@@ -42,7 +41,7 @@ function Watcher:watch(path, cb)
   if self.handler then
     self.handler:stop()
   end
-  self.handler = assert(uv.new_fs_event()) --[[@as UvFsEventHandle]]
+  self.handler = assert(vim.uv.new_fs_event()) --[[@as UvFsEventHandle]]
   self.handler:start(path, { recursive = true }, function(err, _, _)
     if err then
       log.debug("failed to watch path: " .. err)

@@ -2,7 +2,6 @@
 local Frecency = require "frecency.klass"
 local Picker = require "frecency.picker"
 local config = require "frecency.config"
-local uv = vim.uv or vim.loop
 local log = require "plenary.log"
 local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 local Path = require "plenary.path"
@@ -12,17 +11,17 @@ local wait = require "frecency.wait"
 ---@return FrecencyPlenaryPath
 ---@return fun(): nil close swwp all entries
 local function tmpdir()
-  local ci = uv.os_getenv "CI"
+  local ci = vim.uv.os_getenv "CI"
   local dir
   if ci then
-    dir = Path:new(assert(uv.fs_mkdtemp "tests_XXXXXX"))
+    dir = Path:new(assert(vim.uv.fs_mkdtemp "tests_XXXXXX"))
   else
-    local tmp = assert(uv.os_tmpdir())
+    local tmp = assert(vim.uv.os_tmpdir())
     -- HACK: plenary.path resolves paths later, so here it resolves in advance.
-    if uv.os_uname().sysname == "Darwin" then
+    if vim.uv.os_uname().sysname == "Darwin" then
       tmp = tmp:gsub("^/var", "/private/var")
     end
-    dir = Path:new(assert(uv.fs_mkdtemp(Path:new(tmp, "tests_XXXXXX").filename)))
+    dir = Path:new(assert(vim.uv.fs_mkdtemp(Path:new(tmp, "tests_XXXXXX").filename)))
   end
   return dir, function()
     dir:rm { recursive = true }

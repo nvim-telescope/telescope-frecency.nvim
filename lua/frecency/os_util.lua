@@ -1,10 +1,9 @@
 local lazy_require = require "frecency.lazy_require"
 local Path = lazy_require "plenary.path" --[[@as FrecencyPlenaryPath]]
-local uv = vim.uv or vim.loop
 
 ---@class FrecencyOSUtil
 local M = {
-  is_windows = uv.os_uname().sysname == "Windows_NT",
+  is_windows = vim.uv.os_uname().sysname == "Windows_NT",
 }
 
 ---@type fun(filename: string): string
