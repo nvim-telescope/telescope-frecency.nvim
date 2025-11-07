@@ -1,11 +1,19 @@
 name: CI
+
 on:
-  - push
-  - pull_request
+  push:
+    branches:
+      - "master"
+  pull_request:
+    branches:
+      - "master"
+  workflow_dispatch:
+
 jobs:
   test:
     name: Run tests
     strategy:
+      fail-fast: false
       matrix:
         os:
           - ubuntu-latest
@@ -13,12 +21,12 @@ jobs:
           - windows-latest
         version:
           - v0.10.4
-          - v0.11.4
+          - stable
           - nightly
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - name: Install Neovim
         uses: rhysd/action-setup-vim@v1
         id: nvim
