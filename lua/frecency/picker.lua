@@ -15,7 +15,6 @@ local utils = lazy_require "telescope.utils" --[[@as FrecencyTelescopeUtils]]
 ---@class FrecencyPicker
 ---@field private config FrecencyPickerConfig
 ---@field private database FrecencyDatabase
----@field private entry_maker FrecencyEntryMaker
 ---@field private lsp_workspaces string[]
 ---@field private namespace integer
 ---@field private state FrecencyState
@@ -42,7 +41,6 @@ Picker.new = function(database, picker_config)
   local self = setmetatable({
     config = picker_config,
     database = database,
-    entry_maker = EntryMaker.new(),
     lsp_workspaces = {},
     namespace = vim.api.nvim_create_namespace "frecency",
   }, { __index = Picker })
@@ -51,25 +49,13 @@ Picker.new = function(database, picker_config)
   return self
 end
 
----@class FrecencyPickerOptions
----@field cwd string
----@field hide_current_buffer? boolean
----@field path_display
----| "hidden"
----| "tail"
----| "absolute"
----| "smart"
----| "shorten"
----| "truncate"
----| fun(opts: FrecencyPickerOptions, path: string): string
----@field workspace? string
-
 ---@param opts table
 ---@param workspaces? string[]
 ---@param workspace_tag? string
 function Picker:finder(opts, workspaces, workspace_tag)
   local filepath_formatter = self:filepath_formatter(opts)
-  local entry_maker = self.entry_maker:create(filepath_formatter, workspaces, workspace_tag)
+  local em = EntryMaker.new(opts)
+  local entry_maker = em:create(filepath_formatter, workspaces, workspace_tag)
   local need_scandir = not not (workspaces and #workspaces > 0 and config.show_unindexed)
   return Finder.new(
     self.database,
@@ -80,6 +66,17 @@ function Picker:finder(opts, workspaces, workspace_tag)
     { ignore_filenames = self.config.ignore_filenames }
   )
 end
+
+---@class FrecencyPickerOptions: FrecencyOverwritableOpts
+---@field cwd string
+---@field path_display
+---| "hidden"
+---| "tail"
+---| "absolute"
+---| "smart"
+---| "shorten"
+---| "truncate"
+---| fun(opts: FrecencyPickerOptions, path: string): string
 
 ---@param opts? FrecencyPickerOptions
 function Picker:start(opts)

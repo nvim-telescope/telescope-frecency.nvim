@@ -93,7 +93,7 @@ function Frecency:start(opts)
     ignore_filenames = ignore_filenames,
     initial_workspace_tag = opts.workspace,
   })
-  self.picker:start(vim.tbl_extend("force", config.get(), opts))
+  self.picker:start(vim.tbl_extend("force", config.get_all(), opts))
   timer.track "start() finish"
 end
 
