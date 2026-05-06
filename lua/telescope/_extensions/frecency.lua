@@ -13,7 +13,7 @@ return require("telescope").register_extension {
     else
       vim.health.error "Neovim version must be 0.10 or higher."
     end
-    if vim.F.npcall(require, "nvim-web-devicons") then
+    if pcall(require, "nvim-web-devicons") then
       vim.health.ok "nvim-web-devicons installed."
     else
       vim.health.info "nvim-web-devicons is not installed."
