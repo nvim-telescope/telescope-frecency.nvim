@@ -10,6 +10,9 @@ local lazy_require = require "frecency.lazy_require"
 local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 local Path = lazy_require "plenary.path" --[[@as FrecencyPlenaryPath]]
 
+-- todo(clason): remove when dropping support for Nvim 0.12
+local npcall = vim.npcall or vim.F.npcall
+
 ---@class FrecencyDatabaseV1: FrecencyDatabase
 ---@field protected tbl FrecencyTableV1
 local DatabaseV1 = {}
@@ -200,8 +203,8 @@ function DatabaseV1:_load(file_lock, update_watcher) -- luacheck: no self
     return data
   end)
   assert(not err, err)
-  local f = vim.F.npcall(loadstring, data or "")
-  return f and vim.F.npcall(f)
+  local f = npcall(loadstring, data or "")
+  return f and npcall(f)
 end
 
 ---@async
