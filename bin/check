@@ -1,0 +1,163 @@
+#!/usr/bin/env bash
+#
+# Run the same checks the CI runs (workflows/ci.yml) before pushing. Mirrors:
+#   - stylua --check (formatting; CI doesn't run it but we want it green)
+#   - lua-language-server --check (lua-typecheck-action equivalent)
+#   - luacheck (lunarmodules/luacheck docker image)
+#   - bin/run-tests (PlenaryBustedDirectory)
+#
+# Usage:
+#   bin/check                  run everything; exit non-zero on any failure
+#   bin/check --no-tests       skip bin/run-tests (faster smoke for lint/type only)
+#   bin/check --base <ref>     compare against <ref> for "changed files" filter
+#                              (default: origin/master)
+#   bin/check -h | --help      show this header
+#
+# Notes:
+# - lua-language-server (Mason) and the CI's Nix-provided version drift; the
+#   local copy reports extra `assert.are.*` warnings in busted specs that CI
+#   does not. To stay useful, we filter check.json down to files changed
+#   relative to <base>. New diagnostics in changed files fail the check;
+#   pre-existing ones in untouched files are ignored.
+# - luacheck runs in the same docker image CI uses, so output is byte-identical.
+#   Falls back to `~/.local/share/nvim/mason/bin/luacheck` (needs lua5.4) if
+#   docker is unavailable.
+# - stylua is restricted to changed .lua files (per the project's
+#   "format only what you changed" convention).
+set -uo pipefail
+
+cd "$(dirname "$0")/.."
+
+base=origin/master
+run_tests=1
+while [ $# -gt 0 ]; do
+  case $1 in
+    --no-tests) run_tests=0; shift ;;
+    --base) base=$2; shift 2 ;;
+    -h|--help) sed -n '2,22p' "$0"; exit 0 ;;
+    *) printf 'unknown arg: %s\n' "$1" >&2; exit 2 ;;
+  esac
+done
+
+mason_bin=$HOME/.local/share/nvim/mason/bin
+
+find_tool() {
+  local name=$1
+  if command -v "$name" >/dev/null 2>&1; then
+    command -v "$name"
+  elif [ -x "$mason_bin/$name" ]; then
+    printf '%s\n' "$mason_bin/$name"
+  fi
+}
+
+stylua_bin=$(find_tool stylua)
+lls_bin=$(find_tool lua-language-server)
+luacheck_bin=$(find_tool luacheck)
+docker_bin=$(command -v docker || true)
+
+failures=()
+step() { printf '\n==> %s\n' "$1"; }
+
+# Resolve "changed lua files" once. Fallback: empty list (nothing to check).
+changed_lua=()
+if git rev-parse --verify --quiet "$base" >/dev/null; then
+  while IFS= read -r f; do
+    [ -n "$f" ] && [ -f "$f" ] && changed_lua+=("$f")
+  done < <(git diff --name-only --diff-filter=ACMR "$base" -- '*.lua')
+else
+  printf 'warning: base ref %s not found; skipping changed-files filter\n' "$base" >&2
+fi
+
+# 1. stylua --check on changed .lua files
+if [ -z "$stylua_bin" ]; then
+  printf 'stylua not found (install via mason or `brew install stylua`)\n' >&2
+  failures+=("stylua: not installed")
+elif [ ${#changed_lua[@]} -eq 0 ]; then
+  step "stylua --check (no changed .lua files; skipping)"
+else
+  step "stylua --check ${#changed_lua[@]} file(s)"
+  if ! "$stylua_bin" --check "${changed_lua[@]}"; then
+    failures+=("stylua")
+  fi
+fi
+
+# 2. lua-language-server --check, filtered to changed files
+if [ -z "$lls_bin" ]; then
+  printf 'lua-language-server not found (install via mason)\n' >&2
+  failures+=("lua-language-server: not installed")
+else
+  step "lua-language-server --check lua (filtered to changed files)"
+  log_dir=$(mktemp -d)
+  trap 'rm -rf "$log_dir"' EXIT
+  # `--check` exits non-zero when problems are found, so we ignore the exit
+  # code and base success/failure on check.json contents instead.
+  "$lls_bin" --check "$PWD/lua" \
+    --configpath="$PWD/.luarc.json" \
+    --logpath="$log_dir" \
+    --checklevel=Hint \
+    --check_format=json \
+    --locale=en-us >/dev/null 2>&1 || true
+  if [ -s "$log_dir/check.json" ]; then
+    # Build a JSON array of "file://<absolute-path>" for jq to filter by.
+    file_uris=$(printf '%s\n' "${changed_lua[@]}" \
+      | sed "s|^|file://$PWD/|" \
+      | jq -R . | jq -s .)
+    # Filter:
+    # 1. Keep only diagnostics in changed files.
+    # 2. Drop known luassert false positives (`assert.are`, `assert.is`,
+    #    `assert.is_*`, `assert.has`, `assert.Nil`, `assert.match`, etc.).
+    #    The Mason lua-language-server flags these because we don't ship
+    #    luassert type stubs; the CI version does not.
+    filtered=$(jq --argjson keep "$file_uris" '
+      def luassert_noise:
+        .code == "undefined-field"
+        and (.message | test("Undefined field `(are|is|is_[a-z_]+|has|Nil|match|matches|equals|same|truthy|falsy|has_match)`"));
+      with_entries(select(.key as $k | $keep | index($k)))
+      | with_entries(.value |= map(select(luassert_noise | not)))
+      | with_entries(select(.value | length > 0))
+    ' "$log_dir/check.json")
+    if [ "$(printf '%s' "$filtered" | jq 'length')" -gt 0 ]; then
+      printf 'lua-language-server diagnostics in changed files:\n' >&2
+      printf '%s\n' "$filtered" >&2
+      failures+=("lua-language-server: diagnostics")
+    fi
+  fi
+fi
+
+# 3. luacheck (prefer the docker image CI uses; fall back to local if it works)
+if [ -n "$docker_bin" ] && "$docker_bin" info >/dev/null 2>&1; then
+  step "luacheck . (docker: lunarmodules/luacheck:v1.2.0)"
+  if ! "$docker_bin" run --rm \
+      -v "$PWD":/check \
+      -w /check \
+      ghcr.io/lunarmodules/luacheck:v1.2.0 \
+      luacheck .; then
+    failures+=("luacheck")
+  fi
+elif [ -n "$luacheck_bin" ] && "$luacheck_bin" --version >/dev/null 2>&1; then
+  step "luacheck . (local; docker unavailable)"
+  if ! "$luacheck_bin" .; then
+    failures+=("luacheck")
+  fi
+else
+  printf 'luacheck unavailable. Either:\n' >&2
+  printf '  - start Docker Desktop (preferred; matches CI exactly), or\n' >&2
+  printf '  - install lua@5.4 so the Mason luacheck shebang works:\n' >&2
+  printf '      brew install lua@5.4 && brew link --force lua@5.4\n' >&2
+  failures+=("luacheck: not runnable")
+fi
+
+# 4. bin/run-tests
+if [ "$run_tests" -eq 1 ]; then
+  step "bin/run-tests"
+  if ! bin/run-tests; then
+    failures+=("bin/run-tests")
+  fi
+fi
+
+printf '\n'
+if [ ${#failures[@]} -gt 0 ]; then
+  printf 'FAILED: %s\n' "${failures[*]}" >&2
+  exit 1
+fi
+printf 'All checks passed.\n'
