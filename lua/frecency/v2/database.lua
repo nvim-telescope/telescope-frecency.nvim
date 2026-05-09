@@ -76,6 +76,14 @@ function DatabaseV2:migrate_from(v2, v1)
   self.tbl:set(self.tbl:from_v1(tbl))
   self.watcher_tx.send "save"
   log.debug "migration finish"
+  vim.schedule(function()
+    vim.notify(
+      ("[telescope-frecency] migrated v1 database to v2 (%s -> %s).\n"):format(v1, v2)
+        .. "Rankings may shift because the score algorithm changed (count x static recency -> exponential decay).\n"
+        .. "The v1 file is preserved on disk for rollback. See :help telescope-frecency-database-v2-migration",
+      vim.log.levels.WARN
+    )
+  end)
 end
 
 ---@async

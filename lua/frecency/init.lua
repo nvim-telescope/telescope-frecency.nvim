@@ -1,3 +1,7 @@
+if vim.fn.has "nvim-0.11.7" ~= 1 then
+  error "telescope-frecency.nvim requires Neovim v0.11.7 or higher (pin to ^1.0.0 for older Neovim)."
+end
+
 ---@type FrecencyDatabase?
 local database
 

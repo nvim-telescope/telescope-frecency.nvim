@@ -98,6 +98,40 @@ manager.
 }
 ```
 
+### Upgrading to 2.0.0
+
+Heads-up for users tracking `master` (or otherwise pulling HEAD without pinning
+to a tag): **2.0.0 is a breaking release.**
+
+- Minimum Neovim is bumped to **v0.11.7**. The plugin will refuse to load on
+  older versions.
+- The default database format changes from v1 to v2. The first launch on 2.0.0
+  automatically migrates your existing `file_frecency.bin` to
+  `file_frecency_v2.bin` and prints a one-time `vim.notify`. Your v1 file is
+  **preserved on disk** so you can roll back by pinning to `^1.0.0`.
+- Rankings will shift after the migration because the score algorithm changed
+  (v1: count × static recency → v2: exponential decay). This is expected; the
+  underlying data is intact.
+- `query({ record = true })` no longer returns a `timestamps` array. Use
+  `reference_time + last_accessed` to get the most-recent access epoch (single
+  value). The `count` field is preserved as an alias for `num_accesses`.
+- The `db_version` config option is removed.
+
+If you want the previous behaviour (v1 algorithm, Neovim 0.10.x support), pin
+to the v1 line:
+
+```lua
+{
+  "nvim-telescope/telescope-frecency.nvim",
+  version = "^1.0.0",
+  config = function()
+    require("telescope").load_extension "frecency"
+  end,
+}
+```
+
+See `:help telescope-frecency-database-v2-migration` for the full story.
+
 ## Usage
 
 ```vim
