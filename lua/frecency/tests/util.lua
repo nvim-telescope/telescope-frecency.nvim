@@ -75,8 +75,15 @@ local function make_epoch(datetime)
 end
 
 ---@param records table<string, table>
-local function v1_table(records)
-  return { version = "v1", records = records }
+---@param reference_time? integer default: os.time()
+---@param half_life? integer default: 3 days
+local function v2_table(records, reference_time, half_life)
+  return {
+    version = "v2",
+    reference_time = reference_time or os.time(),
+    half_life = half_life or 60 * 60 * 24 * 3,
+    records = records,
+  }
 end
 
 ---@param files string[]
@@ -198,7 +205,7 @@ return {
   make_register = make_register,
   make_tree = make_tree,
   tmpdir = tmpdir,
-  v1_table = v1_table,
+  v2_table = v2_table,
   with_fake_register = with_fake_register,
   with_fake_vim_ui_select = with_fake_vim_ui_select,
   with_files = with_files,

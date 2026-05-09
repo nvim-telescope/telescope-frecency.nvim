@@ -28,6 +28,9 @@ end
 ---@class FrecencyDatabaseObjV2: FrecencyTableRecordV2
 ---@field path string
 ---@field score number
+---@field half_life integer
+---@field reference_time integer
+---@field count integer alias for num_accesses (kept for v1 → v2 query() API compatibility)
 
 ---@return FrecencyDatabaseObjV2
 function EntryV2:obj()
@@ -38,6 +41,7 @@ function EntryV2:obj()
     last_accessed = self.last_accessed,
     num_accesses = self.num_accesses,
     score = self.score,
+    count = self.num_accesses,
   }
 end
 

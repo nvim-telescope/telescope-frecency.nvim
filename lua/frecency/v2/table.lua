@@ -1,5 +1,20 @@
-local TableV1 = require "frecency.v1.table"
 local EntryV2 = require "frecency.v2.entry"
+local log = require "frecency.log"
+local timer = require "frecency.timer"
+local wait = require "frecency.wait"
+local lazy_require = require "frecency.lazy_require"
+local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
+
+-- v1 record / data shape kept here because TableV2:from_v1 still consumes
+-- them for the v1 → v2 migration in 2.0.0.
+-- TODO: remove together with the migration path in a later 2.x minor release.
+---@class FrecencyTableRecordV1
+---@field count integer
+---@field timestamps integer[]
+
+---@class FrecencyTableDataV1
+---@field records table<string, FrecencyTableRecordV1>
+---@field version string
 
 ---@class FrecencyTableRecordV2
 ---@field last_accessed integer
@@ -12,22 +27,87 @@ local EntryV2 = require "frecency.v2.entry"
 ---@field reference_time integer
 ---@field version string
 
----@class FrecencyTableV2: FrecencyTableV1
----@field get_record fun(self: FrecencyTableV2, key: string): FrecencyTableRecordV2
----@field records fun(self: FrecencyTableV2): table<string, FrecencyTableRecordV2>
----@field set fun(self: FrecencyTableV2, tbl: FrecencyTableDataV2): nil
----@field set_record fun(self: FrecencyTableV2, key: string, record: FrecencyTableRecordV2): nil
+---@class FrecencyTable
+---@field version string
+
+---@class FrecencyTableV2: FrecencyTable
 ---@field private data FrecencyTableDataV2
-local TableV2 = setmetatable({}, { __index = TableV1 })
+---@field private is_ready boolean
+local TableV2 = {}
 
 ---@return FrecencyTableV2
 TableV2.new = function()
-  local self = setmetatable(TableV1.new(), { __index = TableV2 }) --[[@as FrecencyTableV2]]
-  self.version = "v2"
+  local self = setmetatable({ is_ready = false, version = "v2", data = {} }, { __index = TableV2 }) --[[@as FrecencyTableV2]]
   self.data = self:default_table()
   return self
 end
 
+---@async
+---@return table<string, FrecencyTableRecordV2>
+function TableV2:records()
+  local is_async = not not coroutine.running()
+  if is_async then
+    self:wait_ready()
+  else
+    log.debug "need wait() for wait_ready()"
+    wait(function()
+      self:wait_ready()
+    end)
+  end
+  return self.data.records
+end
+
+---@param key string
+---@return FrecencyTableRecordV2
+function TableV2:get_record(key)
+  return self.data.records[key]
+end
+
+---@param key string
+---@param record FrecencyTableRecordV2
+---@return nil
+function TableV2:set_record(key, record)
+  self.data.records[key] = record
+end
+
+---@param key string
+---@return nil
+function TableV2:remove_record(key)
+  self.data.records[key] = nil
+end
+
+---@param raw_table? FrecencyTableDataV2
+---@return nil
+function TableV2:set(raw_table)
+  local tbl = raw_table or self:default_table()
+  if self.version ~= tbl.version then
+    error "Invalid version"
+  end
+  self.is_ready = true
+  self.data = tbl
+end
+
+---@return FrecencyTableDataV2
+function TableV2:raw()
+  return self.data
+end
+
+---This is for internal or testing use only.
+---@async
+---@return nil
+function TableV2:wait_ready()
+  timer.track "wait_ready() start"
+  local t = 0.2
+  while not rawget(self, "is_ready") do
+    async.util.sleep(t)
+    t = t * 2
+  end
+  timer.track "wait_ready() finish"
+end
+
+-- v1 → v2 migration helper. Kept in 2.0.0 for transparent upgrade of existing
+-- file_frecency.bin databases. Will be removed together with the v1 read path
+-- in a later 2.x minor release.
 ---@param v1_tbl FrecencyTableDataV1
 ---@return FrecencyTableDataV2
 function TableV2:from_v1(v1_tbl)
@@ -50,20 +130,6 @@ function TableV2:from_v1(v1_tbl)
   end)
 end
 
----@protected
----@return FrecencyTableRecordV2
-function TableV2:get_records()
-  return self.data.records
-end
-
----@private
----@param path string
----@param record FrecencyTableRecordV2
----@return nil
-function TableV2:set_record(path, record)
-  self.data.records[path] = record
-end
-
 ---@return integer
 function TableV2:reference_time()
   return self.data.reference_time
@@ -79,11 +145,6 @@ end
 ---@return integer
 function TableV2:half_life()
   return self.data.half_life
-end
-
----@return FrecencyTableDataV2
-function TableV2:raw()
-  return self.data
 end
 
 ---@return FrecencyTableDataV2
@@ -110,7 +171,7 @@ end
 ---@return FrecencyDatabaseEntryV2
 function TableV2:entry(path, epoch)
   local now = epoch or os.time()
-  local record = self:get_records()[path] or self:default_record()
+  local record = self.data.records[path] or self:default_record()
   return EntryV2.new(path, record, self:half_life(), self:reference_time(), now)
 end
 

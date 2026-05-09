@@ -53,8 +53,9 @@ directories provided by the language server.
 
 ## Requirements
 
-* Neovim v0.10.0 or higher
+* Neovim v0.11.7 or higher (matches [telescope.nvim])
     * Use `^0.9.0` tag for Neovim 0.9.x (See [Notice for versioning](#notice-for-versioning)).
+    * For Neovim 0.10.x, lock to a release before 2.0.0.
 - [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) **(required)**
 - [nvim-web-devicons](https://github.com/kyazdani42/nvim-web-devicons) (optional)
 - [fd](https://github.com/sharkdp/fd) or [ripgrep](https://github.com/BurntSushi/ripgrep) (optional)
