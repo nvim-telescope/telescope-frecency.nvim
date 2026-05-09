@@ -13,6 +13,7 @@ local function with_database(f)
     local database = Database.create()
     database:start()
     -- Let the initial load coroutine settle before we mutate the table.
+    ---@diagnostic disable-next-line: invisible, undefined-field
     database.tbl:wait_ready()
     f(database)
     close()
