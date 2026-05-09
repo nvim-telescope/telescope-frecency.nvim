@@ -37,7 +37,8 @@ local TableV2 = {}
 
 ---@return FrecencyTableV2
 TableV2.new = function()
-  local self = setmetatable({ is_ready = false, version = "v2", data = {} }, { __index = TableV2 }) --[[@as FrecencyTableV2]]
+  local self = setmetatable({ is_ready = false, version = "v2", data = {} }, { __index = TableV2 })
+  ---@cast self FrecencyTableV2
   self.data = self:default_table()
   return self
 end
