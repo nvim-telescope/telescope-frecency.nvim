@@ -118,13 +118,16 @@ function TableV2:from_v1(v1_tbl)
   return vim.iter(v1_tbl.records):fold(self:default_table(), function(tbl, path, v1)
     local v2 = self:default_record()
     v2.num_accesses = v1.count
-    v2.last_accessed = v1.timestamps[#v1.timestamps]
     ---@param record FrecencyTableRecordV2
     ---@param timestamp integer
     tbl.records[path] = vim.iter(v1.timestamps):fold(v2, function(record, timestamp)
       local entry = EntryV2.new(path, record, self:half_life(), self:reference_time(), timestamp)
       entry:update(timestamp)
+      -- entry:update() stores last_accessed as a delta from reference_time.
+      -- Mirror it back so the persisted record matches the format new entries
+      -- produce, instead of being stuck on the absolute v1 epoch.
       record.score = entry.score
+      record.last_accessed = entry.last_accessed
       return record
     end)
     return tbl
