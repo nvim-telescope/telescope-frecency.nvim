@@ -27,7 +27,7 @@ local Frecency = {}
 ---@return Frecency
 Frecency.new = function(database)
   local self = setmetatable({ buf_registered = {}, status = STATUS.NEW }, { __index = Frecency }) --[[@as Frecency]]
-  self.database = database or Database.create(config.db_version)
+  self.database = database or Database.create()
   return self
 end
 
@@ -205,7 +205,7 @@ end
 
 ---@class FrecencyQueryOpts
 ---@field direction? "asc"|"desc" default: "desc"
----@field filter? fun(obj: FrecencyDatabaseObjV1|FrecencyDatabaseObjV2): boolean? default: nil
+---@field filter? fun(obj: FrecencyDatabaseObjV2): boolean? default: nil
 ---@field json? boolean default: false
 ---@field limit? integer default: 100
 ---@field order? FrecencyQueryOrder default: "score"
@@ -213,10 +213,13 @@ end
 ---@field workspace? string|string[] default: nil
 
 ---@class FrecencyQueryEntry
----@field count integer
 ---@field path string
 ---@field score number
----@field timestamps integer[]
+---@field num_accesses integer
+---@field last_accessed integer
+---@field half_life integer
+---@field reference_time integer
+---@field count integer alias for num_accesses (kept for v1 → v2 query() API compatibility)
 
 ---@param opts? FrecencyQueryOpts
 ---@param epoch? integer

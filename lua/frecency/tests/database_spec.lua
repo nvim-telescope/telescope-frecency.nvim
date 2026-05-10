@@ -4,63 +4,45 @@ local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 local util = require "frecency.tests.util"
 async.tests.add_to_env()
 
-local make_epoch = util.make_epoch
-
 local function with_database(f)
   local dir, close = util.tmpdir()
-  dir:joinpath("file_frecency.bin"):touch()
+  -- Touch a v2 file so DatabaseV2:filename() skips the migration probe.
+  dir:joinpath("file_frecency_v2.bin"):touch()
   return function()
     config.setup { debug = true, db_root = dir.filename }
-    local database = Database.create "v1"
+    local database = Database.create()
     database:start()
+    -- Let the initial load coroutine settle before we mutate the table.
+    ---@diagnostic disable-next-line: invisible, undefined-field
+    database.tbl:wait_ready()
     f(database)
     close()
   end
 end
 
----@async
----@param database FrecencyDatabase
----@param records table<string, table>
----@param epoch integer
----@return FrecencyEntry[]
-local function save_and_load(database, records, epoch)
-  ---@diagnostic disable-next-line: invisible, undefined-field
-  database.tbl:set(util.v1_table(records))
-  database:save()
-  async.util.sleep(100)
-  local entries = database:get_entries(nil, epoch)
-  table.sort(entries, function(a, b)
-    return a.path < b.path
-  end)
-  return entries
-end
-
 a.describe("frecency.database", function()
-  a.describe("updated by another process", function()
+  a.describe("v2 round-trip", function()
     a.it(
-      "returns valid entries",
-      ---@param database FrecencyDatabase
+      "preserves records across save -> get_entries",
       with_database(function(database)
-        assert.are.same(
-          {
-            {
-              path = "hoge1.txt",
-              count = 1,
-              score = 10,
-              timestamps = { make_epoch "2023-08-21T00:00:00+09:00" },
-            },
-            {
-              path = "hoge2.txt",
-              count = 1,
-              score = 10,
-              timestamps = { make_epoch "2023-08-21T00:00:00+09:00" },
-            },
-          },
-          save_and_load(database, {
-            ["hoge1.txt"] = { count = 1, timestamps = { make_epoch "2023-08-21T00:00:00+09:00" } },
-            ["hoge2.txt"] = { count = 1, timestamps = { make_epoch "2023-08-21T00:00:00+09:00" } },
-          }, make_epoch "2023-08-21T01:00:00+09:00")
-        )
+        local ref = os.time()
+        local now = ref + 60
+        ---@diagnostic disable-next-line: invisible, undefined-field
+        database.tbl:set(util.v2_table({
+          ["hoge1.txt"] = { score = 1, last_accessed = 0, num_accesses = 1 },
+          ["hoge2.txt"] = { score = 2, last_accessed = 30, num_accesses = 3 },
+        }, ref))
+        database:save()
+        async.util.sleep(100)
+        local entries = database:get_entries(nil, now)
+        table.sort(entries, function(a, b)
+          return a.path < b.path
+        end)
+        assert.are.same(2, #entries)
+        assert.are.same("hoge1.txt", entries[1].path)
+        assert.are.same(1, entries[1].num_accesses)
+        assert.are.same("hoge2.txt", entries[2].path)
+        assert.are.same(3, entries[2].num_accesses)
       end)
     )
   end)

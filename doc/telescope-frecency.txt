@@ -110,9 +110,10 @@ You can define other workspace tags by an option:
 ==============================================================================
 REQUIREMENTS				       *telescope-frecency-requirements*
 
-- Neovim 0.10.0 or higher
+- Neovim 0.11.7 or higher (matches |telescope.nvim|)
   - Use `^0.9.0` tag for Neovim 0.9.x (See
     |telescope-frecency-installation-versioning|)
+  - For Neovim 0.10.x, lock to a release before 2.0.0.
 - |telescope.nvim| (required)
   https://github.com/nvim-telescope/telescope.nvim
 - nvim-web-devicons (optional)
@@ -304,13 +305,22 @@ plugin. See |telescope-frecency-combining-results-outside-this-plugin|.
     -- example results
     [
       {
-        count = 203,
         path = "/path/to/any/file1.txt",
-        score = 4872,
-        timestamps = { 1719206250, 1719207356, …… },
+        score = 4.872,
+        num_accesses = 203,
+        last_accessed = 12345,
+        half_life = 259200,
+        reference_time = 1719200000,
+        count = 203,  -- alias for num_accesses
       },
       ……
     ]
+
+NOTE: The shape changed in 2.0.0. The `timestamps` array is no longer
+returned (the v2 database keeps only the most-recent access time, not a
+history). To recover the absolute epoch of the most-recent access, compute
+`reference_time + last_accessed`. The `count` field is preserved as an
+alias for `num_accesses` so existing integrations keep working.
 
 Options:						     *FrecencyQueryOpts*
 				     *telescope-frecency-function-query-options*
@@ -335,6 +345,8 @@ Options:						     *FrecencyQueryOpts*
 		same value, they will be sorted by `"path"` always in ascending
 		order. With `"path"`, the order direction differs by the value
 		of `direction`.
+		For backwards compatibility `"count"` sorts by `num_accesses`
+		and `"timestamps"` sorts by `last_accessed`.
 			      *telescope-frecency-function-query-options-record*
   - `record`	Default: `false`
 		Type: `boolean`
@@ -342,10 +354,14 @@ Options:						     *FrecencyQueryOpts*
 		absolute paths. If `true`, it contains tables with this
 		properties below.
 
-		`count`: Count that the file has been opened.
 		`path`: Absolute path for the file.
-		`score`: Recency score to be used in frecency picker.
-		`timestamps`: UNIX timestamps that the file has been opened at.
+		`score`: Frecency score (v2 exponential decay).
+		`num_accesses`: Total times the file has been opened.
+		`last_accessed`: Seconds elapsed since `reference_time` at the
+		most-recent access (delta, not an absolute epoch).
+		`half_life`: Half-life used by the score decay (seconds).
+		`reference_time`: Reference epoch the table is anchored to.
+		`count`: Alias for `num_accesses` (v1 → v2 compatibility).
 			   *telescope-frecency-function-query-options-workspace*
   - `workspace`	Default: `nil`
 		Type: `string?`
@@ -497,24 +513,6 @@ Default: `10`
 Type: `integer`
 
 It will remove entries when stale ones exist more than this count.
-
-				   *telescope-frecency-configuration-db_version*
-db_version ~
-
-Default: `"v1"`
-Type: `"v1"|"v2"`
-
-WARNING: This option is highly experimental.
-
-After 1.1.0, it has the “v2” version of database. This implements “New
-Frecency” algorithm that improves performance and stability.
-
-User:Jesse/NewFrecency - MozillaWiki
-https://wiki.mozilla.org/User:Jesse/NewFrecency?title=User:Jesse/NewFrecency
-
-NOTE: In the future version, such as 1.2.x or later, “v1” version will be
-marked “deprecated” and be removed in 2.0.0.
-
 
 					*telescope-frecency-configuration-debug*
 debug ~
@@ -890,6 +888,29 @@ with your favorite plugin manager.
       "nvim-telescope/telescope-frecency.nvim",
       commit = "a3e818d001baad9ee2f6800d3bbc71c4275364ae",
     }
+
+------------------------------------------------------------------------------
+v1 → v2 migration in 2.0.0	    *telescope-frecency-database-v2-migration*
+
+In 2.0.0 the v1 database format is no longer the runtime format. The plugin
+keeps a one-shot migration shim: on startup, if a v2 file
+(`file_frecency_v2.bin`) is missing but a v1 file (`file_frecency.bin`) is
+present, the v1 records are converted into v2 once and saved as v2. The
+original v1 file is left on disk so you can roll back to a pre-2.0.0 release
+if needed; you can delete it manually once you are happy with the new
+behaviour.
+
+Notes:
+
+- Internal score representation differs (v1: count × static recency; v2:
+  exponential decay). Initial rankings may shift after the upgrade.
+- v1 stored a history of up to `max_timestamps` access times per file. v2
+  keeps only the most-recent access time, so that history is dropped during
+  migration. The `query()` API no longer returns a `timestamps` array as a
+  result. See |telescope-frecency-function-query-options-record|.
+- The migration shim itself will be removed in a later 2.x minor release
+  after a CHANGELOG notice. After that, upgrading from v1 will require
+  opening the plugin once on a 2.0.x release first.
 
 
 ==============================================================================

@@ -1,3 +1,7 @@
+if vim.fn.has "nvim-0.11.7" ~= 1 then
+  error "telescope-frecency.nvim requires Neovim v0.11.7 or higher (pin to ^1.0.0 for older Neovim)."
+end
+
 ---@type FrecencyDatabase?
 local database
 
@@ -105,7 +109,7 @@ local function setup(ext_config)
   end
 
   if config.bootstrap and vim.v.vim_did_enter == 0 then
-    database = require("frecency.database").create(config.db_version)
+    database = require("frecency.database").create()
     async_call(function()
       database:start()
     end)
