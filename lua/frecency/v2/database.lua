@@ -3,11 +3,11 @@ local TableV2 = require "frecency.v2.table"
 local config = require "frecency.config"
 local fs = require "frecency.fs"
 local log = require "frecency.log"
+local os_util = require "frecency.os_util"
 local timer = require "frecency.timer"
 local watcher = require "frecency.watcher"
 local lazy_require = require "frecency.lazy_require"
 local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
-local Path = lazy_require "plenary.path" --[[@as FrecencyPlenaryPath]]
 
 -- todo(clason): remove when dropping support for Nvim 0.12
 local npcall = vim.npcall or vim.F.npcall
@@ -33,7 +33,7 @@ end
 ---@async
 ---@return string
 function DatabaseV2:filename()
-  local db = Path.new(config.db_root, "file_frecency_v2.bin").filename
+  local db = os_util.join_path(config.db_root, "file_frecency_v2.bin")
   if not fs.exists(db) then
     local v1 = self:v1_filename()
     if fs.exists(v1) then
@@ -51,9 +51,9 @@ end
 ---@return string
 function DatabaseV2:v1_filename() -- luacheck: no self
   local file_v1 = "file_frecency.bin"
-  local db = Path.new(config.db_root, file_v1).filename
+  local db = os_util.join_path(config.db_root, file_v1)
   if not config.ext_config.db_root and not fs.exists(db) then
-    local old_location = Path.new(vim.fn.stdpath "data", file_v1).filename
+    local old_location = os_util.join_path(vim.fn.stdpath "data", file_v1)
     if fs.exists(old_location) then
       return old_location
     end

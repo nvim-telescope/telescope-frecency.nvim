@@ -33,18 +33,6 @@
 ---@field rm fun(self: FrecencyPlenaryPath, opts?: { recursive: boolean }): nil
 ---@field touch fun(self: FrecencyPlenaryPath, opts?: { parents: boolean }): nil
 
----@class FrecencyPlenaryScanDirOptions
----@field hidden boolean if true hidden files will be added
----@field add_dirs boolean if true dirs will also be added to the results
----@field only_dirs boolean if true only dirs will be added to the results
----@field respect_gitignore boolean if true will only add files that are not ignored by the git
----@field depth integer depth on how deep the search should go
----@field search_pattern string|string[]|fun(path: string): boolean regex for which files will be added, string, table of strings, or fn(e) -> boolean
----@field on_insert fun(path: string): boolean           Will be called for each element
----@field silent boolean              if true will not echo messages that are not accessible
-
----@alias scan_dir fun(path: string, opts: FrecencyPlenaryScanDirOptions): string[]
-
 ---@class FrecencyPlenaryAsync
 ---@field control FrecencyPlenaryAsyncControl
 ---@field tests { add_to_env: fun(): nil }
