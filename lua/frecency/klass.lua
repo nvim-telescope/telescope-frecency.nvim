@@ -52,11 +52,18 @@ function Frecency:setup(is_async, need_cleanup)
     end
     if self.status == STATUS.DB_STARTED and need_cleanup then
       self:assert_db_entries()
-      if config.auto_validate then
-        self:validate_database()
-      end
       self.status = STATUS.CLEANUP_FINISHED
       timer.track "CLEANUP_FINISHED"
+      if config.auto_validate then
+        -- Defer validation so it doesn't open a nested vim.ui.select picker
+        -- during the same tick that the frecency picker is being opened,
+        -- which would leave stray input in the prompt buffer.
+        vim.schedule(function()
+          async.void(function()
+            self:validate_database()
+          end)()
+        end)
+      end
     end
     timer.track "frecency.setup() finish"
   end
