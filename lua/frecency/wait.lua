@@ -1,4 +1,4 @@
-local async = require "plenary.async"
+local async = require "neoplen.async"
 
 ---@class FrecencyWait
 ---@field config FrecencyWaitConfig

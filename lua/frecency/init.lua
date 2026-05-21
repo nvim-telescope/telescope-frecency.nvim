@@ -39,7 +39,7 @@ local frecency = setmetatable({}, {
 })
 
 local function async_call(f, ...)
-  require("plenary.async").void(f)(...)
+  require("neoplen.async").void(f)(...)
 end
 
 local setup_done = false

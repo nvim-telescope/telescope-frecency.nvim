@@ -2,8 +2,8 @@
 local config = require "frecency.config"
 local FileLock = require "frecency.file_lock"
 local util = require "frecency.tests.util"
-local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
-require("plenary.async").tests.add_to_env()
+local async = require "neoplen.async" --[[@as FrecencyPlenaryAsync]]
+util.add_async_to_env()
 
 config.setup { debug = true }
 
