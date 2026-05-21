@@ -2,7 +2,7 @@ local config = require "frecency.config"
 local os_util = require "frecency.os_util"
 local log = require "frecency.log"
 local lazy_require = require "frecency.lazy_require"
-local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
+local async = lazy_require "neoplen.async" --[[@as FrecencyPlenaryAsync]]
 
 ---@class FrecencyFS
 local M = {

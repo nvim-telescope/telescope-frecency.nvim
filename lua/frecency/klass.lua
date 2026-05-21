@@ -6,7 +6,7 @@ local log = require "frecency.log"
 local timer = require "frecency.timer"
 local wait = require "frecency.wait"
 local lazy_require = require "frecency.lazy_require"
-local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
+local async = lazy_require "neoplen.async" --[[@as FrecencyPlenaryAsync]]
 
 ---@enum FrecencyStatus
 local STATUS = {

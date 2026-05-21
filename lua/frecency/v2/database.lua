@@ -7,7 +7,7 @@ local os_util = require "frecency.os_util"
 local timer = require "frecency.timer"
 local watcher = require "frecency.watcher"
 local lazy_require = require "frecency.lazy_require"
-local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
+local async = lazy_require "neoplen.async" --[[@as FrecencyPlenaryAsync]]
 
 -- todo(clason): remove when dropping support for Nvim 0.12
 local npcall = vim.npcall or vim.F.npcall

@@ -1,8 +1,8 @@
 local Database = require "frecency.database"
 local config = require "frecency.config"
-local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
+local async = require "neoplen.async" --[[@as FrecencyPlenaryAsync]]
 local util = require "frecency.tests.util"
-async.tests.add_to_env()
+util.add_async_to_env()
 
 local function with_database(f)
   local dir, close = util.tmpdir()

@@ -3,7 +3,7 @@ local log = require "frecency.log"
 local timer = require "frecency.timer"
 local wait = require "frecency.wait"
 local lazy_require = require "frecency.lazy_require"
-local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
+local async = lazy_require "neoplen.async" --[[@as FrecencyPlenaryAsync]]
 
 -- v1 record / data shape kept here because TableV2:from_v1 still consumes
 -- them for the v1 → v2 migration in 2.0.0.
