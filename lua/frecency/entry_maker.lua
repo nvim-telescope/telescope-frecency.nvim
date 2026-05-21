@@ -50,9 +50,17 @@ function EntryMaker:create(filepath_formatter, workspaces, workspace_tag)
     end)
 
   return function(file)
+    -- Compute ordinal as relative path from workspace to avoid matching workspace name
+    local ordinal = file.path
+    if workspaces and #workspaces == 1 then
+      if file.path:find(workspaces[1], 1, true) == 1 then
+        ordinal = file.path:sub(#workspaces[1] + 2) -- +2 to skip the path separator
+      end
+    end
+
     return {
       filename = file.path,
-      ordinal = file.path,
+      ordinal = ordinal,
       name = file.path,
       score = file.score,
       ---@param entry FrecencyEntry
