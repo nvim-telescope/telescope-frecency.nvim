@@ -1,7 +1,7 @@
 local web_devicons = require "frecency.web_devicons"
 local config = require "frecency.config"
 local fs = require "frecency.fs"
-local Path = require "plenary.path"
+local os_util = require "frecency.os_util"
 local lazy_require = require "frecency.lazy_require"
 local entry_display = lazy_require "telescope.pickers.entry_display" --[[@as FrecencyTelescopeEntryDisplay]]
 local utils = lazy_require "telescope.utils" --[[@as FrecencyTelescopeUtils]]
@@ -35,7 +35,7 @@ function EntryMaker:create(filepath_formatter, workspaces, workspace_tag)
   -- in entry_maker because it will be called in a Lua loop.
   local displayer = entry_display.create {
     separator = "",
-    hl_chars = { [Path.path.sep] = "TelescopePathSeparator" },
+    hl_chars = { [os_util.sep] = "TelescopePathSeparator" },
     items = self:width_items(workspaces, workspace_tag),
   }
 
@@ -129,8 +129,8 @@ function EntryMaker:items(entry, workspace, workspace_tag, formatter)
     table.insert(items, { icon, icon_highlight })
   end
   if config.show_filter_column and workspace and workspace_tag then
-    local filtered = self:should_show_tail(workspace_tag) and utils.path_tail(workspace) .. Path.path.sep
-      or fs.relative_from_home(workspace) .. Path.path.sep
+    local filtered = self:should_show_tail(workspace_tag) and utils.path_tail(workspace) .. os_util.sep
+      or fs.relative_from_home(workspace) .. os_util.sep
     table.insert(items, { filtered, "Directory" })
   end
   local formatted_name, path_style = formatter(entry.name)

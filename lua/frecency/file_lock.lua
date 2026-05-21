@@ -1,6 +1,5 @@
 local log = require "frecency.log"
 local lazy_require = require "frecency.lazy_require"
-local Path = lazy_require "plenary.path" --[[@as FrecencyPlenaryPath]]
 local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
 
 ---@class FrecencyFileLock
@@ -37,12 +36,11 @@ function FileLock:get()
   local err, fd
   while true do
     count = count + 1
-    local dir = Path.new(self.lock):parent()
-    if not dir:exists() then
+    local dir = vim.fs.dirname(self.lock)
+    if not vim.uv.fs_stat(dir) then
       -- TODO: make this call be async
-      log.debug(("file_lock get(): mkdir parent: %s"):format(dir.filename))
-      ---@diagnostic disable-next-line: undefined-field
-      dir:mkdir { parents = true }
+      log.debug(("file_lock get(): mkdir parent: %s"):format(dir))
+      vim.fn.mkdir(dir, "p")
     end
     err, fd = async.uv.fs_open(self.lock, "wx", tonumber("600", 8))
     if not err then

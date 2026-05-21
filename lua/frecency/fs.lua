@@ -2,9 +2,7 @@ local config = require "frecency.config"
 local os_util = require "frecency.os_util"
 local log = require "frecency.log"
 local lazy_require = require "frecency.lazy_require"
-local Path = lazy_require "plenary.path" --[[@as FrecencyPlenaryPath]]
 local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
-local scandir = lazy_require "plenary.scandir"
 
 ---@class FrecencyFS
 local M = {
@@ -60,7 +58,7 @@ end
 ---@param path string
 ---@return string
 function M.relative_from_home(path)
-  return Path:new(path):make_relative(M.os_homedir)
+  return vim.fs.relpath(M.os_homedir, path) or path
 end
 
 ---@type table<string,string>
@@ -74,7 +72,7 @@ function M.starts_with(path, base)
     return true
   end
   if not with_sep[base] then
-    with_sep[base] = base .. (base:sub(#base) == Path.path.sep and "" or Path.path.sep)
+    with_sep[base] = base .. (base:sub(#base) == os_util.sep and "" or os_util.sep)
   end
   return path:find(with_sep[base], 1, true) == 1
 end
@@ -86,11 +84,70 @@ function M.exists(path)
   return not (async.uv.fs_stat(path))
 end
 
+-- Vendored from plenary.scandir.__make_gitignore (the only function this plugin
+-- used from plenary.scandir). Returns a filter `(base_paths, entry) -> boolean`
+-- that returns false when `entry` matches a .gitignore rule under one of the
+-- base paths. Returns a permissive filter when no .gitignore is found.
 ---@private
 ---@param basepath string
 ---@return fun(base_paths: string[], entry: string): boolean
 function M.make_gitignore(basepath)
-  return scandir.__make_gitignore { basepath } or function(_, _)
+  local basepaths = { basepath }
+  local patterns = {}
+  local valid = false
+  for _, v in ipairs(basepaths) do
+    local gitignore = v .. os_util.sep .. ".gitignore"
+    if vim.uv.fs_stat(gitignore) then
+      valid = true
+      patterns[v] = { ignored = {}, negated = {} }
+      for l in io.lines(gitignore) do
+        local prefix = l:sub(1, 1)
+        local negated = prefix == "!"
+        if negated then
+          l = l:sub(2)
+          prefix = l:sub(1, 1)
+        end
+        if prefix == "/" then
+          l = v .. l
+        end
+        if not (prefix == "" or prefix == "#") then
+          local el = vim.trim(l)
+          el = el:gsub("%-", "%%-")
+          el = el:gsub("%.", "%%.")
+          el = el:gsub("/%*%*/", "/%%w+/")
+          el = el:gsub("%*%*", "")
+          el = el:gsub("%*", "%%w+")
+          el = el:gsub("%?", "%%w")
+          if el ~= "" then
+            table.insert(negated and patterns[v].negated or patterns[v].ignored, el)
+          end
+        end
+      end
+    end
+  end
+  if not valid then
+    return function(_, _)
+      return true
+    end
+  end
+  return function(bp, entry)
+    for _, v in ipairs(bp) do
+      if entry:find(v, 1, true) then
+        local negated = false
+        for _, w in ipairs(patterns[v].ignored) do
+          if not negated and entry:match(w) then
+            for _, inverse in ipairs(patterns[v].negated) do
+              if not negated and entry:match(inverse) then
+                negated = true
+              end
+            end
+            if not negated then
+              return false
+            end
+          end
+        end
+      end
+    end
     return true
   end
 end

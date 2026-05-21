@@ -4,9 +4,9 @@ local Finder = require "frecency.finder"
 local config = require "frecency.config"
 local fs = require "frecency.fs"
 local fuzzy_matcher = require "frecency.fuzzy_matcher"
+local os_util = require "frecency.os_util"
 local substr_matcher = require "frecency.substr_matcher"
 local lazy_require = require "frecency.lazy_require"
-local Path = lazy_require "plenary.path" --[[@as FrecencyPlenaryPath]]
 local actions = lazy_require "telescope.actions"
 local telescope_config = lazy_require "telescope.config"
 local pickers = lazy_require "telescope.pickers"
@@ -151,12 +151,12 @@ end
 ---@param path string
 ---@return string
 function Picker:default_path_display(opts, path)
-  local filename = Path:new(path):make_relative(opts.cwd)
+  local filename = vim.fs.relpath(opts.cwd, path) or path
   if not self.workspaces or #self.workspaces == 0 then
     if vim.startswith(filename, fs.os_homedir) then
-      filename = "~" .. Path.path.sep .. fs.relative_from_home(filename)
+      filename = "~" .. os_util.sep .. fs.relative_from_home(filename)
     elseif filename ~= path then
-      filename = "." .. Path.path.sep .. filename
+      filename = "." .. os_util.sep .. filename
     end
   end
   return filename
