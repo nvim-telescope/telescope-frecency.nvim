@@ -137,9 +137,6 @@ function Frecency:_validate_database(force)
     timer.track "validate_database() finish: removed"
     return
   end
-  -- HACK: This is needed because the default implementaion of vim.ui.select()
-  -- uses vim.fn.* function and it makes E5560 error.
-  async.util.scheduler()
   vim.ui.select({ "y", "n" }, {
     prompt = "\n" .. self:message("remove %d entries from database?", #unlinked),
     ---@param item "y"|"n"
