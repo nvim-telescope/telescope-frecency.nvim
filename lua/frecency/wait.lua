@@ -1,4 +1,5 @@
-local async = require "neoplen.async"
+local lazy_require = require "frecency.lazy_require"
+local async = lazy_require "neoplen.async" --[[@as FrecencyPlenaryAsync]]
 
 ---@class FrecencyWait
 ---@field config FrecencyWaitConfig
