@@ -18,6 +18,9 @@
     bin/run-tests -v
     # Show verbose log
 
+    bin/run-tests -r master
+    # Test against another telescope.nvim branch (default: feat/neoplen)
+
 =cut
 
 use 5.24.0;
@@ -43,11 +46,15 @@ BEGIN {
 
 my %opt = (
     executable => 'nvim',
+    # This plugin runs on vim.async, but telescope drives the finder from its
+    # own async runtime, which lives on this branch only.
+    telescope_ref => 'feat/neoplen',
 );
 GetOptions(
     \%opt, qw(
     update_libs|u
     executable|e=s
+    telescope_ref|r=s
     verbose|v
     help|h
 )) or pod2usage(1);
@@ -57,9 +64,15 @@ my $test_file = shift;
 
 my $test_dir = 'lua/frecency/tests/';
 my $minimal_lua = "${test_dir}minimal.lua";
+# NOTE: `sequential` is not about speed. Running the spec files in parallel
+# makes plenary's harness race with its own children: it stops waiting as soon
+# as every job reports shutdown, so a job whose exit handler has not run yet
+# loses its output and contributes a nil exit code, which the harness reads as
+# a failure. That shows up as a spec silently missing from the output and a red
+# run with no failing assertion.
 my $command = defined $test_file
     ? qq(PlenaryBustedFile $test_file)
-    : qq(PlenaryBustedDirectory $test_dir {minimal_init = '$minimal_lua'});
+    : qq(PlenaryBustedDirectory $test_dir {minimal_init = '$minimal_lua', sequential = true});
 
 sub logger($msg) {
     if ($opt{verbose}) {
@@ -82,26 +95,29 @@ my $info = (-e $info_json && !$opt{update_libs}) ? do {
     local $/;
     decode_json <$fh>;
 }: {};
-sub prepare_lib($name) {
+sub prepare_lib($name, $ref = undef) {
     my $today = localtime->ymd;
-    if (defined $info->{$name} && $info->{$name}{ymd} eq $today) {
-        logger("Using cached $name");
+    my $key = defined $ref ? "$name#$ref" : $name;
+    if (defined $info->{$key} && $info->{$key}{ymd} eq $today) {
+        logger("Using cached $key");
     } else {
-        $info->{$name} = {
+        $info->{$key} = {
             ymd => $today,
             path => create_tempdir(0),
         };
-        0 == system 'git', 'clone', "https://github.com/$name", $info->{$name}{path}
-            or die "Failed to clone $name";
+        my @clone = ('git', 'clone', '--depth', '1');
+        push @clone, '--branch', $ref if defined $ref;
+        0 == system @clone, "https://github.com/$name", $info->{$key}{path}
+            or die "Failed to clone $key";
     }
     open my $fh, '>', $info_json or die;
     $fh->print(encode_json $info);
-    $info->{$name}{path};
+    $info->{$key}{path};
 }
 
 logger('Preparing libraries...');
 
-my $telescope_path = prepare_lib('nvim-telescope/telescope.nvim');
+my $telescope_path = prepare_lib('nvim-telescope/telescope.nvim', $opt{telescope_ref});
 my $plenary_path = prepare_lib('nvim-lua/plenary.nvim');
 
 my @cmd = ($opt{executable}, '--headless', '--clean', '-u', $minimal_lua, '-c', $command);

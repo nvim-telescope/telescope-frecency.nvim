@@ -4,7 +4,14 @@ local os_util = require "frecency.os_util"
 local log = require "frecency.log"
 local timer = require "frecency.timer"
 local Sorter = require "frecency.sorter"
+local lazy_require = require "frecency.lazy_require"
 local async = require "frecency.async"
+-- The picker calls Finder:find() from inside telescope's own async runtime, so
+-- the consumer side of this file -- find(), process_channel(), reflow_results()
+-- and both channels -- has to yield the way that runtime expects. Only the
+-- producer side, which runs in tasks we start ourselves, is on |vim.async|.
+-- This split goes away once telescope moves to vim.async too.
+local telescope_async = lazy_require "neoplen.async" --[[@as FrecencyTelescopeAsync]]
 
 ---@class FrecencyFinder
 ---@field config FrecencyFinderConfig
@@ -14,10 +21,10 @@ local async = require "frecency.async"
 ---@field entry_maker FrecencyEntryMakerInstance
 ---@field paths? string[]
 ---@field private database FrecencyDatabase
----@field private rx FrecencyAsyncChannelRx
----@field private tx FrecencyAsyncChannelTx
----@field private scan_rx FrecencyAsyncChannelRx
----@field private scan_tx FrecencyAsyncChannelTx
+---@field private rx FrecencyTelescopeAsyncChannelRx
+---@field private tx FrecencyTelescopeAsyncChannelTx
+---@field private scan_rx FrecencyTelescopeAsyncChannelRx
+---@field private scan_tx FrecencyTelescopeAsyncChannelTx
 ---@field private need_scan_db boolean
 ---@field private need_scan_dir boolean
 ---@field private seen table<string, boolean>
@@ -58,8 +65,8 @@ local Finder = {
 ---@param finder_config? FrecencyFinderConfig
 ---@return FrecencyFinder
 Finder.new = function(database, entry_maker, need_scandir, paths, state, finder_config)
-  local tx, rx = async.channel.mpsc()
-  local scan_tx, scan_rx = async.channel.mpsc()
+  local tx, rx = telescope_async.control.channel.mpsc()
+  local scan_tx, scan_rx = telescope_async.control.channel.mpsc()
   local self = setmetatable({
     config = vim.tbl_extend("force", { chunk_size = 1000, sleep_interval = 50 }, finder_config or {}),
     closed = false,
@@ -210,7 +217,7 @@ function Finder:find(_, process_result, process_complete)
     self.need_scan_db = false
   end
   -- HACK: This is needed for heavy workspaces to show up entries immediately.
-  async.scheduler()
+  telescope_async.util.scheduler()
   if self:process_table(process_result, self.scanned_entries) then
     return
   end
@@ -237,12 +244,12 @@ end
 ---@async
 ---@param process_result fun(entry: FrecencyEntry): nil
 ---@param entries FrecencyEntry[]
----@param rx FrecencyAsyncChannelRx
+---@param rx FrecencyTelescopeAsyncChannelRx
 ---@param start_index? integer
 ---@return boolean?
 function Finder:process_channel(process_result, entries, rx, start_index)
   -- HACK: This is needed for small workspaces that it shows up entries fast.
-  async.sleep(self.config.sleep_interval)
+  telescope_async.util.sleep(self.config.sleep_interval)
   local index = #entries > 0 and entries[#entries].index or start_index or 0
   local count = 0
   while true do
@@ -294,7 +301,7 @@ function Finder:reflow_results()
   if not picker then
     return
   end
-  async.scheduler()
+  telescope_async.util.scheduler()
 
   local function reflow()
     local bufnr = picker.results_bufnr

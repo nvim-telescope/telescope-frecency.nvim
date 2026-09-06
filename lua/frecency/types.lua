@@ -44,6 +44,25 @@
 
 -- NOTE: types are for telescope.nvim
 
+-- The async runtime telescope vendors (`neoplen`). This plugin only touches it
+-- where telescope owns the coroutine, that is the finder's consumer side.
+---@class FrecencyTelescopeAsync
+---@field control FrecencyTelescopeAsyncControl
+---@field util FrecencyTelescopeAsyncUtil
+
+---@class FrecencyTelescopeAsyncControl
+---@field channel { mpsc: fun(): FrecencyTelescopeAsyncChannelTx, FrecencyTelescopeAsyncChannelRx }
+
+---@class FrecencyTelescopeAsyncUtil
+---@field scheduler async fun(): nil
+---@field sleep async fun(ms: integer): nil
+
+---@class FrecencyTelescopeAsyncChannelTx
+---@field send fun(value?: any): nil
+
+---@class FrecencyTelescopeAsyncChannelRx
+---@field recv async fun(): any?
+
 ---@alias FrecencyTelescopeEntryDisplayer fun(items: string[]): table
 
 ---@class FrecencyTelescopeEntryDisplayOptions
