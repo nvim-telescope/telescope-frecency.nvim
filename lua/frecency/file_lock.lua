@@ -1,6 +1,5 @@
 local log = require "frecency.log"
-local lazy_require = require "frecency.lazy_require"
-local async = lazy_require "neoplen.async" --[[@as FrecencyPlenaryAsync]]
+local async = require "frecency.async"
 
 ---@class FrecencyFileLock
 ---@field base string
@@ -46,7 +45,7 @@ function FileLock:get()
     if not err then
       break
     end
-    async.util.sleep(self.config.interval)
+    async.sleep(self.config.interval)
     if count >= self.config.retry then
       log.debug(("file_lock get(): retry count reached. try to delete the lock file: %d"):format(count))
       err = async.uv.fs_unlink(self.lock)

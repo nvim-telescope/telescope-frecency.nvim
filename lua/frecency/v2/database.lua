@@ -6,11 +6,14 @@ local log = require "frecency.log"
 local os_util = require "frecency.os_util"
 local timer = require "frecency.timer"
 local watcher = require "frecency.watcher"
-local lazy_require = require "frecency.lazy_require"
-local async = lazy_require "neoplen.async" --[[@as FrecencyPlenaryAsync]]
+local async = require "frecency.async"
 
 -- todo(clason): remove when dropping support for Nvim 0.12
 local npcall = vim.npcall or vim.F.npcall
+
+-- A database can hold thousands of records, and unlinked_entries() calls
+-- fs_realpath() for every one of them. Cap how many are in flight at once.
+local REALPATH_CONCURRENCY = 64
 
 ---@class FrecencyDatabaseV2: FrecencyDatabase
 ---@field protected tbl FrecencyTableV2
@@ -18,16 +21,30 @@ local DatabaseV2 = {}
 
 ---@return FrecencyDatabaseV2
 DatabaseV2.new = function()
-  local file_lock_tx, file_lock_rx = async.control.channel.oneshot()
-  local watcher_tx, watcher_rx = async.control.channel.mpsc()
   return setmetatable({
-    file_lock_rx = file_lock_rx,
-    file_lock_tx = file_lock_tx,
-    is_started = false,
+    io_lock = async.semaphore(1),
     tbl = TableV2.new(),
-    watcher_rx = watcher_rx,
-    watcher_tx = watcher_tx,
   }, { __index = DatabaseV2 })
+end
+
+---Queue a load or a save.
+---
+---Runs in a task of its own so that the caller does not wait for the I/O, and
+---holds `io_lock` so that reads and writes never interleave.
+---@param mode "load"|"save"
+---@return nil
+function DatabaseV2:enqueue(mode)
+  async.void(function()
+    self.io_lock:with(function()
+      log.debug("DB task start:", mode)
+      if mode == "load" then
+        self:load()
+      else
+        self:save()
+      end
+      log.debug("DB task end:", mode)
+    end)
+  end)()
 end
 
 ---@async
@@ -74,7 +91,7 @@ function DatabaseV2:migrate_from(v2, v1)
     return
   end
   self.tbl:set(self.tbl:from_v1(tbl))
-  self.watcher_tx.send "save"
+  self:enqueue "save"
   log.debug "migration finish"
   vim.schedule(function()
     vim.notify(
@@ -90,30 +107,23 @@ end
 ---@return nil
 function DatabaseV2:start()
   timer.track "Database:start() start"
-  if self.is_started then
+  if self.start_task then
     return
   end
-  self.is_started = true
-  local target = self:filename()
-  self.file_lock_tx(FileLock.new(target))
-  self.watcher_tx.send "load"
-  watcher.watch(target, function()
-    self.watcher_tx.send "load"
-  end)
-  async.void(function()
-    while true do
-      local mode = self.watcher_rx.recv()
-      log.debug("DB coroutine start:", mode)
-      if mode == "load" then
-        self:load()
-      elseif mode == "save" then
-        self:save()
-      else
-        log.error("unknown mode: " .. mode)
-      end
-      log.debug("DB coroutine end:", mode)
-    end
-  end)()
+  -- Detached, because this outlives the task that happens to call start()
+  -- first: file_lock() awaits it from every later DB operation, so closing
+  -- that caller must not take the file lock down with it.
+  self.start_task = async
+    .run(function()
+      local target = self:filename()
+      self._file_lock = FileLock.new(target)
+      watcher.watch(target, function()
+        self:enqueue "load"
+      end)
+    end)
+    :detach()
+  async.await(self.start_task)
+  self:enqueue "load"
   timer.track "Database:start() finish"
 end
 
@@ -133,13 +143,13 @@ function DatabaseV2:insert_files(paths)
   for _, path in ipairs(paths) do
     self.tbl:set_record(path, self.tbl:default_record())
   end
-  self.watcher_tx.send "save"
+  self:enqueue "save"
 end
 
 ---@async
 ---@return string[]
 function DatabaseV2:unlinked_entries()
-  local threads = vim
+  local fns = vim
     .iter(self.tbl:records())
     :map(function(path, _)
       return function()
@@ -150,7 +160,7 @@ function DatabaseV2:unlinked_entries()
       end
     end)
     :totable()
-  return vim.iter(async.util.join(threads)):flatten():totable()
+  return vim.iter(async.join(fns, REALPATH_CONCURRENCY)):flatten():totable()
 end
 
 ---@async
@@ -159,7 +169,7 @@ function DatabaseV2:remove_files(paths)
   for _, file in ipairs(paths) do
     self.tbl:remove_record(file)
   end
-  self.watcher_tx.send "save"
+  self:enqueue "save"
 end
 
 ---@async
@@ -170,7 +180,7 @@ function DatabaseV2:update(path, epoch)
   local entry = self.tbl:entry(path, now)
   entry:update(now)
   self.tbl:set_record(path, entry:record())
-  self.watcher_tx.send "save"
+  self:enqueue "save"
 end
 
 ---@async
@@ -204,7 +214,7 @@ function DatabaseV2:load()
     log.debug "half_life recalculation start"
     self.tbl:reset_reference_time()
     log.debug "half_life recalculation finish"
-    self.watcher_tx.send "save"
+    self:enqueue "save"
   end
   timer.track "load() finish"
   log.debug "load v2 finish"
@@ -278,7 +288,7 @@ function DatabaseV2:remove_entry(path)
     return false
   end
   self.tbl:remove_record(path)
-  self.watcher_tx.send "save"
+  self:enqueue "save"
   return true
 end
 
@@ -286,9 +296,9 @@ end
 ---@async
 ---@return FrecencyFileLock
 function DatabaseV2:file_lock()
-  if not self._file_lock then
-    self._file_lock = self.file_lock_rx()
-  end
+  -- The v1 -> v2 migration queues a save while start() is still resolving the
+  -- filename, so the lock is not there yet when this is first called.
+  async.await(assert(self.start_task, "the database is not started"))
   return self._file_lock
 end
 

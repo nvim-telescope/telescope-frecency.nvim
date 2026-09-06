@@ -3,9 +3,8 @@ local fs = require "frecency.fs"
 local os_util = require "frecency.os_util"
 local log = require "frecency.log"
 local timer = require "frecency.timer"
-local lazy_require = require "frecency.lazy_require"
 local Sorter = require "frecency.sorter"
-local async = lazy_require "neoplen.async" --[[@as FrecencyPlenaryAsync]]
+local async = require "frecency.async"
 
 ---@class FrecencyFinder
 ---@field config FrecencyFinderConfig
@@ -15,10 +14,10 @@ local async = lazy_require "neoplen.async" --[[@as FrecencyPlenaryAsync]]
 ---@field entry_maker FrecencyEntryMakerInstance
 ---@field paths? string[]
 ---@field private database FrecencyDatabase
----@field private rx FrecencyPlenaryAsyncControlChannelRx
----@field private tx FrecencyPlenaryAsyncControlChannelTx
----@field private scan_rx FrecencyPlenaryAsyncControlChannelRx
----@field private scan_tx FrecencyPlenaryAsyncControlChannelTx
+---@field private rx FrecencyAsyncChannelRx
+---@field private tx FrecencyAsyncChannelTx
+---@field private scan_rx FrecencyAsyncChannelRx
+---@field private scan_tx FrecencyAsyncChannelTx
 ---@field private need_scan_db boolean
 ---@field private need_scan_dir boolean
 ---@field private seen table<string, boolean>
@@ -59,8 +58,8 @@ local Finder = {
 ---@param finder_config? FrecencyFinderConfig
 ---@return FrecencyFinder
 Finder.new = function(database, entry_maker, need_scandir, paths, state, finder_config)
-  local tx, rx = async.control.channel.mpsc()
-  local scan_tx, scan_rx = async.control.channel.mpsc()
+  local tx, rx = async.channel.mpsc()
+  local scan_tx, scan_rx = async.channel.mpsc()
   local self = setmetatable({
     config = vim.tbl_extend("force", { chunk_size = 1000, sleep_interval = 50 }, finder_config or {}),
     closed = false,
@@ -113,7 +112,7 @@ function Finder:start(epoch)
   end
   async.void(function()
     -- NOTE: return to the main loop to show the main window
-    async.util.scheduler()
+    async.scheduler()
     for _, file in ipairs(self:get_results(self.paths, epoch)) do
       file.path = os_util.normalize_sep(file.path)
       local entry = self.entry_maker(file)
@@ -128,7 +127,7 @@ function Finder:start(epoch)
         end)
         :each(function(path)
           log.debug("scan_dir_lua: " .. path)
-          async.util.scheduler()
+          async.scheduler()
           self:scan_dir_lua(path)
         end)
     end
@@ -189,7 +188,7 @@ function Finder:scan_dir_lua(path)
     self.scan_tx.send(entry)
     count = count + 1
     if count % self.config.chunk_size == 0 then
-      async.util.sleep(self.config.sleep_interval)
+      async.sleep(self.config.sleep_interval)
     end
   end
   self.scan_tx.send(nil)
@@ -211,7 +210,7 @@ function Finder:find(_, process_result, process_complete)
     self.need_scan_db = false
   end
   -- HACK: This is needed for heavy workspaces to show up entries immediately.
-  async.util.scheduler()
+  async.scheduler()
   if self:process_table(process_result, self.scanned_entries) then
     return
   end
@@ -238,12 +237,12 @@ end
 ---@async
 ---@param process_result fun(entry: FrecencyEntry): nil
 ---@param entries FrecencyEntry[]
----@param rx FrecencyPlenaryAsyncControlChannelRx
+---@param rx FrecencyAsyncChannelRx
 ---@param start_index? integer
 ---@return boolean?
 function Finder:process_channel(process_result, entries, rx, start_index)
   -- HACK: This is needed for small workspaces that it shows up entries fast.
-  async.util.sleep(self.config.sleep_interval)
+  async.sleep(self.config.sleep_interval)
   local index = #entries > 0 and entries[#entries].index or start_index or 0
   local count = 0
   while true do
@@ -295,7 +294,7 @@ function Finder:reflow_results()
   if not picker then
     return
   end
-  async.util.scheduler()
+  async.scheduler()
 
   local function reflow()
     local bufnr = picker.results_bufnr

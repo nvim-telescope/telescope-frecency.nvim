@@ -2,12 +2,10 @@ local DatabaseV2 = require "frecency.v2.database"
 
 ---@class FrecencyDatabase
 ---@field protected _file_lock FrecencyFileLock
----@field protected file_lock_rx async fun(): ...
----@field protected file_lock_tx fun(...): nil
----@field protected is_started boolean
+---@field protected io_lock vim.async.Semaphore serialises load and save
+---@field protected start_task? vim.async.Task set by start(), awaited by file_lock()
 ---@field protected tbl FrecencyTable
----@field protected watcher_rx FrecencyPlenaryAsyncControlChannelRx
----@field protected watcher_tx FrecencyPlenaryAsyncControlChannelTx
+---@field enqueue fun(self, mode: "load"|"save"): nil
 ---@field file_lock async fun(self): FrecencyFileLock
 ---@field filename async fun(self): string
 ---@field get_entries async fun(self, workspaces?: string[], epoch?: integer): FrecencyDatabaseEntry[]

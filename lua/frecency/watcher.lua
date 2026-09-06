@@ -1,6 +1,5 @@
 local log = require "frecency.log"
-local lazy_require = require "frecency.lazy_require"
-local async = lazy_require "neoplen.async" --[[@as FrecencyPlenaryAsync]]
+local async = require "frecency.async"
 
 ---@class FrecencyWatcherMtime
 ---@field sec integer
@@ -49,7 +48,7 @@ function Watcher:watch(path, cb)
     end
     async.void(function()
       -- NOTE: wait for updating mtime
-      async.util.sleep(50)
+      async.sleep(50)
       local stat
       err, stat = async.uv.fs_stat(path)
       if err then

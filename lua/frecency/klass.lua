@@ -5,8 +5,7 @@ local fs = require "frecency.fs"
 local log = require "frecency.log"
 local timer = require "frecency.timer"
 local wait = require "frecency.wait"
-local lazy_require = require "frecency.lazy_require"
-local async = lazy_require "neoplen.async" --[[@as FrecencyPlenaryAsync]]
+local async = require "frecency.async"
 
 ---@enum FrecencyStatus
 local STATUS = {
@@ -66,12 +65,12 @@ function Frecency:setup(is_async, need_cleanup)
     return
   end
 
-  local ok, status = wait(init)
+  local ok, err = wait(init)
   if ok then
     return
   end
   -- NOTE: This means init() has failed. Try again.
-  self:error(status == -1 and "init() never returns during the time" or "init() is interrupted during the time")
+  self:error(err == "timeout" and "init() never returns during the time" or ("init() failed: " .. tostring(err)))
 end
 
 ---This can be calledBy `require("telescope").extensions.frecency.frecency`.
@@ -139,7 +138,7 @@ function Frecency:_validate_database(force)
   end
   -- HACK: This is needed because the default implementaion of vim.ui.select()
   -- uses vim.fn.* function and it makes E5560 error.
-  async.util.scheduler()
+  async.scheduler()
   vim.ui.select({ "y", "n" }, {
     prompt = "\n" .. self:message("remove %d entries from database?", #unlinked),
     ---@param item "y"|"n"

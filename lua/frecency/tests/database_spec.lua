@@ -1,6 +1,6 @@
 local Database = require "frecency.database"
 local config = require "frecency.config"
-local async = require "neoplen.async" --[[@as FrecencyPlenaryAsync]]
+local async = require "frecency.async"
 local util = require "frecency.tests.util"
 util.add_async_to_env()
 
@@ -33,7 +33,7 @@ a.describe("frecency.database", function()
           ["hoge2.txt"] = { score = 2, last_accessed = 30, num_accesses = 3 },
         }, ref))
         database:save()
-        async.util.sleep(100)
+        async.sleep(100)
         local entries = database:get_entries(nil, now)
         table.sort(entries, function(a, b)
           return a.path < b.path
