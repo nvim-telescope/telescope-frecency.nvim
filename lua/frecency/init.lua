@@ -48,9 +48,9 @@ end
 -- This was introduced because the async runtime used to live inside
 -- telescope.nvim (`neoplen.async`), so starting async work during startup
 -- dragged telescope's load onto Neovim's startup critical path. |vim.async| is
--- part of Neovim, so that reason is gone; the deferral is kept for now because
--- it also keeps the DB warm-up off the startup path, and reverting it is a
--- behavior change of its own.
+-- part of Neovim, so that reason is gone. What is left is keeping the DB
+-- warm-up off the startup path, which is a behavior choice rather than a
+-- necessity; dropping it would put the warm-up back where master has it.
 local function async_call_or_defer(f, ...)
   if vim.v.vim_did_enter == 1 then
     async_call(f, ...)
@@ -132,9 +132,8 @@ local function setup(ext_config)
   end
 
   if config.bootstrap and vim.v.vim_did_enter == 0 then
-    -- Defer DB bootstrap to VimEnter: it still warms the DB before the first
-    -- picker while keeping the work off Neovim's startup path. See
-    -- async_call_or_defer above.
+    -- Deferred like the registrations above, so that the DB warm-up stays off
+    -- Neovim's startup path. It still finishes well before the first picker.
     vim.api.nvim_create_autocmd("VimEnter", {
       once = true,
       callback = function()

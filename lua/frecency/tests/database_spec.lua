@@ -20,7 +20,45 @@ local function with_database(f)
   end
 end
 
+-- Like with_database(), but the file on disk already holds a record and the
+-- callback runs without waiting for the initial load.
+local function with_loading_database(records, f)
+  local dir, close = util.tmpdir()
+  return function()
+    config.setup { debug = true, db_root = dir.filename }
+    local seed = Database.create()
+    seed:start()
+    ---@diagnostic disable-next-line: invisible, undefined-field
+    seed.tbl:wait_ready()
+    ---@diagnostic disable-next-line: invisible, undefined-field
+    seed.tbl:set(util.v2_table(records))
+    seed:save()
+
+    local database = Database.create()
+    database:start()
+    f(database)
+    close()
+  end
+end
+
 a.describe("frecency.database", function()
+  a.describe("when a record is written while the initial load is in flight", function()
+    a.it(
+      "keeps both the loaded records and the new one",
+      with_loading_database({ ["hoge1.txt"] = { score = 1, last_accessed = 0, num_accesses = 1 } }, function(database)
+        database:update "hoge2.txt"
+        local paths = vim
+          .iter(database:get_entries())
+          :map(function(entry)
+            return entry.path
+          end)
+          :totable()
+        table.sort(paths)
+        assert.are.same({ "hoge1.txt", "hoge2.txt" }, paths)
+      end)
+    )
+  end)
+
   a.describe("v2 round-trip", function()
     a.it(
       "preserves records across save -> get_entries",

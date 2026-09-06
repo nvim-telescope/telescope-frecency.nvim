@@ -4,6 +4,7 @@ A [telescope.nvim][] extension that offers intelligent prioritization when
 selecting files from your editing history.
 
 [telescope.nvim]: https://github.com/nvim-telescope/telescope.nvim
+[`vim.async`]: https://neovim.io/doc/user/lua-async.html
 
 Using an implementation of Mozilla's [Frecency algorithm][] (used in [Firefox's
 address bar][]), files edited _frecently_ are given higher precedence in the
@@ -57,8 +58,6 @@ directories provided by the language server.
   available from v0.13.
     * Use `^0.9.0` tag for Neovim 0.9.x (See [Notice for versioning](#notice-for-versioning)).
     * For Neovim 0.10.x, lock to a release before 2.0.0.
-
-[`vim.async`]: https://neovim.io/doc/user/lua-async.html
 - [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) **(required)**
 - [nvim-web-devicons](https://github.com/kyazdani42/nvim-web-devicons) (optional)
 - [fd](https://github.com/sharkdp/fd) or [ripgrep](https://github.com/BurntSushi/ripgrep) (optional)
@@ -123,8 +122,7 @@ to a tag): **2.0.0 is a breaking release.**
 - Asynchronous I/O comes from Neovim's built-in `vim.async` instead of a module
   vendored inside `telescope.nvim` (`neoplen`), so loading this plugin eagerly
   to register startup buffers no longer drags `telescope.nvim` into startup.
-  The DB warm-up is still deferred to `VimEnter` to keep it off Neovim's
-  startup path.
+  The DB warm-up runs at `VimEnter`, off Neovim's startup path.
 
 If you want the previous behaviour (v1 algorithm, Neovim 0.10.x support), pin
 to the v1 line:

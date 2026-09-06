@@ -385,8 +385,8 @@ configuration for |lazy.nvim| is below.
 
 NOTE: Since 2.0.0 the asynchronous I/O comes from |vim.async|, which is part of
 Neovim itself, so loading this plugin non-lazily does not load
-|telescope.nvim|. The startup DB warm-up is still deferred to |VimEnter| to
-keep it off Neovim's startup path; it finishes well before the first picker.
+|telescope.nvim|. The startup DB warm-up runs at |VimEnter| to keep it off
+Neovim's startup path; it finishes well before the first picker.
 >lua
     {
       "nvim-telescope/telescope-frecency.nvim",
@@ -487,11 +487,6 @@ Type: `boolean`
 If `true` and you set this plugin to be loaded non-lazily, it initializes DB at
 |VimEnter|. This initialization logic works asynchronously and does not block
 Neovim's starting process.
-
-NOTE: Since 2.0.0 this initialization is deferred to |VimEnter| (it previously
-ran earlier in startup) to keep the DB warm-up off Neovim's startup path. It
-does not load |telescope.nvim|: the async I/O it uses is |vim.async|, which is
-part of Neovim.
 
 				      *telescope-frecency-configuration-db_root*
 db_root ~
