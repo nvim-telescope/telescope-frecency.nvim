@@ -7,7 +7,7 @@ local os_util = require "frecency.os_util"
 local timer = require "frecency.timer"
 local watcher = require "frecency.watcher"
 local lazy_require = require "frecency.lazy_require"
-local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
+local async = lazy_require "neoplen.async" --[[@as FrecencyPlenaryAsync]]
 
 -- todo(clason): remove when dropping support for Nvim 0.12
 local npcall = vim.npcall or vim.F.npcall
@@ -130,6 +130,7 @@ function DatabaseV2:insert_files(paths)
   if #paths == 0 then
     return
   end
+  self.tbl:wait_ready()
   for _, path in ipairs(paths) do
     self.tbl:set_record(path, self.tbl:default_record())
   end
@@ -156,6 +157,7 @@ end
 ---@async
 ---@param paths string[]
 function DatabaseV2:remove_files(paths)
+  self.tbl:wait_ready()
   for _, file in ipairs(paths) do
     self.tbl:remove_record(file)
   end
@@ -166,6 +168,10 @@ end
 ---@param path string
 ---@param epoch? integer
 function DatabaseV2:update(path, epoch)
+  -- Mutations have to land on top of what is on disk. Without this, a buffer
+  -- registered while the initial load is still in flight is written into the
+  -- table and then wiped by that load.
+  self.tbl:wait_ready()
   local now = epoch or os.time()
   local entry = self.tbl:entry(path, now)
   entry:update(now)

@@ -1,9 +1,10 @@
 ---@diagnostic disable: invisible, undefined-field
+-- luacheck: globals describe it pending before_each after_each
 local Frecency = require "frecency.klass"
 local Picker = require "frecency.picker"
 local config = require "frecency.config"
-local log = require "plenary.log"
-local async = require "plenary.async" --[[@as FrecencyPlenaryAsync]]
+local log = require "neoplen.log"
+local async = require "neoplen.async" --[[@as FrecencyPlenaryAsync]]
 local Path = require "plenary.path"
 local Job = require "plenary.job"
 local wait = require "frecency.wait"
@@ -199,7 +200,32 @@ local function with_fake_vim_ui_select(choice, callback)
   vim.ui.select = original_vim_ui_select
 end
 
+-- Replacement for `require("plenary.async").tests.add_to_env()` — neoplen
+-- removed the `async.tests` submodule, so we inline the minimal helpers that
+-- frecency's spec files use (`a.describe` / `a.it` / `a.before_each` /
+-- `a.after_each` / `a.pending`). Sets `_G.a` so call sites resolve through the
+-- global table the same way `setfenv`-based add_to_env did.
+local function add_async_to_env()
+  local timeout = tonumber(vim.env.PLENARY_TEST_TIMEOUT)
+  _G.a = {
+    describe = describe,
+    it = function(s, async_func)
+      it(s, async.util.will_block(async_func, timeout))
+    end,
+    pending = function(async_func)
+      pending(async_func)
+    end,
+    before_each = function(async_func)
+      before_each(async.util.will_block(async_func))
+    end,
+    after_each = function(async_func)
+      after_each(async.util.will_block(async_func))
+    end,
+  }
+end
+
 return {
+  add_async_to_env = add_async_to_env,
   filepath = filepath,
   make_epoch = make_epoch,
   make_register = make_register,

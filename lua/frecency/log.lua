@@ -1,6 +1,6 @@
 local config = require "frecency.config"
 local lazy_require = require "frecency.lazy_require"
-local log = lazy_require "plenary.log"
+local log = lazy_require "neoplen.log"
 
 return setmetatable({}, {
   __index = function(_, key)
