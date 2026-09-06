@@ -20,7 +20,8 @@ jobs:
           - macos-latest
           - windows-latest
         version:
-          - stable
+          # `vim.async` is only in Neovim v0.13, which is not released yet, so
+          # `stable` cannot run these tests. Add it back once v0.13 is out.
           - nightly
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
