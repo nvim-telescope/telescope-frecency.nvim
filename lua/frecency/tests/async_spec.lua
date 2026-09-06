@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-field
 local async = require "frecency.async"
 
 ---@param name string

@@ -43,6 +43,9 @@ function DatabaseV2:enqueue(mode)
         self:save()
       end
       log.debug("DB task end:", mode)
+      -- `Semaphore:with()` is generic over the callback's return value, so it
+      -- wants one even when there is nothing to hand back.
+      return nil
     end)
   end)()
 end
