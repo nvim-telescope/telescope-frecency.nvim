@@ -122,7 +122,6 @@ to a tag): **2.0.0 is a breaking release.**
 - Asynchronous I/O comes from Neovim's built-in `vim.async` instead of a module
   vendored inside `telescope.nvim` (`neoplen`), so loading this plugin eagerly
   to register startup buffers no longer drags `telescope.nvim` into startup.
-  The DB warm-up runs at `VimEnter`, off Neovim's startup path.
 
 If you want the previous behaviour (v1 algorithm, Neovim 0.10.x support), pin
 to the v1 line:
