@@ -117,14 +117,15 @@ to a tag): **2.0.0 is a breaking release.**
   value). The `count` field is preserved as an alias for `num_accesses`.
 - The `db_version` config option is removed.
 - Asynchronous I/O now comes from a module vendored inside `telescope.nvim`
-  (`neoplen`), so loading this plugin non-lazily also loads `telescope.nvim` at
-  `VimEnter`. The startup DB warm-up used to be a minimal `frecency` + `plenary`
-  load; it now unavoidably pulls in `telescope.nvim`, so it is deferred to
-  `VimEnter` to keep that load off Neovim's startup path. Keeping
-  `telescope.nvim` fully lazy while loading this plugin eagerly to register
-  startup buffers is no longer possible; set `bootstrap = false` to keep
-  telescope from loading until you open a picker. This will become possible
-  again once `vim.async` lands in Neovim core.
+  (`neoplen`), so every database access loads `telescope.nvim` itself under a
+  plugin manager that resolves modules to plugins (lazy.nvim and the like).
+  This used to be a minimal `frecency` + `plenary` load. In practice, loading
+  this plugin non-lazily loads `telescope.nvim` during startup (the DB warm-up
+  and the buffers you opened on the command line), and even with
+  `bootstrap = false` the first buffer you open registers itself and loads it
+  then. **Keeping `telescope.nvim` lazy therefore requires loading this plugin
+  lazily too, which means buffers opened at startup are not registered.** This
+  will become possible again once `vim.async` lands in Neovim core.
 
 If you want the previous behaviour (v1 algorithm, Neovim 0.10.x support), pin
 to the v1 line:
