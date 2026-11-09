@@ -3,53 +3,85 @@
 local Frecency = require "frecency.klass"
 local Picker = require "frecency.picker"
 local config = require "frecency.config"
-local log = require "neoplen.log"
+local log = require "frecency.log"
 local async = require "neoplen.async" --[[@as FrecencyPlenaryAsync]]
-local Path = require "plenary.path"
-local Job = require "plenary.job"
 local wait = require "frecency.wait"
 
----@return FrecencyPlenaryPath
----@return fun(): nil close swwp all entries
+-- Minimal replacement for the parts of plenary.path that the specs use.
+---@class FrecencyTestPath
+---@field filename string
+local TestPath = {}
+TestPath.__index = TestPath
+
+---@param filename string
+---@return FrecencyTestPath
+function TestPath.new(filename)
+  return setmetatable({ filename = filename }, TestPath)
+end
+
+---@param ... string
+---@return FrecencyTestPath
+function TestPath:joinpath(...)
+  return TestPath.new(vim.fs.joinpath(self.filename, ...))
+end
+
+TestPath.__div = TestPath.joinpath
+
+---@return string
+function TestPath:absolute()
+  return vim.fs.abspath(self.filename)
+end
+
+---@param opts? { parents: boolean? }
+---@return nil
+function TestPath:touch(opts)
+  if opts and opts.parents then
+    vim.fn.mkdir(vim.fs.dirname(self.filename), "p")
+  end
+  local fd = assert(vim.uv.fs_open(self.filename, "a", tonumber("644", 8)))
+  assert(vim.uv.fs_close(fd))
+end
+
+---@param opts? { recursive: boolean? }
+---@return nil
+function TestPath:rm(opts)
+  vim.fs.rm(self.filename, { recursive = opts and opts.recursive })
+end
+
+---@param opts { new_name: string }
+---@return nil
+function TestPath:rename(opts)
+  assert(vim.uv.fs_rename(self.filename, opts.new_name))
+end
+
+---@return FrecencyTestPath
+---@return fun(): nil close sweep all entries
 local function tmpdir()
   local ci = vim.uv.os_getenv "CI"
-  local dir
-  if ci then
-    dir = Path:new(assert(vim.uv.fs_mkdtemp "tests_XXXXXX"))
-  else
-    local tmp = assert(vim.uv.os_tmpdir())
-    -- HACK: plenary.path resolves paths later, so here it resolves in advance.
-    if vim.uv.os_uname().sysname == "Darwin" then
-      tmp = tmp:gsub("^/var", "/private/var")
-    end
-    dir = Path:new(assert(vim.uv.fs_mkdtemp(Path:new(tmp, "tests_XXXXXX").filename)))
-  end
+  local template = ci and "tests_XXXXXX" or vim.fs.joinpath(assert(vim.uv.os_tmpdir()), "tests_XXXXXX")
+  -- NOTE: Resolve symlinks (e.g. /var -> /private/var on macOS) in advance so
+  -- that paths match the ones Neovim reports for buffers.
+  local dir = TestPath.new(assert(vim.uv.fs_realpath(assert(vim.uv.fs_mkdtemp(template)))))
   return dir, function()
     dir:rm { recursive = true }
   end
 end
 
 ---@param entries string[]
----@return FrecencyPlenaryPath dir the top dir of tree
+---@return FrecencyTestPath dir the top dir of tree
 ---@return fun(): nil close sweep all entries
 local function make_tree(entries)
   local dir, close = tmpdir()
   for _, entry in ipairs(entries) do
-    ---@diagnostic disable-next-line: undefined-field
     dir:joinpath(entry):touch { parents = true }
   end
   return dir, close
 end
 
 local AsyncJob = async.wrap(function(cmd, callback)
-  return Job:new({
-    command = cmd[1],
-    args = { select(2, unpack(cmd)) },
-    on_exit = function(self, code, _)
-      local stdout = code == 0 and table.concat(self:result(), "\n") or nil
-      callback(stdout, code)
-    end,
-  }):start()
+  vim.system(cmd, { text = true }, function(obj)
+    callback(obj.code == 0 and vim.trim(obj.stdout) or nil, obj.code)
+  end)
 end, 2)
 
 -- NOTE: vim.fn.strptime cannot be used in Lua loop
@@ -88,8 +120,8 @@ local function v2_table(records, reference_time, half_life)
 end
 
 ---@param files string[]
----@param cb_or_config table|fun(frecency: Frecency, finder: FrecencyFinder, dir: FrecencyPlenaryPath): nil
----@param callback? fun(frecency: Frecency, finder: FrecencyFinder, dir: FrecencyPlenaryPath): nil
+---@param cb_or_config table|fun(frecency: Frecency, finder: FrecencyFinder, dir: FrecencyTestPath): nil
+---@param callback? fun(frecency: Frecency, finder: FrecencyFinder, dir: FrecencyTestPath): nil
 ---@return nil
 local function with_files(files, cb_or_config, callback)
   local dir, close = make_tree(files)
@@ -119,7 +151,7 @@ local function filepath(dir, file)
 end
 
 ---@param frecency Frecency
----@param dir FrecencyPlenaryPath
+---@param dir FrecencyTestPath
 ---@return fun(file: string, epoch: integer, reset: boolean?, wipeout?: boolean): nil reset: boolean?): nil
 local function make_register(frecency, dir)
   return function(file, epoch, reset, wipeout)
@@ -154,7 +186,7 @@ local function make_register(frecency, dir)
 end
 
 ---@param frecency Frecency
----@param dir FrecencyPlenaryPath
+---@param dir FrecencyTestPath
 ---@param callback fun(register: fun(file: string, epoch?: integer): nil): nil
 ---@return nil
 local function with_fake_register(frecency, dir, callback)
@@ -169,7 +201,7 @@ local function with_fake_register(frecency, dir, callback)
   ---@param epoch integer
   local function register(file, epoch)
     local path = filepath(dir, file)
-    Path.new(path):touch()
+    TestPath.new(path):touch()
     bufnr = bufnr + 1
     buffers[bufnr] = path
     async.util.block_on(function()
@@ -200,13 +232,13 @@ local function with_fake_vim_ui_select(choice, callback)
   vim.ui.select = original_vim_ui_select
 end
 
--- Replacement for `require("plenary.async").tests.add_to_env()` — neoplen
+-- Replacement for `require("plenary.async").tests.add_to_env()`: neoplen
 -- removed the `async.tests` submodule, so we inline the minimal helpers that
 -- frecency's spec files use (`a.describe` / `a.it` / `a.before_each` /
 -- `a.after_each` / `a.pending`). Sets `_G.a` so call sites resolve through the
 -- global table the same way `setfenv`-based add_to_env did.
 local function add_async_to_env()
-  local timeout = tonumber(vim.env.PLENARY_TEST_TIMEOUT)
+  local timeout = tonumber(vim.env.PLENTEST_TIMEOUT)
   _G.a = {
     describe = describe,
     it = function(s, async_func)
