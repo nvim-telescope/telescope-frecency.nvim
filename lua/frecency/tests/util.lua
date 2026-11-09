@@ -3,6 +3,7 @@
 local Frecency = require "frecency.klass"
 local Picker = require "frecency.picker"
 local config = require "frecency.config"
+local os_util = require "frecency.os_util"
 local log = require "frecency.log"
 local async = require "neoplen.async" --[[@as FrecencyPlenaryAsync]]
 local wait = require "frecency.wait"
@@ -61,7 +62,7 @@ local function tmpdir()
   local template = ci and "tests_XXXXXX" or vim.fs.joinpath(assert(vim.uv.os_tmpdir()), "tests_XXXXXX")
   -- NOTE: Resolve symlinks (e.g. /var -> /private/var on macOS) in advance so
   -- that paths match the ones Neovim reports for buffers.
-  local dir = TestPath.new(assert(vim.uv.fs_realpath(assert(vim.uv.fs_mkdtemp(template)))))
+  local dir = TestPath.new(os_util.normalize(assert(vim.uv.fs_realpath(assert(vim.uv.fs_mkdtemp(template))))))
   return dir, function()
     dir:rm { recursive = true }
   end
@@ -147,7 +148,7 @@ local function with_files(files, cb_or_config, callback)
 end
 
 local function filepath(dir, file)
-  return dir:joinpath(file):absolute()
+  return os_util.normalize(dir:joinpath(file):absolute())
 end
 
 ---@param frecency Frecency

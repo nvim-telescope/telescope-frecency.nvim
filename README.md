@@ -116,6 +116,8 @@ to a tag): **2.0.0 is a breaking release.**
   `reference_time + last_accessed` to get the most-recent access epoch (single
   value). The `count` field is preserved as an alias for `num_accesses`.
 - The `db_version` config option is removed.
+- On Windows, paths use `/` as the separator instead of `\`, the same as
+  `telescope.nvim`. Paths in the database are rewritten on the first load.
 - Asynchronous I/O now comes from a module vendored inside `telescope.nvim`
   (`neoplen`), so loading this plugin non-lazily also loads `telescope.nvim` at
   `VimEnter`. The startup DB warm-up used to be a minimal `frecency` + `plenary`

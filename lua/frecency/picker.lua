@@ -84,7 +84,7 @@ end
 ---@param opts? FrecencyPickerOptions
 function Picker:start(opts)
   opts = vim.tbl_extend("force", {
-    cwd = vim.uv.cwd(),
+    cwd = os_util.normalize(assert(vim.uv.cwd())),
     path_display = function(picker_opts, path)
       return self:default_path_display(picker_opts, path)
     end,
@@ -167,16 +167,18 @@ end
 ---@param tag? string
 ---@return string[]?
 function Picker:get_workspaces(cwd, tag)
+  local workspaces
   if not tag then
     return nil
   elseif config.workspaces[tag] then
     local w = config.workspaces[tag]
-    return type(w) == "table" and w or { w }
+    workspaces = type(w) == "table" and w or { w }
   elseif tag == "LSP" then
-    return self:get_lsp_workspaces()
+    workspaces = self:get_lsp_workspaces()
   elseif tag == "CWD" then
-    return { cwd }
+    workspaces = { cwd }
   end
+  return workspaces and vim.iter(workspaces):map(os_util.normalize):totable()
 end
 
 ---@private

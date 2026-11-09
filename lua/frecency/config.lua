@@ -124,8 +124,7 @@ Config.default_values = {
   enable_prompt_mappings = false,
   filter_delimiter = ":",
   hide_current_buffer = false,
-  ignore_patterns = os_util.is_windows and { [[*.git\*]], [[*\tmp\*]], "term://*" }
-    or { "*.git/*", "*/tmp/*", "term://*" },
+  ignore_patterns = { "*.git/*", "*/tmp/*", "term://*" },
   matcher = "default",
   max_timestamps = 10,
   recency_values = {
@@ -165,7 +164,7 @@ Config.ignore_regexes = function()
     config.cached_ignore_regexes = vim
       .iter(config.ignore_patterns)
       :map(function(pattern)
-        local regex = vim.pesc(pattern):gsub("%%%*", ".*"):gsub("%%%?", ".")
+        local regex = vim.pesc(os_util.normalize(pattern)):gsub("%%%*", ".*"):gsub("%%%?", ".")
         return "^" .. regex .. "$"
       end)
       :totable()
