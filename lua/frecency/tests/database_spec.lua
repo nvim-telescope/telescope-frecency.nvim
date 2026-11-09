@@ -80,7 +80,7 @@ local function with_backslash_database(records, f)
 end
 
 ---@param database FrecencyDatabase
----@return table<string, FrecencyDatabaseEntry>
+---@return table<string, FrecencyDatabaseEntryV2>
 local function entries_by_path(database)
   return vim.iter(database:get_entries()):fold({}, function(a, entry)
     a[entry.path] = entry
