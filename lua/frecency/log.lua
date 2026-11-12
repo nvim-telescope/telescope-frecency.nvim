@@ -1,11 +1,11 @@
 local config = require "frecency.config"
 
----@type vim.Log?
+---@type table?
 local logger
 
 -- NOTE: This keeps $DEBUG_PLENARY, which plenary.log read, as the switch for
 -- the log level.
----@return vim.Log
+---@return table
 local function get_logger()
   if not logger then
     logger = vim.log.new {
