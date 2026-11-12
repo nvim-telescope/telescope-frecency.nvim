@@ -19,8 +19,9 @@ jobs:
           - ubuntu-latest
           - macos-latest
           - windows-latest
+        # TODO: add `stable` back once Neovim 0.13 is released; `vim.log`
+        # is not available in 0.12.
         version:
-          - stable
           - nightly
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15

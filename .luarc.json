@@ -2,8 +2,11 @@
   "diagnostics": {
     "globals": [
       "a",
+      "after_each",
+      "before_each",
       "describe",
       "it",
+      "pending",
       "vim"
     ]
   },

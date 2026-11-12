@@ -1,5 +1,5 @@
 local util = require "frecency.tests.util"
-local async = require "plenary.async"
+local async = require "neoplen.async"
 
 local filepath = util.filepath
 local make_epoch = util.make_epoch
