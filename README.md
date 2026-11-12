@@ -125,6 +125,9 @@ to a tag): **2.0.0 is a breaking release.**
   startup buffers is no longer possible; set `bootstrap = false` to keep
   telescope from loading until you open a picker. This will become possible
   again once `vim.async` lands in Neovim core.
+- With `debug = true`, debug messages are written only to
+  `telescope-frecency.log` in `stdpath("log")`; they are no longer shown in
+  `:messages`.
 
 If you want the previous behaviour (v1 algorithm, Neovim 0.10.x support), pin
 to the v1 line:

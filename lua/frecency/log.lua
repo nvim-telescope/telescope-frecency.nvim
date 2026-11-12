@@ -1,17 +1,16 @@
 local config = require "frecency.config"
 
----@type table?
+---@type vim.Log?
 local logger
 
--- NOTE: neoplen.log (vendored in telescope.nvim) no longer reads
--- $DEBUG_PLENARY as plenary.log did, so this creates its own logger and keeps
--- the same switch for the log level.
----@return table
+-- NOTE: This keeps $DEBUG_PLENARY, which plenary.log read, as the switch for
+-- the log level.
+---@return vim.Log
 local function get_logger()
   if not logger then
-    logger = require("neoplen.log").new {
-      plugin = "telescope-frecency",
-      level = vim.env.DEBUG_PLENARY and "debug" or "info",
+    logger = vim.log.new {
+      name = "telescope-frecency",
+      level = vim.env.DEBUG_PLENARY and vim.log.levels.DEBUG or vim.log.levels.INFO,
     }
   end
   return logger

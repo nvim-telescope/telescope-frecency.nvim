@@ -537,13 +537,13 @@ debug ~
 Default: `false`
 Type: `boolean`
 
-This plugin uses `neoplen.log` bundled in |telescope.nvim| to log debugging
-messages. You should set this to `true` and set environmental variable
-`DEBUG_PLENARY` to see debug messages. They are also written to
-`telescope-frecency.log` in |stdpath()| `"log"`.
+This plugin uses |vim.log| to log debugging messages. You should set this to
+`true` and set environmental variable `DEBUG_PLENARY` to log debug messages.
+They are written to `telescope-frecency.log` in |stdpath()| `"log"`, not shown
+in |:messages|.
 >bash
     # Launch Neovim with DEBUG_PLENARY=1 and set `debug = true` and you can
-    # see debug messages.
+    # see debug messages in the log file.
     env DEBUG_PLENARY=1 nvim
 <
 				  *telescope-frecency-configuration-debug_timer*
