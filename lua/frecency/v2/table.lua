@@ -134,6 +134,37 @@ function TableV2:from_v1(v1_tbl)
   end)
 end
 
+---Rewrites the keys of records with `normalize`. Records whose keys become the
+---same are merged: their scores and access counts are added up, and the most
+---recent access is kept. This migrates databases written with "\" as the path
+---separator on Windows.
+---@param normalize fun(path: string): string
+---@return integer count of rewritten records
+function TableV2:normalize_paths(normalize)
+  local records = self.data.records
+  ---@type string[]
+  local targets = vim
+    .iter(records)
+    :map(function(path, _)
+      return normalize(path) ~= path and path or nil
+    end)
+    :totable()
+  for _, path in ipairs(targets) do
+    local record = records[path]
+    records[path] = nil
+    local key = normalize(path)
+    local existing = records[key]
+    records[key] = existing
+        and {
+          score = existing.score + record.score,
+          num_accesses = existing.num_accesses + record.num_accesses,
+          last_accessed = math.max(existing.last_accessed, record.last_accessed),
+        }
+      or record
+  end
+  return #targets
+end
+
 ---@return integer
 function TableV2:reference_time()
   return self.data.reference_time

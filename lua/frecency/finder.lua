@@ -88,7 +88,7 @@ Finder.new = function(database, entry_maker, need_scandir, paths, state, finder_
     end,
   })
   if self.config.ignore_filenames then
-    self.seen = vim.iter(self.config.ignore_filenames):fold({}, function(a, b)
+    self.seen = vim.iter(self.config.ignore_filenames):map(os_util.normalize):fold({}, function(a, b)
       a[b] = true
       return a
     end)
@@ -115,7 +115,6 @@ function Finder:start(epoch)
     -- NOTE: return to the main loop to show the main window
     async.util.scheduler()
     for _, file in ipairs(self:get_results(self.paths, epoch)) do
-      file.path = os_util.normalize_sep(file.path)
       local entry = self.entry_maker(file)
       self.tx.send(entry)
     end
@@ -142,7 +141,7 @@ function Finder:scan_dir_cmd(path, cmd)
   local function stdout(err, chunk)
     if not self.closed and not err and chunk then
       for name in chunk:gmatch "[^\n]+" do
-        local cleaned = name:gsub("^%./", "")
+        local cleaned = os_util.normalize(name):gsub("^%./", "")
         local fullpath = os_util.join_path(path, cleaned)
         local entry = self.entry_maker { id = 0, count = 0, path = fullpath, score = 0 }
         self.scan_tx.send(entry)

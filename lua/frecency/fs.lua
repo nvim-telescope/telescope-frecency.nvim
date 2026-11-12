@@ -6,7 +6,7 @@ local async = lazy_require "neoplen.async" --[[@as FrecencyPlenaryAsync]]
 
 ---@class FrecencyFS
 local M = {
-  os_homedir = assert(vim.uv.os_homedir()),
+  os_homedir = os_util.normalize(assert(vim.uv.os_homedir())),
 }
 
 -- TODO: make this configurable
