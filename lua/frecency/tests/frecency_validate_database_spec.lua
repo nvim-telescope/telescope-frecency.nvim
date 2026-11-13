@@ -86,4 +86,77 @@ describe("frecency", function()
       end)
     end)
   end)
+
+  -- vim.ui.select() replacements such as telescope's ui_select() return
+  -- before the choice is made. start() should open the picker only after it,
+  -- since opening the picker would close the one for the confirmation.
+  describe("start with unlinked entries and vim.ui.select() returning at once", function()
+    ---@param choice "y"|nil
+    ---@param callback fun(events: string[], finder: FrecencyFinder, dir: FrecencyPlenaryPath): nil
+    local function with_deferred_choice(choice, callback)
+      with_files({ "hoge1.txt", "hoge2.txt" }, { db_validate_threshold = 1 }, function(frecency, finder, dir)
+        local register = make_register(frecency, dir)
+        register("hoge1.txt", make_epoch "2023-07-29T00:00:00+09:00")
+        register("hoge2.txt", make_epoch "2023-07-29T00:01:00+09:00")
+        dir:joinpath("hoge1.txt"):rm()
+
+        local events = {}
+        local Picker = require "frecency.picker"
+        local original_new = Picker.new
+        local original_select = vim.ui.select
+        ---@diagnostic disable-next-line: duplicate-set-field
+        Picker.new = function()
+          return {
+            start = function()
+              table.insert(events, "picker")
+            end,
+          }
+        end
+        local on_choice
+        ---@diagnostic disable-next-line: duplicate-set-field
+        vim.ui.select = function(_, _, f)
+          table.insert(events, "select")
+          on_choice = f
+        end
+
+        frecency:setup(false, true)
+        frecency:start()
+        table.insert(events, "returned")
+        on_choice(choice)
+        vim.wait(1000, function()
+          return events[#events] == "picker"
+        end)
+
+        Picker.new = original_new
+        vim.ui.select = original_select
+        callback(events, finder, dir)
+      end)
+    end
+
+    describe("when the removal is confirmed", function()
+      with_deferred_choice("y", function(events, finder, dir)
+        it("opens the picker after the choice", function()
+          assert.are.same({ "select", "returned", "picker" }, events)
+        end)
+
+        it("removes unlinked entries", function()
+          local results = finder:get_results(nil, make_epoch "2023-07-29T02:00:00+09:00")
+          assert.are.same({ filepath(dir, "hoge2.txt") }, paths(results))
+        end)
+      end)
+    end)
+
+    describe("when the removal is aborted", function()
+      with_deferred_choice(nil, function(events, finder, dir)
+        it("opens the picker after the choice", function()
+          assert.are.same({ "select", "returned", "picker" }, events)
+        end)
+
+        it("keeps all entries", function()
+          local results = finder:get_results(nil, make_epoch "2023-07-29T02:00:00+09:00")
+          assert.are.same({ filepath(dir, "hoge1.txt"), filepath(dir, "hoge2.txt") }, paths(results))
+        end)
+      end)
+    end)
+  end)
 end)
