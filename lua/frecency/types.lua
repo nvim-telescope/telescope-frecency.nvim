@@ -59,6 +59,21 @@
 ---@field start fun(self: UvFsEventHandle, path: string, opts: { recursive: boolean }, cb: fun(err?: string, filename?: string, events: string[])): nil
 ---@field close fun(self: UvFsEventHandle): nil
 
+-- NOTE: The type check does not load Neovim's runtime, so the parts of
+-- |vim.async| that annotations here refer to are declared by hand (simplified:
+-- no generics).
+
+---@class vim.async.Task
+---@field close fun(self: vim.async.Task, callback?: fun()): nil
+---@field completed fun(self: vim.async.Task): boolean
+---@field detach fun(self: vim.async.Task): vim.async.Task
+---@field pwait fun(self: vim.async.Task, timeout?: integer): boolean, ...
+---@field raise_on_error fun(self: vim.async.Task): vim.async.Task
+---@field wait fun(self: vim.async.Task, timeout?: integer): ...
+
+---@class vim.async.Semaphore
+---@field with async fun(self: vim.async.Semaphore, fn: async fun(): ...): ...
+
 --- @class VimSystemObj
 --- @field pid integer
 --- @field wait fun(self: VimSystemObj, timeout?: integer): VimSystemCompleted
