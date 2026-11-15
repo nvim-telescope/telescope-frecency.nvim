@@ -110,7 +110,8 @@ You can define other workspace tags by an option:
 ==============================================================================
 REQUIREMENTS				       *telescope-frecency-requirements*
 
-- Neovim 0.11.7 or higher (matches |telescope.nvim|)
+- Neovim 0.13 or higher. This plugin runs on |vim.async|, which is only
+  available from 0.13.
   - Use `^0.9.0` tag for Neovim 0.9.x (See
     |telescope-frecency-installation-versioning|)
   - For Neovim 0.10.x, lock to a release before 2.0.0.
@@ -382,14 +383,10 @@ register buffers that are opened while Neovim is launching. If you load this
 plugin lazily, those buffers will not be registered into DB. Example
 configuration for |lazy.nvim| is below.
 
-NOTE: Since 2.0.0 the asynchronous I/O is provided by a module vendored inside
-|telescope.nvim| (`neoplen`). Loading this plugin non-lazily therefore also
-loads |telescope.nvim| itself at |VimEnter|. The startup DB warm-up used to be a
-minimal load (this plugin + plenary); it now unavoidably loads |telescope.nvim|,
-so it is deferred to |VimEnter| to keep that load off Neovim's startup path.
-Keeping |telescope.nvim| fully lazy while this plugin registers startup buffers
-is no longer possible; it will become possible again once `vim.async` lands in
-Neovim core.
+NOTE: Since 2.0.0 the asynchronous I/O comes from |vim.async|, which is part of
+Neovim itself, so loading this plugin non-lazily does not load
+|telescope.nvim|. The startup DB warm-up is still deferred to |VimEnter| to
+keep it off Neovim's startup path; it finishes well before the first picker.
 >lua
     {
       "nvim-telescope/telescope-frecency.nvim",
@@ -404,9 +401,7 @@ Neovim core.
 
     {
       "nvim-telescope/telescope.nvim",
-      -- `cmd` opts makes lazy.nvim load telescope.nvim on the `Telescope`
-      -- command. Note that since 2.0.0 telescope.nvim is additionally loaded
-      -- at VimEnter when frecency registers startup buffers (see setup() note).
+      -- `cmd` opts makes lazy.nvim load telescope.nvim lazily.
       cmd = { "Telescope" },
       config = function()
 	local telescope = require "telescope"
@@ -494,10 +489,9 @@ If `true` and you set this plugin to be loaded non-lazily, it initializes DB at
 Neovim's starting process.
 
 NOTE: Since 2.0.0 this initialization is deferred to |VimEnter| (it previously
-ran earlier in startup) and, because the DB uses async I/O vendored inside
-|telescope.nvim| (`neoplen`), it also loads |telescope.nvim| at VimEnter. Set
-this to `false` if you want to keep telescope.nvim from loading until you
-actually open a picker.
+ran earlier in startup) to keep the DB warm-up off Neovim's startup path. It
+does not load |telescope.nvim|: the async I/O it uses is |vim.async|, which is
+part of Neovim.
 
 				      *telescope-frecency-configuration-db_root*
 db_root ~
