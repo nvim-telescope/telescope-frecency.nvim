@@ -194,7 +194,8 @@ M.uv = {}
 ---@return string? err
 ---@return FsStat stat
 function M.uv.fs_stat(path)
-  return vim.async.await(2, vim.uv.fs_stat, path)
+  local err, stat = vim.async.await(2, vim.uv.fs_stat, path)
+  return err, stat
 end
 
 ---@async
@@ -204,7 +205,8 @@ end
 ---@return string? err
 ---@return integer fd
 function M.uv.fs_open(path, flags, mode)
-  return vim.async.await(4, vim.uv.fs_open, path, flags, mode)
+  local err, fd = vim.async.await(4, vim.uv.fs_open, path, flags, mode)
+  return err, fd
 end
 
 ---@async
@@ -212,7 +214,8 @@ end
 ---@return string? err
 ---@return boolean? success
 function M.uv.fs_close(fd)
-  return vim.async.await(2, vim.uv.fs_close, fd)
+  local err, success = vim.async.await(2, vim.uv.fs_close, fd)
+  return err, success
 end
 
 ---@async
@@ -222,7 +225,8 @@ end
 ---@return string? err
 ---@return string data
 function M.uv.fs_read(fd, size, offset)
-  return vim.async.await(4, vim.uv.fs_read, fd, size, offset or -1)
+  local err, data = vim.async.await(4, vim.uv.fs_read, fd, size, offset or -1)
+  return err, data
 end
 
 ---@async
@@ -232,7 +236,8 @@ end
 ---@return string? err
 ---@return integer bytes
 function M.uv.fs_write(fd, data, offset)
-  return vim.async.await(4, vim.uv.fs_write, fd, data, offset or -1)
+  local err, bytes = vim.async.await(4, vim.uv.fs_write, fd, data, offset or -1)
+  return err, bytes
 end
 
 ---@async
@@ -240,7 +245,8 @@ end
 ---@return string? err
 ---@return boolean? success
 function M.uv.fs_unlink(path)
-  return vim.async.await(2, vim.uv.fs_unlink, path)
+  local err, success = vim.async.await(2, vim.uv.fs_unlink, path)
+  return err, success
 end
 
 ---@async
@@ -248,7 +254,8 @@ end
 ---@return string? err
 ---@return string? path
 function M.uv.fs_realpath(path)
-  return vim.async.await(2, vim.uv.fs_realpath, path)
+  local err, realpath = vim.async.await(2, vim.uv.fs_realpath, path)
+  return err, realpath
 end
 
 return M
