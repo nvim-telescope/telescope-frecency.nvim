@@ -25,6 +25,14 @@ function M.await(...)
   return vim.async.await(...)
 end
 
+---Make an async function out of a callback-style one.
+---@param argc integer the position the callback is inserted at
+---@param f function
+---@return async fun(...): ...
+function M.wrap(argc, f)
+  return vim.async.wrap(argc, f)
+end
+
 ---Make a fire-and-forget async function.
 ---
 ---The returned function starts a detached task, so a caller inside another

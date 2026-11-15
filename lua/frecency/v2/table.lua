@@ -2,8 +2,7 @@ local EntryV2 = require "frecency.v2.entry"
 local log = require "frecency.log"
 local timer = require "frecency.timer"
 local wait = require "frecency.wait"
-local lazy_require = require "frecency.lazy_require"
-local async = lazy_require "neoplen.async" --[[@as FrecencyPlenaryAsync]]
+local async = require "frecency.async"
 
 -- v1 record / data shape kept here because TableV2:from_v1 still consumes
 -- them for the v1 → v2 migration in 2.0.0.
@@ -100,7 +99,7 @@ function TableV2:wait_ready()
   timer.track "wait_ready() start"
   local t = 0.2
   while not rawget(self, "is_ready") do
-    async.util.sleep(t)
+    async.sleep(t)
     t = t * 2
   end
   timer.track "wait_ready() finish"
