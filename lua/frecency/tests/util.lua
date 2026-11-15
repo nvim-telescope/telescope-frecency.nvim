@@ -4,7 +4,7 @@ local Frecency = require "frecency.klass"
 local Picker = require "frecency.picker"
 local config = require "frecency.config"
 local log = require "frecency.log"
-local async = require "neoplen.async" --[[@as FrecencyPlenaryAsync]]
+local async = require "frecency.async"
 local wait = require "frecency.wait"
 
 -- Minimal replacement for the parts of plenary.path that the specs use.
@@ -78,11 +78,11 @@ local function make_tree(entries)
   return dir, close
 end
 
-local AsyncJob = async.wrap(function(cmd, callback)
+local AsyncJob = async.wrap(2, function(cmd, callback)
   vim.system(cmd, { text = true }, function(obj)
     callback(obj.code == 0 and vim.trim(obj.stdout) or nil, obj.code)
   end)
-end, 2)
+end)
 
 -- NOTE: vim.fn.strptime cannot be used in Lua loop
 ---@param iso8601 string
@@ -136,7 +136,7 @@ local function with_files(files, cb_or_config, callback)
   log.debug(cfg)
   config.setup(cfg)
   local frecency = Frecency.new()
-  async.util.block_on(function()
+  async.block_on(function()
     frecency.database:start()
     frecency.database.tbl:wait_ready()
   end)
@@ -165,7 +165,7 @@ local function make_register(frecency, dir)
       if is_floatwin or (config.ignore_register and config.ignore_register(bufnr)) then
         return
       end
-      async.util.block_on(function()
+      async.block_on(function()
         frecency:register(bufnr, vim.api.nvim_buf_get_name(bufnr), epoch)
       end)
     end
@@ -204,7 +204,7 @@ local function with_fake_register(frecency, dir, callback)
     TestPath.new(path):touch()
     bufnr = bufnr + 1
     buffers[bufnr] = path
-    async.util.block_on(function()
+    async.block_on(function()
       frecency:register(bufnr, path, epoch)
     end)
   end
@@ -232,9 +232,19 @@ local function with_fake_vim_ui_select(choice, callback)
   vim.ui.select = original_vim_ui_select
 end
 
--- Replacement for `require("plenary.async").tests.add_to_env()`: neoplen
--- removed the `async.tests` submodule, so we inline the minimal helpers that
--- frecency's spec files use (`a.describe` / `a.it` / `a.before_each` /
+---Run an async function from a busted callback.
+---@param async_func async fun(): nil
+---@param timeout? integer
+---@return fun(): nil
+local function will_block(async_func, timeout)
+  return function()
+    async.block_on(async_func, timeout)
+  end
+end
+
+-- Replacement for `require("plenary.async").tests.add_to_env()`. Neither
+-- neoplen nor |vim.async| ships test helpers, so we inline the minimal ones
+-- that frecency's spec files use (`a.describe` / `a.it` / `a.before_each` /
 -- `a.after_each` / `a.pending`). Sets `_G.a` so call sites resolve through the
 -- global table the same way `setfenv`-based add_to_env did.
 local function add_async_to_env()
@@ -242,16 +252,16 @@ local function add_async_to_env()
   _G.a = {
     describe = describe,
     it = function(s, async_func)
-      it(s, async.util.will_block(async_func, timeout))
+      it(s, will_block(async_func, timeout))
     end,
     pending = function(async_func)
       pending(async_func)
     end,
     before_each = function(async_func)
-      before_each(async.util.will_block(async_func))
+      before_each(will_block(async_func))
     end,
     after_each = function(async_func)
-      after_each(async.util.will_block(async_func))
+      after_each(will_block(async_func))
     end,
   }
 end
