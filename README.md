@@ -123,8 +123,6 @@ to a tag): **2.0.0 is a breaking release.**
 - Asynchronous I/O comes from Neovim's built-in `vim.async` instead of a module
   vendored inside `telescope.nvim` (`neoplen`), so loading this plugin eagerly
   to register startup buffers no longer drags `telescope.nvim` into startup.
-  The DB warm-up is still deferred to `VimEnter` to keep it off Neovim's
-  startup path.
 - With `debug = true`, debug messages are written only to
   `telescope-frecency.log` in `stdpath("log")`; they are no longer shown in
   `:messages`.
