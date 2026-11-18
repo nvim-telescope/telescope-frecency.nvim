@@ -118,6 +118,14 @@ M.channel = {}
 ---`send()` never suspends and can be called from any context, a fast event
 ---included. `recv()` suspends the calling task while the channel is empty.
 ---
+---A waiter is never resumed inside a fast event. `vim.async` resumes a task in
+---the context that completed its await, so waking it straight from a libuv
+---callback (a |vim.system()| handler, for example) would run the rest of the
+---consumer there and fail with `E5560` on the first |vim.api| call. A `send()`
+---from a fast event therefore defers the wake-up to the main loop; consecutive
+---sends share one deferred wake-up, as the woken consumer drains every queued
+---value before it waits again.
+---
 ---`vim.async` has no public channel: |vim.async.Queue| lives in a private
 ---module, so this is built on |vim.async.await()| alone. Values are stored by
 ---index instead of `table.insert()` so that `nil` survives a round trip -- the
@@ -142,13 +150,23 @@ function M.channel.mpsc()
     end
   end
 
+  local wake_scheduled = false
+
   local tx = {
     ---@param value? any
     ---@return nil
     send = function(value)
       last = last + 1
       items[last] = value
-      wake()
+      if not vim.in_fast_event() then
+        wake()
+      elseif not wake_scheduled then
+        wake_scheduled = true
+        vim.schedule(function()
+          wake_scheduled = false
+          wake()
+        end)
+      end
     end,
   }
 

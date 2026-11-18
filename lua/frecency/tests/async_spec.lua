@@ -61,6 +61,23 @@ describe("frecency.async", function()
       assert.are.same("from timer", value)
     end)
 
+    it("does not resume recv() inside a fast event", function()
+      local received_in_fast_event, values = async.block_on(function()
+        local tx, rx = async.channel.mpsc()
+        local timer = assert(vim.uv.new_timer())
+        timer:start(10, 0, function()
+          tx.send "first"
+          tx.send "second"
+          timer:close()
+        end)
+        local first = rx.recv()
+        local in_fast_event = vim.in_fast_event()
+        return in_fast_event, { first, rx.recv() }
+      end)
+      assert.is_false(received_in_fast_event)
+      assert.are.same({ "first", "second" }, values)
+    end)
+
     it("serves multiple producers", function()
       local values = async.block_on(function()
         local tx, rx = async.channel.mpsc()
