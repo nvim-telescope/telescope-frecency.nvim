@@ -19,6 +19,7 @@ local STATUS = {
 ---@class Frecency
 ---@field private buf_registered table<integer, boolean> flag to indicate the buffer is registered to the database.
 ---@field private database FrecencyDatabase
+---@field private pending_unlinked? string[] unlinked entries to confirm before opening the picker
 ---@field private picker FrecencyPicker
 ---@field private status FrecencyStatus
 local Frecency = {}
@@ -53,7 +54,16 @@ function Frecency:setup(is_async, need_cleanup)
     if self.status == STATUS.DB_STARTED and need_cleanup then
       self:assert_db_entries()
       if config.auto_validate then
-        self:validate_database()
+        if is_async then
+          self:validate_database()
+        else
+          -- NOTE: start() asks for the confirmation before it opens the
+          -- picker. Asking here does not work when vim.ui.select() returns
+          -- before the choice is made, as telescope's ui_select() does: the
+          -- picker opened by start() would close the one for the
+          -- confirmation.
+          self.pending_unlinked = self:unlinked_to_confirm()
+        end
       end
       self.status = STATUS.CLEANUP_FINISHED
       timer.track "CLEANUP_FINISHED"
@@ -84,17 +94,27 @@ function Frecency:start(opts)
   if opts.cwd then
     opts.cwd = vim.fn.expand(opts.cwd)
   end
+  local editing_bufnr = vim.api.nvim_get_current_buf()
   local ignore_filenames
   if opts.hide_current_buffer or config.hide_current_buffer then
-    ignore_filenames = { vim.api.nvim_buf_get_name(0) }
+    ignore_filenames = { vim.api.nvim_buf_get_name(editing_bufnr) }
   end
-  self.picker = Picker.new(self.database, {
-    editing_bufnr = vim.api.nvim_get_current_buf(),
-    ignore_filenames = ignore_filenames,
-    initial_workspace_tag = opts.workspace,
-  })
-  self.picker:start(vim.tbl_extend("force", config.get(), opts))
-  timer.track "start() finish"
+  local function start_picker()
+    self.picker = Picker.new(self.database, {
+      editing_bufnr = editing_bufnr,
+      ignore_filenames = ignore_filenames,
+      initial_workspace_tag = opts.workspace,
+    })
+    self.picker:start(vim.tbl_extend("force", config.get(), opts))
+    timer.track "start() finish"
+  end
+  local unlinked = self.pending_unlinked
+  if unlinked then
+    self.pending_unlinked = nil
+    self:confirm_removal(unlinked, start_picker)
+  else
+    start_picker()
+  end
 end
 
 ---This can be calledBy `require("telescope").extensions.frecency.complete`.
@@ -121,6 +141,22 @@ end
 ---@param force? boolean
 ---@return nil
 function Frecency:_validate_database(force)
+  local unlinked = self:unlinked_to_confirm(force)
+  if unlinked then
+    -- HACK: This is needed because the default implementaion of vim.ui.select()
+    -- uses vim.fn.* function and it makes E5560 error.
+    async.util.scheduler()
+    self:confirm_removal(unlinked)
+  end
+end
+
+---Finds unlinked entries. It removes them at once when no confirmation is
+---needed, and returns them otherwise.
+---@private
+---@async
+---@param force? boolean
+---@return string[]? unlinked entries to confirm before removing them
+function Frecency:unlinked_to_confirm(force)
   timer.track "validate_database() start"
   local unlinked = self.database:unlinked_entries()
   timer.track "validate_database() calculate unlinked"
@@ -128,18 +164,30 @@ function Frecency:_validate_database(force)
     timer.track "validate_database() finish: no unlinked"
     return
   end
-  local function remove_entries()
-    self.database:remove_files(unlinked)
-    self:notify("removed %d missing entries.", #unlinked)
-  end
   if not config.db_safe_mode then
-    remove_entries()
+    self:remove_entries(unlinked)
     timer.track "validate_database() finish: removed"
     return
   end
-  -- HACK: This is needed because the default implementaion of vim.ui.select()
-  -- uses vim.fn.* function and it makes E5560 error.
-  async.util.scheduler()
+  return unlinked
+end
+
+---@private
+---@async
+---@param unlinked string[]
+---@return nil
+function Frecency:remove_entries(unlinked)
+  self.database:remove_files(unlinked)
+  self:notify("removed %d missing entries.", #unlinked)
+end
+
+---Asks whether to remove the unlinked entries, and calls on_done after the
+---removal finishes or is aborted. This must be called outside fast events.
+---@private
+---@param unlinked string[]
+---@param on_done? fun(): nil
+---@return nil
+function Frecency:confirm_removal(unlinked, on_done)
   vim.ui.select({ "y", "n" }, {
     prompt = "\n" .. self:message("remove %d entries from database?", #unlinked),
     ---@param item "y"|"n"
@@ -148,11 +196,20 @@ function Frecency:_validate_database(force)
       return item == "y" and "Yes. Remove them." or "No. Do nothing."
     end,
   }, function(item)
-    if item == "y" then
-      remove_entries()
-    else
+    if item ~= "y" then
       self:notify "validation aborted"
+      if on_done then
+        on_done()
+      end
+      return
     end
+    async.void(function()
+      self:remove_entries(unlinked)
+      if on_done then
+        async.util.scheduler()
+        on_done()
+      end
+    end)()
   end)
 end
 

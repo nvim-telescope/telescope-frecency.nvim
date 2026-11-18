@@ -504,7 +504,8 @@ Default: `true`
 Type: `boolean`
 
 If `true`, it shows confirmation dialog by |vim.ui.select()| before validating DB.
-See the note for |telescope-frecency-database|.
+When the validation runs on opening the picker, the picker opens after you
+answer the dialog. See the note for |telescope-frecency-database|.
 
 			*telescope-frecency-configuration-db_validate_threshold*
 db_validate_threshold ~
