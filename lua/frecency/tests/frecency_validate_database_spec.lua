@@ -1,5 +1,5 @@
 local util = require "frecency.tests.util"
-local async = require "plenary.async"
+local async = require "neoplen.async"
 
 local filepath = util.filepath
 local make_epoch = util.make_epoch
@@ -92,7 +92,7 @@ describe("frecency", function()
   -- since opening the picker would close the one for the confirmation.
   describe("start with unlinked entries and vim.ui.select() returning at once", function()
     ---@param choice "y"|nil
-    ---@param callback fun(events: string[], finder: FrecencyFinder, dir: FrecencyPlenaryPath): nil
+    ---@param callback fun(events: string[], finder: FrecencyFinder, dir: FrecencyTestPath): nil
     local function with_deferred_choice(choice, callback)
       with_files({ "hoge1.txt", "hoge2.txt" }, { db_validate_threshold = 1 }, function(frecency, finder, dir)
         local register = make_register(frecency, dir)

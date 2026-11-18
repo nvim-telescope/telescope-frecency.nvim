@@ -57,9 +57,11 @@ my $test_file = shift;
 
 my $test_dir = 'lua/frecency/tests/';
 my $minimal_lua = "${test_dir}minimal.lua";
+# NOTE: plentest's test_file() does not pass minimal_init to the child
+# process, so a single spec runs in this (already minimal) instance instead.
 my $command = defined $test_file
-    ? qq(PlenaryBustedFile $test_file)
-    : qq(PlenaryBustedDirectory $test_dir {minimal_init = '$minimal_lua'});
+    ? qq(lua require('busted').run('$test_file'))
+    : qq(lua require('plentest').test_directory('$test_dir', { minimal_init = '$minimal_lua' }));
 
 sub logger($msg) {
     if ($opt{verbose}) {
@@ -82,27 +84,31 @@ my $info = (-e $info_json && !$opt{update_libs}) ? do {
     local $/;
     decode_json <$fh>;
 }: {};
-sub prepare_lib($name) {
+sub prepare_lib($name, $branch = undef) {
     my $today = localtime->ymd;
-    if (defined $info->{$name} && $info->{$name}{ymd} eq $today) {
+    my $key = defined $branch ? "$name\@$branch" : $name;
+    if (defined $info->{$key} && $info->{$key}{ymd} eq $today) {
         logger("Using cached $name");
     } else {
-        $info->{$name} = {
+        $info->{$key} = {
             ymd => $today,
             path => create_tempdir(0),
         };
-        0 == system 'git', 'clone', "https://github.com/$name", $info->{$name}{path}
-            or die "Failed to clone $name";
+        0 == system 'git', 'clone', '--filter=blob:none',
+            (defined $branch ? ('--branch', $branch) : ()),
+            "https://github.com/$name", $info->{$key}{path}
+            or die "Failed to clone $key";
     }
     open my $fh, '>', $info_json or die;
     $fh->print(encode_json $info);
-    $info->{$name}{path};
+    $info->{$key}{path};
 }
 
 logger('Preparing libraries...');
 
-my $telescope_path = prepare_lib('nvim-telescope/telescope.nvim');
-my $plenary_path = prepare_lib('nvim-lua/plenary.nvim');
+# TODO: drop the branch once telescope.nvim merges `next` into `master`.
+my $telescope_path = prepare_lib('nvim-telescope/telescope.nvim', 'next');
+my $plentest_path = prepare_lib('nvim-treesitter/plentest.nvim');
 
 my @cmd = ($opt{executable}, '--headless', '--clean', '-u', $minimal_lua, '-c', $command);
 logger("Running: @{[join ' ', @cmd]}");
@@ -114,7 +120,7 @@ my $code = system 'env',
     'XDG_STATE_HOME=' . create_tempdir,
     'NVIM_LOG_FILE=' . create_tempdir . '/log',
     "TELESCOPE_PATH=$telescope_path",
-    "PLENARY_PATH=$plenary_path",
+    "PLENTEST_PATH=$plentest_path",
     @cmd;
 
 my $status = $code >> 8;
