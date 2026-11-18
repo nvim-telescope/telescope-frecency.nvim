@@ -5,53 +5,6 @@
 
 -- NOTE: types are borrowed from plenary.nvim
 
----@class FrecencyPlenaryAsync
----@field control FrecencyPlenaryAsyncControl
----@field tests { add_to_env: fun(): nil }
----@field util FrecencyPlenaryAsyncUtil
----@field uv FrecencyPlenaryAsyncUv
----@field void fun(f: fun(): nil): fun(): nil
----@field wrap fun(f: (fun(...): any), args: integer): (fun(...): any)
-local FrecencyPlenaryAsync = {}
-
----@async
----@param f fun(): nil
----@return nil
-function FrecencyPlenaryAsync.run(f) end
-
----@class FrecencyPlenaryAsyncControl
----@field channel FrecencyPlenaryAsyncControlChannel
-
----@class FrecencyPlenaryAsyncControlChannel
----@field mpsc fun(): FrecencyPlenaryAsyncControlChannelTx, FrecencyPlenaryAsyncControlChannelRx
----@field counter fun(): FrecencyPlenaryAsyncControlChannelTx, FrecencyPlenaryAsyncControlChannelRx
-local FrecencyPlenaryAsyncControlChannel
-
----@return fun(...): nil tx
----@return async fun(): ... rx
-function FrecencyPlenaryAsyncControlChannel.oneshot() end
-
----@class FrecencyPlenaryAsyncControlChannelTx
----@field send fun(entry?: any): nil
-local FrecencyPlenaryAsyncControlChannelTx = {}
-
----@class FrecencyPlenaryAsyncControlChannelRx
-local FrecencyPlenaryAsyncControlChannelRx = {}
-
----@async
----@return any?
-function FrecencyPlenaryAsyncControlChannelRx.recv() end
-
----@async
----@return any?
-function FrecencyPlenaryAsyncControlChannelRx.last() end
-
----@class FrecencyPlenaryAsyncUtil
-local FrecencyPlenaryAsyncUtil = {}
-
----@class FrecencyPlenaryAsyncUv
-local FrecencyPlenaryAsyncUv = {}
-
 ---@class FsStatMtime
 ---@field sec integer
 ---@field nsec integer
@@ -60,67 +13,6 @@ local FrecencyPlenaryAsyncUv = {}
 ---@field mtime FsStatMtime
 ---@field size integer
 ---@field type "file"|"directory"
-
----@async
----@param path string
----@return string? err
----@return { mtime: FsStatMtime, size: integer, type: "file"|"directory" }
-function FrecencyPlenaryAsyncUv.fs_stat(path) end
-
----@async
----@param path string
----@param flags string|integer
----@param mode integer
----@return string? err
----@return integer fd
-function FrecencyPlenaryAsyncUv.fs_open(path, flags, mode) end
-
----@async
----@param path string
----@return string? err
----@return string? path
-function FrecencyPlenaryAsyncUv.fs_realpath(path) end
-
----@async
----@param fd integer
----@param size integer
----@param offset? integer
----@return string? err
----@return string data
-function FrecencyPlenaryAsyncUv.fs_read(fd, size, offset) end
-
----@async
----@param fd integer
----@param data string
----@param offset? integer
----@return string? err
----@return integer bytes
-function FrecencyPlenaryAsyncUv.fs_write(fd, data, offset) end
-
----@async
----@param path string
----@return string? err
----@return boolean? success
-function FrecencyPlenaryAsyncUv.fs_unlink(path) end
-
----@async
----@param fd integer
----@return string? err
-function FrecencyPlenaryAsyncUv.fs_close(fd) end
-
----@async
----@param async_fns (async fun(...): ...)[]
----@return table
-function FrecencyPlenaryAsyncUtil.join(async_fns) end
-
----@async
----@param ms integer
----@return nil
-function FrecencyPlenaryAsyncUtil.sleep(ms) end
-
----@async
----@return nil
-function FrecencyPlenaryAsyncUtil.scheduler() end
 
 -- NOTE: types are for telescope.nvim
 
@@ -167,6 +59,21 @@ function FrecencyPlenaryAsyncUtil.scheduler() end
 ---@field stop fun(self: UvFsEventHandle): nil
 ---@field start fun(self: UvFsEventHandle, path: string, opts: { recursive: boolean }, cb: fun(err?: string, filename?: string, events: string[])): nil
 ---@field close fun(self: UvFsEventHandle): nil
+
+-- NOTE: The type check does not load Neovim's runtime, so the parts of
+-- |vim.async| that annotations here refer to are declared by hand (simplified:
+-- no generics).
+
+---@class vim.async.Task
+---@field close fun(self: vim.async.Task, callback?: fun()): nil
+---@field completed fun(self: vim.async.Task): boolean
+---@field detach fun(self: vim.async.Task): vim.async.Task
+---@field pwait fun(self: vim.async.Task, timeout?: integer): boolean, ...
+---@field raise_on_error fun(self: vim.async.Task): vim.async.Task
+---@field wait fun(self: vim.async.Task, timeout?: integer): ...
+
+---@class vim.async.Semaphore
+---@field with async fun(self: vim.async.Semaphore, fn: async fun(): ...): ...
 
 --- @class VimSystemObj
 --- @field pid integer
