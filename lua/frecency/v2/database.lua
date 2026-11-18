@@ -94,6 +94,7 @@ function DatabaseV2:migrate_from(v2, v1)
     return
   end
   self.tbl:set(self.tbl:from_v1(tbl))
+  self.tbl:normalize_paths(os_util.normalize)
   self:enqueue "save"
   log.debug "migration finish"
   vim.schedule(function()
@@ -158,7 +159,7 @@ function DatabaseV2:unlinked_entries()
     :map(function(path, _)
       return function()
         local err, realpath = async.uv.fs_realpath(path)
-        if err or not realpath or realpath ~= path then
+        if err or not realpath or os_util.normalize(realpath) ~= path then
           return path
         end
       end
@@ -219,10 +220,18 @@ function DatabaseV2:load()
   log.debug "load v2 start"
   local tbl = self:_load(self:file_lock(), true)
   self.tbl:set(tbl)
+  local normalized = self.tbl:normalize_paths(os_util.normalize)
+  local need_save = normalized > 0
+  if need_save then
+    log.debug("normalized paths:", normalized)
+  end
   if self.tbl:half_lives_passed() > 5.0 then
     log.debug "half_life recalculation start"
     self.tbl:reset_reference_time()
     log.debug "half_life recalculation finish"
+    need_save = true
+  end
+  if need_save then
     self:enqueue "save"
   end
   timer.track "load() finish"
