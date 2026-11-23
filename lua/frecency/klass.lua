@@ -2,6 +2,7 @@ local Database = require "frecency.database"
 local Picker = require "frecency.picker"
 local config = require "frecency.config"
 local fs = require "frecency.fs"
+local os_util = require "frecency.os_util"
 local log = require "frecency.log"
 local timer = require "frecency.timer"
 local wait = require "frecency.wait"
@@ -91,7 +92,7 @@ function Frecency:start(opts)
   log.debug "Frecency:start"
   opts = opts or {}
   if opts.cwd then
-    opts.cwd = vim.fn.expand(opts.cwd)
+    opts.cwd = os_util.normalize(vim.fn.expand(opts.cwd) --[[@as string]])
   end
   local editing_bufnr = vim.api.nvim_get_current_buf()
   local ignore_filenames
@@ -217,7 +218,7 @@ end
 ---@return nil
 function Frecency:assert_db_entries()
   if not self.database:has_entry() then
-    self.database:insert_files(vim.v.oldfiles)
+    self.database:insert_files(vim.iter(vim.v.oldfiles):map(os_util.normalize):totable())
     self:notify("Imported %d entries from oldfiles.", #vim.v.oldfiles)
   end
 end
@@ -227,6 +228,7 @@ end
 ---@param path string
 ---@param epoch? integer
 function Frecency:register(bufnr, path, epoch)
+  path = os_util.normalize(path)
   if self.buf_registered[bufnr] or not fs.is_valid_path(path) then
     return
   end
@@ -234,7 +236,7 @@ function Frecency:register(bufnr, path, epoch)
   if err or not realpath then
     return
   end
-  self.database:update(realpath, epoch)
+  self.database:update(os_util.normalize(realpath), epoch)
   self.buf_registered[bufnr] = true
   log.debug("registered:", bufnr, path)
 end
@@ -249,6 +251,7 @@ end
 ---@param path string
 ---@return nil
 function Frecency:delete(path)
+  path = os_util.normalize(path)
   if self.database:remove_entry(path) then
     self:notify("successfully deleted: %s", path)
   else
@@ -297,6 +300,9 @@ function Frecency:query(opts, epoch)
   do
     local w = opts.workspace
     workspaces = type(w) == "table" and w or type(w) == "string" and { w } or nil
+  end
+  if workspaces then
+    workspaces = vim.iter(workspaces):map(os_util.normalize):totable()
   end
   local objects = vim
     .iter(self.database:get_entries(workspaces, epoch))
