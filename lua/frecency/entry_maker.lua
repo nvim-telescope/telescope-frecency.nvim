@@ -122,7 +122,8 @@ function EntryMaker:items(entry, workspace, workspace_tag, formatter)
   end
   if not config.disable_devicons then
     local basename = utils.path_tail(entry.name)
-    local icon, icon_highlight = web_devicons.get_icon(basename, utils.file_extension(basename), { default = false })
+    local icon, icon_highlight =
+      web_devicons.get_icon(basename, web_devicons.file_extension(basename), { default = false })
     if not icon then
       icon, icon_highlight = web_devicons.get_icon(basename, nil, { default = true })
     end
