@@ -1,5 +1,5 @@
-if vim.fn.has "nvim-0.11.7" ~= 1 then
-  error "telescope-frecency.nvim requires Neovim v0.11.7 or higher (pin to ^1.0.0 for older Neovim)."
+if vim.fn.has "nvim-0.13" ~= 1 then
+  error "telescope-frecency.nvim requires Neovim v0.13 or higher: it runs on |vim.async|."
 end
 
 ---@type FrecencyDatabase?
@@ -39,28 +39,7 @@ local frecency = setmetatable({}, {
 })
 
 local function async_call(f, ...)
-  require("neoplen.async").void(f)(...)
-end
-
--- Run an async call now, or defer it to |VimEnter| when still in the startup
--- phase. `neoplen.async` lives inside telescope.nvim, so calling it makes
--- lazy-loading plugin managers load telescope.nvim. There is no longer any
--- reason to do that before VimEnter -- the async DB work still finishes well
--- before the first picker either way -- while doing it mid-startup would drag
--- telescope's load onto Neovim's startup critical path. So during startup we
--- defer to VimEnter.
-local function async_call_or_defer(f, ...)
-  if vim.v.vim_did_enter == 1 then
-    async_call(f, ...)
-    return
-  end
-  local args = { ... }
-  vim.api.nvim_create_autocmd("VimEnter", {
-    once = true,
-    callback = function()
-      async_call(f, unpack(args))
-    end,
-  })
+  require("frecency.async").void(f)(...)
 end
 
 local setup_done = false
@@ -113,7 +92,7 @@ local function setup(ext_config)
       if is_floatwin or (config.ignore_register and config.ignore_register(args.buf)) then
         return
       end
-      async_call_or_defer(frecency.register, args.buf, vim.api.nvim_buf_get_name(args.buf))
+      async_call(frecency.register, args.buf, vim.api.nvim_buf_get_name(args.buf))
     end,
   })
 
@@ -130,19 +109,10 @@ local function setup(ext_config)
   end
 
   if config.bootstrap and vim.v.vim_did_enter == 0 then
-    -- Defer DB bootstrap to VimEnter: creating the DB touches neoplen.async,
-    -- which loads telescope. VimEnter still warms the DB before the first picker
-    -- while keeping that load off Neovim's startup path. See async_call_or_defer
-    -- above.
-    vim.api.nvim_create_autocmd("VimEnter", {
-      once = true,
-      callback = function()
-        async_call(function()
-          database = require("frecency.database").create()
-          database:start()
-        end)
-      end,
-    })
+    database = require("frecency.database").create()
+    async_call(function()
+      database:start()
+    end)
   end
 
   setup_done = true

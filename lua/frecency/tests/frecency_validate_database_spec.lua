@@ -1,5 +1,5 @@
 local util = require "frecency.tests.util"
-local async = require "neoplen.async"
+local async = require "frecency.async"
 
 local filepath = util.filepath
 local make_epoch = util.make_epoch
@@ -47,7 +47,7 @@ describe("frecency", function()
         dir:joinpath("hoge1.txt"):rm()
 
         with_fake_vim_ui_select("y", function(called)
-          async.util.block_on(function()
+          async.block_on(function()
             frecency:validate_database(true)
           end)
 
@@ -74,7 +74,7 @@ describe("frecency", function()
         register("Hoge2.txt", make_epoch "2023-07-29T00:02:00+09:00")
 
         with_fake_vim_ui_select("y", function(_)
-          async.util.block_on(function()
+          async.block_on(function()
             frecency:validate_database(true)
           end)
         end)

@@ -8,3 +8,7 @@ vim.opt.runtimepath:append(vim.env.PLENTEST_PATH)
 vim.opt.runtimepath:append(vim.env.TELESCOPE_PATH)
 vim.opt.runtimepath:append "."
 vim.cmd.runtime { "plugin/telescope", bang = true }
+-- NOTE: plentest runs the spec files in parallel processes that share
+-- $XDG_STATE_HOME, so the ones that `:edit` files race to create the swap
+-- directory (E303). The specs need no swap files.
+vim.o.swapfile = false
