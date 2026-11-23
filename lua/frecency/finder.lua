@@ -5,7 +5,7 @@ local log = require "frecency.log"
 local timer = require "frecency.timer"
 local lazy_require = require "frecency.lazy_require"
 local Sorter = require "frecency.sorter"
-local async = lazy_require "plenary.async" --[[@as FrecencyPlenaryAsync]]
+local async = lazy_require "neoplen.async" --[[@as FrecencyPlenaryAsync]]
 
 ---@class FrecencyFinder
 ---@field config FrecencyFinderConfig
